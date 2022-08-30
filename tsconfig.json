@@ -1,0 +1,87 @@
+{ 
+    "imploderConfig": {
+        "profiles": {
+            "test": {
+                "entryModule": "ts/test/test_main.ts",
+                "entryFunction": "main",
+                "outFile": "target/test.js",
+                "target": "es5"
+            },
+            "client": {
+                "moduleBlacklistRegexp": ["^/test/.*?$", "^/server/.*?$"],
+                "entryModule": "ts/client/client_main.ts",
+                "entryFunction": "main",
+                "outFile": "target/client.js",
+                "target": "es5"
+            },
+            "server": {
+                "moduleBlacklistRegexp": ["^/test/.*?$", "^/client/.*?$"],
+                "plugins": [{
+                    "transform": "@nartallax/runtyper", 
+                    "type":"program"
+                }],
+                "entryModule": "ts/server/server_main.ts",
+                "entryFunction": "main",
+                "outFile": "target/server.js",
+                "target": "es2018"
+            },
+        }
+    },
+
+    "include": [
+        "./ts/**/*"
+    ],
+
+    "compilerOptions": {
+
+        "outDir": "js",
+        "rootDir": "./ts/",
+        "baseUrl": "./ts/",
+        "paths": {
+            "*": [
+                "./*",
+            ]
+        },
+
+
+        "moduleResolution": "Node",
+        "lib": ["dom", "es2017"],
+
+        "allowJs": false,
+
+        "noErrorTruncation": false,
+        "downlevelIteration": true,
+        "skipLibCheck": true,
+
+        "noImplicitUseStrict": false,
+        "alwaysStrict": true,
+        "newLine": "lf",
+        "noEmitOnError": true,
+        "pretty": false,
+        "removeComments": true,
+        "sourceMap": false,
+        "declaration": false,
+        "emitBOM": false,
+        "module": "amd",
+        "target": "es5",
+
+        "importsNotUsedAsValues": "remove",
+        "forceConsistentCasingInFileNames": true,
+        
+        "strict": true,
+        "strictFunctionTypes": true,
+        "strictNullChecks": true,
+        "strictBindCallApply": true,
+        "strictPropertyInitialization": true,
+        "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noStrictGenericChecks": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noUncheckedIndexedAccess": true
+    }
+}
