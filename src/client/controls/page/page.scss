@@ -1,0 +1,16 @@
+.page-root {
+	padding: 1vw;
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+}
+
+.settings-column {
+	flex-grow: 1;
+	max-width: 400px;
+	min-width: 250px;
+}
+
+.generation-column {
+	flex-grow: 4;
+}

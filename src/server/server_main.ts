@@ -1,5 +1,7 @@
-import {getCliArgs} from "server/cli_args"
+import {Runtyper} from "@nartallax/runtyper"
+import {config, loadConfig} from "server/config"
 import {HttpServer} from "server/http_server"
+import {ServerApi} from "server/server_api"
 import {errToString} from "server/utils/err_to_string"
 
 export async function main() {
@@ -11,23 +13,20 @@ export async function main() {
 	}
 }
 
-function cloneShit(shit: string, times: number): string {
-	return new Array(times + 1).join(shit)
-}
-
 async function mainInternal(): Promise<void> {
-	const cliArgs = getCliArgs()
+	await loadConfig()
+
 	const server = new HttpServer({
-		port: cliArgs.port,
-		httpRoot: cliArgs.httpRootDir,
+		port: config.port,
+		httpRoot: config.httpRootDir,
 		apiRoot: "/api/",
 		inputSizeLimit: 1024 * 1024 * 16,
 		readTimeoutSeconds: 3 * 60,
 		cacheDuration: 0,
-		apiMethods: {
-			cloneShit
-		}
+		apiMethods: ServerApi
 	})
+
+	Runtyper.cleanup()
 
 	const port = await server.start()
 	console.error("Server started at http://localhost:" + port + "/")

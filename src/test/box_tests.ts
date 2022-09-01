@@ -1,33 +1,33 @@
-import {viewBox, wbox} from "client/box/box"
+import {viewBox, box} from "client/base/box"
 import {assertEquals, makeTestPack} from "test/test_utils"
 
 export default makeTestPack("box", makeTest => {
 
 	makeTest("wbox simple test", () => {
-		const box = wbox(0)
-		const revZero = box.revision
-		box(5)
+		const b = box(0)
+		const revZero = b.revision
+		b(5)
 
-		assertEquals(box(), 5)
-		assertEquals(box.revision, revZero + 1)
+		assertEquals(b(), 5)
+		assertEquals(b.revision, revZero + 1)
 
 		let subscriberCalledTimes = 0
-		const unsub = box.subscribe(() => subscriberCalledTimes++)
+		const unsub = b.subscribe(() => subscriberCalledTimes++)
 		assertEquals(subscriberCalledTimes, 0)
 
-		box(10)
+		b(10)
 		assertEquals(subscriberCalledTimes, 1)
-		box(10)
+		b(10)
 		assertEquals(subscriberCalledTimes, 1)
-		box(15)
+		b(15)
 		assertEquals(subscriberCalledTimes, 2)
 		unsub()
-		box(7)
+		b(7)
 		assertEquals(subscriberCalledTimes, 2)
 	})
 
 	makeTest("viewBox simple test", () => {
-		const a = wbox(0)
+		const a = box(0)
 		const b = viewBox(() => Math.floor(a() / 2))
 
 		let calls = 0
@@ -50,7 +50,7 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("chain subscription test", () => {
-		const a = wbox(5)
+		const a = box(5)
 		const b = viewBox(() => a() * 2)
 		const c = viewBox(() => b() * 3)
 
@@ -79,31 +79,31 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("same-value notification culling", () => {
-		const box = wbox<unknown>({a: 5})
+		const b = box<unknown>({a: 5})
 		let calls = 0
-		box.subscribe(() => calls++)
-		box({a: 10})
+		b.subscribe(() => calls++)
+		b({a: 10})
 		assertEquals(calls, 1)
-		box(box())
+		b(b())
 		assertEquals(calls, 2)
-		box(null)
+		b(null)
 		assertEquals(calls, 3)
-		box(null)
+		b(null)
 		assertEquals(calls, 3)
 
 		const obj = {b: 5}
-		box(obj)
+		b(obj)
 		assertEquals(calls, 4)
-		box(obj)
+		b(obj)
 		assertEquals(calls, 5)
-		box(5)
+		b(5)
 		assertEquals(calls, 6)
-		box(5)
+		b(5)
 		assertEquals(calls, 6)
 	})
 
 	makeTest("view only subscribes to direct dependencies", () => {
-		const a = wbox(5)
+		const a = box(5)
 		let bRecalcs = 0
 		const b = viewBox(() => {
 			bRecalcs++
@@ -145,32 +145,32 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("subscriber does not receive outdated values", () => {
-		const box = wbox(0)
-		box.subscribe(v => box(Math.floor(v / 2) * 2))
-		let lastVisibleValue = box()
+		const b = box(0)
+		b.subscribe(v => b(Math.floor(v / 2) * 2))
+		let lastVisibleValue = b()
 		let callsCount = 0
-		box.subscribe(v => {
+		b.subscribe(v => {
 			lastVisibleValue = v
 			callsCount++
 		})
 
-		box(1)
+		b(1)
 		assertEquals(callsCount, 0)
 		assertEquals(lastVisibleValue, 0)
-		box(2)
+		b(2)
 		assertEquals(callsCount, 1)
 		assertEquals(lastVisibleValue, 2)
-		box(3)
+		b(3)
 		assertEquals(callsCount, 1)
 		assertEquals(lastVisibleValue, 2)
-		box(4)
+		b(4)
 		assertEquals(callsCount, 2)
 		assertEquals(lastVisibleValue, 4)
 	})
 
 	makeTest("basic property subbox test", () => {
-		const parent = wbox({a: 5})
-		const child = parent.makePropertySubBox("a")
+		const parent = box({a: 5})
+		const child = parent.prop("a")
 
 		assertEquals(child(), 5)
 		child(6)
@@ -196,8 +196,8 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("property subbox array test", () => {
-		const parent = wbox([1, 2, 3])
-		const child = parent.makePropertySubBox(3)
+		const parent = box([1, 2, 3])
+		const child = parent.prop(3)
 
 		assertEquals(child(), undefined)
 		child(4)
@@ -212,9 +212,9 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("property subbox properly ignores circular updates", () => {
-		const parent = wbox({a: {c: 5}, b: {d: "uwu"}})
-		const childA = parent.makePropertySubBox("a")
-		const childB = parent.makePropertySubBox("b")
+		const parent = box({a: {c: 5}, b: {d: "uwu"}})
+		const childA = parent.prop("a")
+		const childB = parent.prop("b")
 
 		let callsParent = 0
 		parent.subscribe(() => callsParent++)
@@ -242,9 +242,9 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("chain property subboxes", () => {
-		const parent = wbox({a: {b: {c: 5}}})
-		const middle = parent.makePropertySubBox("a")
-		const child = middle.makePropertySubBox("b")
+		const parent = box({a: {b: {c: 5}}})
+		const middle = parent.prop("a")
+		const child = middle.prop("b")
 		let parentCalls = 0
 		parent.subscribe(() => parentCalls++)
 		let childCalls = 0
@@ -279,9 +279,9 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("chain property subboxes with middle one implicit subscrption", () => {
-		const parent = wbox({a: {b: {c: 5}}})
-		const middle = parent.makePropertySubBox("a")
-		const child = middle.makePropertySubBox("b")
+		const parent = box({a: {b: {c: 5}}})
+		const middle = parent.prop("a")
+		const child = middle.prop("b")
 		let parentCalls = 0
 		parent.subscribe(() => parentCalls++)
 		let childCalls = 0
@@ -312,9 +312,9 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("chain property subboxes with only top sub", () => {
-		const parent = wbox({a: {b: {c: 5}}})
-		const middle = parent.makePropertySubBox("a")
-		const child = middle.makePropertySubBox("b")
+		const parent = box({a: {b: {c: 5}}})
+		const middle = parent.prop("a")
+		const child = middle.prop("b")
 		let parentCalls = 0
 		parent.subscribe(() => parentCalls++)
 
@@ -339,9 +339,9 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("chain property subboxes with only bottom sub", () => {
-		const parent = wbox({a: {b: {c: 5}}})
-		const middle = parent.makePropertySubBox("a")
-		const child = middle.makePropertySubBox("b")
+		const parent = box({a: {b: {c: 5}}})
+		const middle = parent.prop("a")
+		const child = middle.prop("b")
 		let childCalls = 0
 		child.subscribe(() => childCalls++)
 

@@ -34,8 +34,6 @@ export class HttpServer {
 			validators[apiMethodName] = validator
 		}
 		this.validators = validators
-
-		Runtyper.cleanup()
 	}
 
 	start(): Promise<number> {

@@ -4,6 +4,6 @@ set -e
 cd `dirname "$0"`
 cd ..
 
-scripts/build.sh
+scripts/build.sh development
 
-node target/server.js --http-root ./target/
+node target/server.js --http-root ./target/ --config config.example.json

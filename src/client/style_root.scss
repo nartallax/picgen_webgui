@@ -1,0 +1,79 @@
+@import "../../fontello/fontello-codes";
+
+@import "controls/input_styles";
+
+@import "controls/page/page";
+@import "controls/settings_block/settings_block";
+@import "controls/settings_subblock/settings_subblock";
+@import "controls/param_line/param_line";
+@import "controls/number_input/number_input";
+@import "controls/bool_input/bool_input";
+
+body {
+	width: 100vw;
+	height: 100vh;
+	background-color: #E5D6D2;
+}
+
+* {
+	border: 0;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	line-height: 1.3rem;
+	font-size: 1rem;
+	font-family: 'OpenSans', Arial, Helvetica, sans-serif;
+}
+
+@font-face {
+	font-family: 'fontello';
+	src: url('./font/fontello.eot');
+	src: url('./font/fontello.eot#iefix') format('embedded-opentype'),
+		 url('./font/fontello.woff2') format('woff2'),
+		 url('./font/fontello.woff') format('woff'),
+		 url('./font/fontello.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'OpenSans';
+	src: url('./font/opensans_medium.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'OpenSans';
+	src: url('./font/opensans_bold.ttf') format('truetype');
+	font-weight: bold;
+	font-style: normal;
+}
+
+[class^="icon-"]:before, [class*=" icon-"]:before {
+	font-family: "fontello";
+	font-style: normal;
+	font-weight: normal;
+	speak: never;
+  
+	display: inline-block;
+	text-decoration: inherit;
+	width: 1em;
+	margin-right: .2em;
+	text-align: center;
+	
+	/* For safety - reset parent styles, that can break glyph codes*/
+	font-variant: normal;
+	text-transform: none;
+  
+	/* fix buttons height, for twitter bootstrap */
+	line-height: 1em;
+  
+	/* Animation center compensation - margins should be symmetric */
+	/* remove if not needed */
+	margin-left: .2em;
+  
+	/* Font smoothing. That was taken from TWBS */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}

@@ -16,6 +16,7 @@ export interface RBox<T>{
 const defaultStartingRevision = 1
 
 export type RBoxOrValue<T> = T | RBox<T>
+export type MaybeRBoxed<T> = [T] extends [RBox<unknown>] ? T : T | RBox<T>
 
 export function isRBox<T>(x: RBoxOrValue<T>): x is RBox<T> {
 	return typeof(x) === "function" && (!!(x as RBox<T>).isRBox)
@@ -29,8 +30,8 @@ export function unbox<T>(x: RBoxOrValue<T>): T {
 export interface WBox<T> extends RBox<T>{
 	(newValue: T): T
 	readonly isWBox: true
-	makePropertySubBox<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
-	makePropertySubBox<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
+	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
+	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
 }
 
 // any WBox<T> is also InternalWBox<T>
@@ -163,7 +164,7 @@ function boxContentCanBeDifferent<T>(oldValue: T, newValue: T): boolean {
 }
 
 /** Make a plain simple WBox */
-export function wbox<T>(x: T): WBox<T> {
+export function box<T>(x: T): WBox<T> {
 	let value: T = x
 
 	function updateWBoxValue(newValue: T, byField: boolean) {
@@ -194,7 +195,7 @@ export function wbox<T>(x: T): WBox<T> {
 		isWBox: true as const,
 		subscribe, notify,
 		revision: defaultStartingRevision,
-		makePropertySubBox,
+		prop: makePropertySubBox,
 		subscribeForField,
 		updateByField: function updateByField(newValue: T): void {
 			updateWBoxValue(newValue, true)
@@ -378,8 +379,8 @@ function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey
 		isWBox: true as const,
 		subscribe: (listener: Subscriber<T[K]>) => propertySubWBoxSubscribe(listener, false),
 		notify,
-		revision: 1,
-		makePropertySubBox,
+		revision: defaultStartingRevision,
+		prop: makePropertySubBox,
 		subscribeForField: (listener: Subscriber<T[K]>) => propertySubWBoxSubscribe(listener, true),
 		updateByField: function updatePropWBoxByField(value: T[K]): void {
 			updatePropertySubWBox(value, true, false)

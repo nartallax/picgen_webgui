@@ -1,0 +1,11 @@
+.param-line {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	padding: 8px 0;
+}
+
+.param-line-label {
+	font-size: 1.35rem;
+	color: #625e5e;
+}
