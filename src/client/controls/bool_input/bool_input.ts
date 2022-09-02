@@ -11,13 +11,18 @@ export function BoolInput(opts: BoolInputOptions): HTMLElement {
 			on: opts.value
 		}],
 		on: {
-			click: () => opts.value(!opts.value())
+			click: () => opts.value(!opts.value()),
+			keydown: e => {
+				if(e.key === "Enter" || e.key === "Space" || e.key === " "){
+					opts.value(!opts.value())
+				}
+			}
 		}
 	}, [
 		tag({class: "bool-input-handle"})
 	])
 
-	console.trace("render!")
+	result.tabIndex = 0
 
 	return result
 }

@@ -365,4 +365,57 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(child().c, 20)
 	})
 
+	makeTest("views don't calculate when noone is subscribed", () => {
+		const b = box(5)
+		let calcCount = 0
+		const view = viewBox(() => {
+			calcCount++
+			return b() * 2
+		})
+
+		assertEquals(calcCount, 0)
+		assertEquals(view(), 10)
+		assertEquals(calcCount, 1)
+		assertEquals(view(), 10)
+		assertEquals(calcCount, 2)
+
+		b(6)
+		assertEquals(calcCount, 2)
+		assertEquals(view(), 12)
+		assertEquals(calcCount, 3)
+		assertEquals(view(), 12)
+		assertEquals(calcCount, 4)
+	})
+
+	makeTest("view only subscribes to param box, not to the parent box", () => {
+		const parent = box({a: 5})
+		const child = parent.prop("a")
+		let parentNotifications = 0
+		parent.subscribe(() => parentNotifications++)
+		let childNotifications = 0
+		child.subscribe(() => childNotifications++)
+		let calcCount = 0
+		const view = viewBox(() => {
+			calcCount++
+			return child() * 2
+		})
+		view.subscribe(() => {
+			// nothing
+		})
+
+		assertEquals(calcCount, 1)
+		assertEquals(parentNotifications, 0)
+		assertEquals(childNotifications, 0)
+
+		parent({a: 6})
+		assertEquals(calcCount, 2)
+		assertEquals(parentNotifications, 1)
+		assertEquals(childNotifications, 1)
+
+		parent({a: 6})
+		assertEquals(calcCount, 2)
+		assertEquals(parentNotifications, 2)
+		assertEquals(childNotifications, 1)
+	})
+
 })
