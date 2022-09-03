@@ -12,6 +12,7 @@
 	top: 0;
 	color: #fff;
 	line-height: 1.5em;
+	pointer-events: none;
 
 	&:before {
 		font-size: 0.9em;
@@ -27,5 +28,5 @@
 
 .text-input.input {
 	width: 100%;
-	padding: 0 0.5em;
+	padding: 0 2em 0 0.5em;
 }

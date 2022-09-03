@@ -1,6 +1,7 @@
 interface PrefixTreeNode<T> {
 	values?: T[]
 	leaves?: {[k: string]: PrefixTreeNode<T>}
+	readonly level: number
 }
 
 export class PrefixTree<T> {
@@ -14,9 +15,13 @@ export class PrefixTree<T> {
 	}
 
 	private extractRootsByLetters(): Map<string, PrefixTreeNode<T>[]> {
-		const result = new Map<string, PrefixTreeNode<T>[]>()
-		this.addNodeToRootMap(this.root, result)
-		return result
+		const map = new Map<string, PrefixTreeNode<T>[]>()
+		this.addNodeToRootMap(this.root, map)
+		for(const arr of map.values()){
+			// sorting for better search relevance
+			arr.sort((a, b) => a.level - b.level)
+		}
+		return map
 	}
 
 	private addNodeToRootMap(node: PrefixTreeNode<T>, map: Map<string, PrefixTreeNode<T>[]>): void {
@@ -37,19 +42,20 @@ export class PrefixTree<T> {
 	}
 
 	private buildTree(sourceValuesWithKeys: [T, readonly string[]][]): PrefixTreeNode<T> {
-		const result: PrefixTreeNode<T> = {}
+		const root: PrefixTreeNode<T> = {level: 0}
 		for(const [value, keys] of sourceValuesWithKeys){
 			for(const key of keys){
-				this.addToTree(result, key, value)
+				this.addToTree(root, key, value)
 			}
 		}
-		return result
+		return root
 	}
 
-	private addToTree(node: PrefixTreeNode<T>, key: string, value: T): void {
+	private addToTree(root: PrefixTreeNode<T>, key: string, value: T): void {
+		let node = root
 		for(const char of key){
 			const leaves = node.leaves ||= {}
-			node = leaves[char] ||= {}
+			node = leaves[char] ||= {level: node.level + 1}
 		}
 		(node.values ||= []).push(value)
 	}

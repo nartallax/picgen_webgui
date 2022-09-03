@@ -33,7 +33,7 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 
 		const transformedTags = [] as [string, string[]][]
 		for(const tag in rawTags){
-			const searchText = [...rawTags[tag]!, tag].map(x => x.toLowerCase())
+			const searchText = [tag, ...rawTags[tag]!].map(x => x.toLowerCase())
 			transformedTags.push([tag, searchText])
 		}
 		console.trace(transformedTags)
