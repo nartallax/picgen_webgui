@@ -1,14 +1,17 @@
 import {getBinder} from "client/base/binder/binder"
-import {RBox, WBox} from "client/base/box"
+import {isWBox, RBox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 
 interface TagListOptions {
 	values: RBox<readonly string[]> | WBox<string[]>
 	onclick?(tagStr: string): void
+	center?: boolean
 }
 
 export function TagList(opts: TagListOptions): HTMLElement {
-	const result = tag({class: "tag-list"})
+	const result = tag({class: ["tag-list", {
+		center: !!opts.center
+	}]})
 
 	const binder = getBinder(result)
 	binder.watch(opts.values, values => {
@@ -16,13 +19,28 @@ export function TagList(opts: TagListOptions): HTMLElement {
 			result.firstChild.remove()
 		}
 		for(const tagStr of values){
-			result.appendChild(tag({
+			const item = tag({
 				class: "tag-item",
-				text: tagStr,
-				on: {
-					click: () => opts.onclick && opts.onclick(tagStr)
-				}
-			}))
+				text: tagStr
+			})
+			if(opts.onclick){
+				item.addEventListener("click", () => opts.onclick!(tagStr))
+			}
+
+			const valueBox = opts.values
+			if(isWBox(valueBox)){
+				const cross = tag({
+					class: ["tag-remove-button", "icon-cancel"],
+					on: {click: () => {
+						let tags = valueBox()
+						tags = tags.filter(x => x !== tagStr)
+						valueBox(tags)
+					}}
+				})
+				item.appendChild(cross)
+				item.classList.add("editable")
+			}
+			result.appendChild(item)
 		}
 	})
 

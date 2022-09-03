@@ -8,8 +8,8 @@ export namespace ClientApi {
 	export const getGenerationParameterDefinitions = () =>
 		client.call("getGenerationParameterDefinitions", {}) as Promise<readonly GenParameterDefinition[]>
 
-	export const getFormTags = () =>
-		client.call("getFormTags", {}) as Promise<readonly string[]>
+	export const getShapeTags = () =>
+		client.call("getShapeTags", {}) as Promise<readonly string[]>
 
 	export const getContentTags = () =>
 		client.call("getContentTags", {}) as Promise<{readonly [tagContent: string]: readonly string[]}>

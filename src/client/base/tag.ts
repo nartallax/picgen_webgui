@@ -13,6 +13,9 @@ export interface HTMLTagDescription<K extends keyof HTMLElementTagNameMap = keyo
 	readonly on?: {
 		readonly [k in keyof GlobalEventHandlersEventMap]?: (evt: GlobalEventHandlersEventMap[k]) => void
 	}
+	readonly style?: {
+		readonly [k in keyof CSSStyleDeclaration]?: MaybeRBoxed<CSSStyleDeclaration[k]>
+	}
 }
 
 export type HtmlTaggable = HTMLElement | HTMLTagDescription | Control | null | undefined
@@ -64,6 +67,21 @@ export function tag<K extends keyof HTMLElementTagNameMap = "div">(a?: HTMLTagDe
 			// so just be Any and that's it
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			res.addEventListener(evtName, handler as any, {passive: true, capture: false})
+
+		}
+	}
+
+	if(description.style){
+		for(const k in description.style){
+			const v = description.style[k]
+			if(isRBox(v)){
+				(binder ||= getBinder(res)).watch<string | number>(v, v => {
+					res.style[k] = v as string // ew
+				})
+			}
+			res.style[k] = unbox(description.style[k]!)
+			break
+
 
 		}
 	}

@@ -6,7 +6,7 @@ import {Runtyper} from "@nartallax/runtyper"
 interface ConfigFile {
 	readonly generationParameters: readonly GenParameterDefinition[]
 	readonly tags: {
-		readonly form: readonly string[]
+		readonly shape: readonly string[]
 		readonly content: {readonly [tagContent: string]: readonly string[]}
 	}
 }

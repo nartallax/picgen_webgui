@@ -47,7 +47,7 @@ interface InternalWBox<T> extends WBox<T>, InternalRBox<T>{
 
 export type WBoxOrValue<T> = T | WBox<T>
 
-export function isWBox<T>(x: WBox<T>): x is WBox<T> {
+export function isWBox<T>(x: unknown): x is WBox<T> {
 	return typeof(x) === "function" && (!!(x as InternalWBox<T>).isWBox)
 }
 
@@ -277,14 +277,18 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 		return newValue
 	}
 
-	function recalcValueAndResubscribe(canSkipCalc?: boolean): T {
+	function doOnDependencyUpdated() {
+		recalcValueAndResubscribe(false)
+	}
+
+	function recalcValueAndResubscribe(canSkipCalc: boolean): T {
 		subDispose()
 
 		const shouldCalc = !canSkipCalc || shouldRecalcValue()
 		const newValue = shouldCalc ? recalcValueWithoutSetting() : value as T
 
 		for(let i = 0; i < depList!.length; i++){
-			subDisposers.push(depList![i]!.subscribe(recalcValueAndResubscribe as () => T))
+			subDisposers.push(depList![i]!.subscribe(doOnDependencyUpdated))
 		}
 
 		return shouldCalc ? setValue(newValue) : newValue
@@ -296,7 +300,7 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 			if(!shouldRecalcValue()){
 				return value as T
 			}
-			return recalcValueAndResubscribe()
+			return recalcValueAndResubscribe(false)
 		}
 
 		if(!shouldRecalcValue()){

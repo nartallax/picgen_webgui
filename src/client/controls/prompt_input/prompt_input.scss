@@ -1,0 +1,55 @@
+.prompt-input {
+
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+
+	.prompt-input-first-line{
+		flex-grow: 0;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		position: relative;
+		background-color: #fff;
+		border-radius: 100px;
+	}
+
+	.prompt-input-input {
+		flex-grow: 1;
+		font-size: 1.35rem;
+		line-height: 1.5em;
+		padding: 0.55em 2em 0.55em 1.5em;
+		margin-left: -1em;
+		margin-right: 1.5em;
+		color: #706D6C;
+
+		&::placeholder {
+			color: #bfbfbf;
+		}
+	}
+
+	.prompt-input-generate-button {
+		position: absolute;
+		right: 0;
+		top: -0.08em;
+		font-size: 2.5rem;
+		width: 1.6em;
+		height: 1.6em;
+		border-radius: 10em;
+		cursor: pointer;
+		color: #fff;
+		background: #a0c2a5;
+		transition: 0.25s;
+		line-height: 1.5em;
+
+		&:before {
+			position: relative;
+			left: 2px;
+		}
+
+		&:hover {
+			background: #bdb;
+		}
+	}
+
+}

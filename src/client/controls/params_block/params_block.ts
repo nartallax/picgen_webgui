@@ -1,5 +1,5 @@
 import {getBinder} from "client/base/binder/binder"
-import {box, isRBox, RBox, unbox, WBox} from "client/base/box"
+import {box, RBox, unbox, WBox} from "client/base/box"
 import {ParamLine} from "client/controls/param_line/param_line"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
 import {SettingsSubblock} from "client/controls/settings_subblock/settings_subblock"
@@ -46,12 +46,8 @@ export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
 
 	const result = SettingsBlock(contentItems)
 
-	if(isRBox(opts.paramDefs)){
-		const binder = getBinder(result)
-		binder.watch(opts.paramDefs, () => contentItems(renderItems()))
-	} else {
-		contentItems(renderItems())
-	}
+	const binder = getBinder(result)
+	binder.watchAndRun(opts.paramDefs, () => contentItems(renderItems()))
 
 	return result
 }

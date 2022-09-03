@@ -3,14 +3,18 @@
 	display: flex;
 	flex-direction: row;
 	align-items: stretch;
-}
 
-.settings-column {
-	flex-grow: 1;
-	max-width: 400px;
-	min-width: 250px;
-}
+	.settings-column {
+		flex-grow: 1;
+		flex-basis: 1px;
+		max-width: 400px;
+		min-width: 250px;
+	}
+	
+	.generation-column {
+		flex-grow: 4;
+		flex-basis: 4px;
+		margin-left: 1vw;
+	}
 
-.generation-column {
-	flex-grow: 4;
 }

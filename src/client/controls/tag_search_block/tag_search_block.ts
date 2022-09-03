@@ -67,7 +67,7 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 	const result = SettingsBlock(contentItems)
 
 	const binder = getBinder(result)
-	binder.watch(opts.contentTags, () => contentItems(renderItems()))
+	binder.watchAndRun(opts.contentTags, () => contentItems(renderItems()))
 
 	return result
 

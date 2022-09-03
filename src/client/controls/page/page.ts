@@ -2,6 +2,7 @@ import {ClientApi} from "client/app/client_api"
 import {box, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {ParamsBlock} from "client/controls/params_block/params_block"
+import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {GenParameterDefinition} from "common/common_types"
 
@@ -31,13 +32,25 @@ export function Page(): HTMLElement {
 	const paramDefsBox = box(null as null | readonly GenParameterDefinition[])
 
 	const contentTagBox = box(null as null | {readonly [tagContent: string]: readonly string[]})
-	const selectedContentTags = box([] as string[]);
+	const selectedContentTags = box([] as string[])
+
+	const loadingContentShapeValue = "Loading..."
+	const shapeTagValue = box(loadingContentShapeValue)
+	const shapeTagsBox = box(null as null | readonly string[])
+
+	const promptValue = box("");
 
 	(async() => {
-		const [paramDefs, contentTags] = await Promise.all([
+		const [paramDefs, contentTags, shapeTags] = await Promise.all([
 			ClientApi.getGenerationParameterDefinitions(),
-			ClientApi.getContentTags()
+			ClientApi.getContentTags(),
+			ClientApi.getShapeTags()
 		])
+
+		shapeTagsBox(shapeTags)
+		if(shapeTagValue() === loadingContentShapeValue){
+			shapeTagValue(shapeTags[0] || "Landscape")
+		}
 
 		updateParamValues(paramValues, paramDefs)
 		paramDefsBox(paramDefs)
@@ -55,6 +68,16 @@ export function Page(): HTMLElement {
 				visibleTagLimit: 10
 			})
 		]),
-		tag({class: "generation-column"})
+		tag({class: "generation-column"}, [
+			PromptInput({
+				promptValue: promptValue,
+				selectedContentTags: selectedContentTags,
+				shapeValue: shapeTagValue,
+				shapeValues: shapeTagsBox,
+				startGeneration: () => {
+					console.log("start!")
+				}
+			})
+		])
 	])
 }

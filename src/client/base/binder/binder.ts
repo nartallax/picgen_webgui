@@ -1,5 +1,5 @@
 import {MutationBinder} from "client/base/binder/mutation_binder"
-import {RBox} from "client/base/box"
+import {isRBox, RBox} from "client/base/box"
 import {makeNodeDataAttacher} from "client/base/node_data_attacher"
 
 /** Binder is a way to access various lifecycle events of DOM nodes
@@ -10,7 +10,7 @@ export interface Binder {
 	clearOnNodeInserted(handler: () => void): void
 	clearOnNodeRemoved(handler: () => void): void
 	watch<T>(box: RBox<T>, handler: (value: T) => void): () => void
-	subscribeAndFireIfInDom<T>(box: RBox<T>, handler: (value: T) => void): () => void
+	watchAndRun<T>(box: RBox<T>, handler: (value: T) => void): () => void
 	readonly isInDom: boolean
 }
 
@@ -107,12 +107,17 @@ export class BinderImpl implements Binder {
 		return this._subscribe(box, handler).unsub
 	}
 
-	subscribeAndFireIfInDom<T>(box: RBox<T>, handler: (value: T) => void): () => void {
-		const {unsub, watchedBox} = this._subscribe(box, handler)
-		if(this.isInDom){
+	watchAndRun<T>(box: T | RBox<T>, handler: (value: T) => void): () => void {
+		if(isRBox(box)){
+			const {unsub, watchedBox} = this._subscribe(box, handler)
 			this.invokeBoxHandler(box(), watchedBox)
+			return unsub
+		} else {
+			handler(box)
+			return () => {
+				// noop!
+			}
 		}
-		return unsub
 	}
 
 }

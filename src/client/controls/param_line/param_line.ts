@@ -1,4 +1,4 @@
-import {WBox} from "client/base/box"
+import {viewBox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {NumberInput} from "client/controls/number_input/number_input"
@@ -28,6 +28,14 @@ export function ParamLine(def: GenParameterDefinition, value: WBox<GenParameterD
 		tag({
 			class: "param-line-label",
 			text: def.uiName
+		}),
+		tag({
+			class: ["param-line-revert-button", "icon-ccw", {
+				hidden: viewBox(() => value() === def.default)
+			}],
+			on: {
+				click: () => value(def.default)
+			}
 		}),
 		input
 	])

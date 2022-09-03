@@ -3,9 +3,21 @@
 	flex-direction: row;
 	justify-content: space-between;
 	padding: 8px 0;
-}
 
-.param-line-label {
-	font-size: 1.35rem;
-	color: #625e5e;
+	.param-line-label {
+		font-size: 1.35rem;
+		flex-grow: 1;
+		color: #625e5e;
+	}
+
+	.param-line-revert-button {
+		color: #e55f42;
+		cursor: pointer;
+		font-size: 1.35rem;
+		line-height: 1.5em;
+
+		&.hidden {
+			display: none;
+		}
+	}
 }

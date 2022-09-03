@@ -4,13 +4,23 @@
 	align-items: center;
 	justify-content: flex-start;
 	flex-wrap: wrap;
-}
 
-.tag-list .tag-item {
-	color: #625e5e;
-	background-color: #dfedf2;
-	padding: 0 0.5em;
-	border-radius: 2em;
-	cursor: pointer;
-	margin: 0.5em 0.5em 0 0;
+	&.center {
+		justify-content: center;
+	}
+
+	.tag-item {
+		color: #625e5e;
+		background-color: #dfedf2;
+		padding: 0 0.5em;
+		border-radius: 2em;
+		cursor: pointer;
+		margin: 0.5em 0.5em 0 0;
+		display: flex;
+		flex-direction: row;
+
+		&.editable {
+			padding-right: 0;
+		}
+	}
 }

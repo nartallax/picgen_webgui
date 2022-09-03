@@ -7,8 +7,8 @@ export namespace ServerApi {
 		return config.generationParameters
 	}
 
-	export function getFormTags(): readonly string[] {
-		return config.tags.form
+	export function getShapeTags(): readonly string[] {
+		return config.tags.shape
 	}
 
 	export function getContentTags(): {readonly [tagContent: string]: readonly string[]} {

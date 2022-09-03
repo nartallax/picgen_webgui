@@ -37,7 +37,7 @@ export function TextInput(opts: TextInputOptions): HTMLElement {
 	])
 
 	const binder = getBinder(input)
-	binder.subscribeAndFireIfInDom(opts.value, v => input.value = v)
+	binder.watchAndRun(opts.value, v => input.value = v)
 
 	return wrap
 }

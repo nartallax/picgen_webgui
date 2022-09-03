@@ -62,7 +62,8 @@
 		"isTest": true
 	}],
 	"tags": {
-		"form": ["Concept Art",
+		"shape": [
+			"Concept Art",
             "Matte Painting",
             "Cine Shot",
             "Movie Shot",
