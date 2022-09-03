@@ -418,4 +418,26 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(childNotifications, 1)
 	})
 
+	makeTest("view works fine with zero dependencies", () => {
+		let calcCount = 0
+		const view = viewBox(() => {
+			calcCount++
+			return 2 * 2
+		})
+
+		assertEquals(view(), 4)
+		assertEquals(calcCount, 1)
+		assertEquals(view(), 4)
+		assertEquals(calcCount, 2)
+
+		let subCalls = 0
+		view.subscribe(() => {
+			subCalls++
+		})
+
+		assertEquals(subCalls, 0)
+		assertEquals(view(), 4)
+		assertEquals(subCalls, 0)
+	})
+
 })

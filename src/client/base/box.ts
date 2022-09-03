@@ -6,14 +6,14 @@ type Writable<T> = {-readonly[k in keyof T]: T[k]}
 export interface RBox<T>{
 	(): T
 	subscribe(subscriber: Subscriber<T>): Unsubscribe
-	readonly isRBox: true
 	/** Each time stored value changes, revision is incremented
 	 * Can be used to track if value is changed or not without actually storing value */
 	readonly revision: number
 }
 
 interface InternalRBox<T> extends RBox<T>{
-	notify(): void
+	notify(value: T): void
+	readonly isRBox: true
 }
 
 const defaultStartingRevision = 1
@@ -22,7 +22,7 @@ export type RBoxOrValue<T> = T | RBox<T>
 export type MaybeRBoxed<T> = [T] extends [RBox<unknown>] ? T : T | RBox<T>
 
 export function isRBox<T>(x: RBoxOrValue<T>): x is RBox<T> {
-	return typeof(x) === "function" && (!!(x as RBox<T>).isRBox)
+	return typeof(x) === "function" && (!!(x as InternalRBox<T>).isRBox)
 }
 
 export function unbox<T>(x: RBoxOrValue<T>): T {
@@ -32,7 +32,6 @@ export function unbox<T>(x: RBoxOrValue<T>): T {
 /** Writable box. Something that can hold value and notify subscribers about changes in the value. */
 export interface WBox<T> extends RBox<T>{
 	(newValue: T): T
-	readonly isWBox: true
 	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
 	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
 }
@@ -42,13 +41,14 @@ export interface WBox<T> extends RBox<T>{
 interface InternalWBox<T> extends WBox<T>, InternalRBox<T>{
 	subscribeForField: WBox<T>["subscribe"]
 	updateByField(newValue: T): void
+	readonly isWBox: true
 }
 
 
 export type WBoxOrValue<T> = T | WBox<T>
 
 export function isWBox<T>(x: WBox<T>): x is WBox<T> {
-	return typeof(x) === "function" && (!!(x as WBox<T>).isWBox)
+	return typeof(x) === "function" && (!!(x as InternalWBox<T>).isWBox)
 }
 
 type BoxSubscriber<T = unknown> = (box: RBox<T>) => void
@@ -58,8 +58,8 @@ interface SubscribeNotify<T>{
 	subscribers: Set<SubscriberInternal<T>>
 	subscribe(listener: Subscriber<T>): Unsubscribe
 	subscribeForField(listener: Subscriber<T>): Unsubscribe
-	notify(): void
-	notifyByField(): void
+	notify(value: T): void
+	notifyByField(value: T): void
 }
 
 interface SubscriberInternal<T>{
@@ -67,18 +67,21 @@ interface SubscriberInternal<T>{
 	/* Last value that was passed to the subscriber.
 	Sometimes trick with revisions is not enough to properly cull subscriber calls
 	because on next revision, before subscriber is called, value could have changed back and forth */
-	lastKnownValue: T
+	lastKnownValue: T | NoKnownValue
 	lastKnownRevision: number
 	readonly isFieldSub: boolean
 }
 
-function createSubscribeNotify<T>(getValue: () => T, getRevision: () => number): SubscribeNotify<T> {
+type NoKnownValue = symbol
+const noKnownValue: NoKnownValue = Symbol()
+
+function createSubscribeNotify<T>(getInitialSubscriberValue: () => T | NoKnownValue, getRevision: () => number): SubscribeNotify<T> {
 	const subscribers = new Set<SubscriberInternal<T>>()
 
 	function subscribe(listener: Subscriber<T>, isFieldSub: boolean): Unsubscribe {
 		const sub: SubscriberInternal<T> = {
 			fn: listener,
-			lastKnownValue: getValue(),
+			lastKnownValue: getInitialSubscriberValue(),
 			lastKnownRevision: getRevision(),
 			isFieldSub
 		}
@@ -87,13 +90,12 @@ function createSubscribeNotify<T>(getValue: () => T, getRevision: () => number):
 	}
 
 	let lastNotifyWithFieldsSubsRevision = defaultStartingRevision
-	function notify(includeFieldSubs: boolean): void {
+	function notify(value: T, includeFieldSubs: boolean): void {
 		const startingRevision = getRevision()
 		if(includeFieldSubs){
 			lastNotifyWithFieldsSubsRevision = startingRevision
 		}
 		const subs = [...subscribers]
-		const value = getValue()
 		for(const sub of subs){
 			if(!boxContentCanBeDifferent(sub.lastKnownValue, value)){
 				continue
@@ -124,17 +126,17 @@ function createSubscribeNotify<T>(getValue: () => T, getRevision: () => number):
 	// I don't know. Maybe it will be more performant and less memory-hungry, maybe not
 	const subNot: SubscribeNotify<T> = {
 		subscribers,
-		subscribeForField: function subscribeForField(listener: Subscriber<T>) {
+		subscribeForField: function subscribeForField(listener: Subscriber<T>): Unsubscribe {
 			return subscribe(listener, true)
 		},
-		subscribe: function subscribeForGeneralPurpose(listener: Subscriber<T>) {
+		subscribe: function subscribeForGeneralPurpose(listener: Subscriber<T>): Unsubscribe {
 			return subscribe(listener, false)
 		},
-		notify: function notifyByGeneralUpdate() {
-			notify(true)
+		notify: function notifyByGeneralUpdate(value: T) {
+			notify(value, true)
 		},
-		notifyByField: function notifyByfield() {
-			notify(false)
+		notifyByField: function notifyByfield(value: T) {
+			notify(value, false)
 		}
 	}
 
@@ -175,9 +177,9 @@ export function box<T>(x: T): WBox<T> {
 			(result as Writable<WBox<T>>).revision++
 			value = newValue
 			if(byField){
-				notifyByField()
+				notifyByField(newValue)
 			} else {
-				notify()
+				notify(newValue)
 			}
 		}
 	}
@@ -192,7 +194,7 @@ export function box<T>(x: T): WBox<T> {
 		return value
 	}
 
-	const {subscribe, notify, notifyByField, subscribeForField} = createSubscribeNotify(() => value, () => result.revision)
+	const {subscribe, notify, notifyByField, subscribeForField} = createSubscribeNotify<T>(() => value, () => result.revision)
 	const result: InternalWBox<T> = Object.assign(fn, {
 		isRBox: true as const,
 		isWBox: true as const,
@@ -230,7 +232,7 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 
 	let depList = null as null | RBox<unknown>[]
 	let revList = null as null | number[]
-	let value: T | null = null
+	let value: T | NoKnownValue = noKnownValue
 	const subDisposers: Unsubscribe[] = []
 	const subDispose = () => {
 		subDisposers.forEach(x => x())
@@ -265,12 +267,12 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 		return newValue
 	}
 
-	function setValue(hadValue: boolean, newValue: T): T {
-		const valueChanged = !hadValue || boxContentCanBeDifferent(value, newValue)
+	function setValue(newValue: T): T {
+		const valueChanged = boxContentCanBeDifferent(value, newValue)
 		value = newValue
 		if(valueChanged){
 			(result as Writable<RBox<T>>).revision++
-			notify()
+			notify(newValue)
 		}
 		return newValue
 	}
@@ -278,33 +280,32 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 	function recalcValueAndResubscribe(): T {
 		subDispose()
 
-		const hadValue = !!depList
 		const newValue = recalcValueWithoutSetting()
 
 		for(let i = 0; i < depList!.length; i++){
 			subDisposers.push(depList![i]!.subscribe(recalcValueAndResubscribe))
 		}
 
-		return setValue(hadValue, newValue)
+		return setValue(newValue)
 	}
 
 	function viewBox(): T {
 		notifyOnAccess(result)
 		if(subscribers.size > 0){
 			if(!shouldRecalcValue()){
-				return value!
+				return value as T
 			}
 			return recalcValueAndResubscribe()
 		}
 
 		if(!shouldRecalcValue()){
-			return value!
+			return value as T
 		}
 
-		return setValue(false, recalcValueWithoutSetting())
+		return setValue(recalcValueWithoutSetting())
 	}
 
-	const {subscribe, notify, subscribers} = createSubscribeNotify(viewBox, () => result.revision)
+	const {subscribe, notify, subscribers} = createSubscribeNotify<T>(() => value, () => result.revision)
 	function wrappedSubscribe(listener: Subscriber<T>): Unsubscribe {
 		if(subscribers.size === 0){
 			recalcValueAndResubscribe()
@@ -329,15 +330,14 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 }
 
 function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey: K): WBox<T[K]> {
-	let hasValue = false
-	let value = null as T[K] | null
+	let value: T[K] | NoKnownValue = noKnownValue
 	let parentUnsub = null as Unsubscribe | null
 	// eslint-disable-next-line @typescript-eslint/no-this-alias
 	const parent = this
 
 	function getPropWBoxValue(): T[K] {
-		if(hasValue){
-			return value!
+		if(value !== noKnownValue){
+			return value as T[K]
 		} else {
 			try {
 				// if we are called from view - we should prevent view to access our parent box
@@ -350,11 +350,12 @@ function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey
 		}
 	}
 
-	const {subscribe, notify, subscribeForField, notifyByField, subscribers} = createSubscribeNotify(getPropWBoxValue, () => result.revision)
+	const {subscribe, notify, subscribeForField, notifyByField, subscribers} = createSubscribeNotify<T[K]>(() => value, () => result.revision)
 
 	function updatePropertySubWBox(newValue: T[K], byField: boolean, skipParentUpdate: boolean) {
 		if(boxContentCanBeDifferent(value, newValue)){
-			if(hasValue){
+			if(value !== noKnownValue){
+				// if value is absent, that means that we are detached from parent and should not receive updates
 				value = newValue;
 				(result as Writable<WBox<T[K]>>).revision++
 			}
@@ -364,9 +365,9 @@ function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey
 				parent.updateByField(parentObject)
 			}
 			if(byField){
-				notifyByField()
+				notifyByField(newValue)
 			} else {
-				notify()
+				notify(newValue)
 			}
 		}
 	}
@@ -383,8 +384,7 @@ function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey
 
 	function tryUnsubFromParent() {
 		if(subscribers.size === 0){
-			hasValue = false
-			value = null
+			value = noKnownValue
 			if(parentUnsub){
 				parentUnsub()
 			}
@@ -394,7 +394,6 @@ function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey
 	function trySubToParent(): void {
 		if(subscribers.size === 0){
 			value = getPropWBoxValue()
-			hasValue = true
 			parentUnsub = parent.subscribeForField(v => {
 				updatePropertySubWBox(v[propKey], false, true)
 			})
