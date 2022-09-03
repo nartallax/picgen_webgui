@@ -277,16 +277,17 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 		return newValue
 	}
 
-	function recalcValueAndResubscribe(): T {
+	function recalcValueAndResubscribe(canSkipCalc?: boolean): T {
 		subDispose()
 
-		const newValue = recalcValueWithoutSetting()
+		const shouldCalc = !canSkipCalc || shouldRecalcValue()
+		const newValue = shouldCalc ? recalcValueWithoutSetting() : value as T
 
 		for(let i = 0; i < depList!.length; i++){
-			subDisposers.push(depList![i]!.subscribe(recalcValueAndResubscribe))
+			subDisposers.push(depList![i]!.subscribe(recalcValueAndResubscribe as () => T))
 		}
 
-		return setValue(newValue)
+		return shouldCalc ? setValue(newValue) : newValue
 	}
 
 	function viewBox(): T {
@@ -308,7 +309,7 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 	const {subscribe, notify, subscribers} = createSubscribeNotify<T>(() => value, () => result.revision)
 	function wrappedSubscribe(listener: Subscriber<T>): Unsubscribe {
 		if(subscribers.size === 0){
-			recalcValueAndResubscribe()
+			recalcValueAndResubscribe(true)
 		}
 		const disposer = subscribe(listener)
 		return () => {

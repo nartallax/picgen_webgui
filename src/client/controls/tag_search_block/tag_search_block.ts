@@ -36,7 +36,6 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 			const searchText = [tag, ...rawTags[tag]!].map(x => x.toLowerCase())
 			transformedTags.push([tag, searchText])
 		}
-		console.trace(transformedTags)
 		return new PrefixTree(transformedTags)
 	})
 
