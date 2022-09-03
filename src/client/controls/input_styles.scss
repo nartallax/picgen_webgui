@@ -1,7 +1,19 @@
-.input {
+.input-width {
+	width: 100px;
+}
+
+.input-size {
 	font-size: 1.35rem;
 	line-height: 1.5em;
 	height: 1.5em;
-	width: 100px;
 	border-radius: 25px;
+}
+
+.input {
+	@extend .input-width;
+	@extend .input-size;
+
+	box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.15);
+	background: #fff;
+	color: #505050;
 }

@@ -1,24 +1,25 @@
+import {WBox} from "client/base/box"
 import {tag} from "client/base/tag"
-import {ParamDefWithValue} from "client/client_types"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {NumberInput} from "client/controls/number_input/number_input"
+import {GenParameterDefinition} from "common/common_types"
 
-export function ParamLine(opts: ParamDefWithValue): HTMLElement {
+export function ParamLine(def: GenParameterDefinition, value: WBox<GenParameterDefinition["default"]>): HTMLElement {
 	let input: HTMLElement
-	switch(opts.type){
+	switch(def.type){
 		case "int":
 		case "float":
 			input = NumberInput({
-				value: opts.value,
-				int: opts.type === "int",
-				max: opts.max,
-				min: opts.min,
-				step: opts.type === "int" ? opts.step : undefined
+				value: value as WBox<number>,
+				int: def.type === "int",
+				max: def.max,
+				min: def.min,
+				step: def.type === "int" ? def.step : undefined
 			})
 			break
 		case "bool":
 			input = BoolInput({
-				value: opts.value
+				value: value as WBox<boolean>
 			})
 			break
 	}
@@ -26,7 +27,7 @@ export function ParamLine(opts: ParamDefWithValue): HTMLElement {
 	return tag({class: "param-line"}, [
 		tag({
 			class: "param-line-label",
-			text: opts.uiName
+			text: def.uiName
 		}),
 		input
 	])

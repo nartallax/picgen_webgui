@@ -1,0 +1,31 @@
+.text-input-icon {
+	&.hidden {
+		display: none;
+	}
+
+	@extend .input-size;
+	
+	width: 1.5em;
+	background-color: #a0c2a5;
+	position: absolute;
+	right: 0;
+	top: 0;
+	color: #fff;
+	line-height: 1.5em;
+
+	&:before {
+		font-size: 0.9em;
+		position: relative;
+		bottom: 2px;
+		left: 2px;
+	}
+}
+
+.text-input-wrap {
+	position: relative;
+}
+
+.text-input.input {
+	width: 100%;
+	padding: 0 0.5em;
+}
