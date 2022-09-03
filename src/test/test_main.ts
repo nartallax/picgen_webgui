@@ -2,7 +2,8 @@ import boxTests from "test/box_tests"
 import {failedTests, passedTests} from "test/test_utils"
 
 export async function main() {
-	await boxTests()
+	const targetTestName = process.argv[2]
+	await boxTests(targetTestName)
 
 	if(failedTests.length === 0){
 		console.error(`All tests (${passedTests.length}) passed!`)

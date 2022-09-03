@@ -377,14 +377,14 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(view(), 10)
 		assertEquals(calcCount, 1)
 		assertEquals(view(), 10)
-		assertEquals(calcCount, 2)
+		assertEquals(calcCount, 1)
 
 		b(6)
+		assertEquals(calcCount, 1)
+		assertEquals(view(), 12)
 		assertEquals(calcCount, 2)
 		assertEquals(view(), 12)
-		assertEquals(calcCount, 3)
-		assertEquals(view(), 12)
-		assertEquals(calcCount, 4)
+		assertEquals(calcCount, 2)
 	})
 
 	makeTest("view only subscribes to param box, not to the parent box", () => {

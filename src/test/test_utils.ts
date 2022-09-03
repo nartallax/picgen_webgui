@@ -4,19 +4,23 @@ export const passedTests = [] as string[]
 type TestFn = () => Promise<void>
 type TestCaseMaker = (name: string, action: () => void | Promise<void>) => TestFn
 
-export function makeTestPack(baseName: string, definition: (testCaseMaker: TestCaseMaker) => void): TestFn {
+export function makeTestPack(baseName: string, definition: (testCaseMaker: TestCaseMaker) => void): (name?: string) => Promise<void> {
 
-	const cases = [] as TestFn[]
+	const cases = [] as {name: string, fn: TestFn}[]
 
 	definition((name, action) => {
-		const testFn = makeTest(baseName + " / " + name, action)
-		cases.push(testFn)
+		const fullName = baseName + " / " + name
+		const testFn = makeTest(fullName, action)
+		cases.push({name: fullName, fn: testFn})
 		return testFn
 	})
 
-	return async() => {
-		for(const caseFn of cases){
-			await caseFn()
+	return async(targetName?: string) => {
+		for(const {name, fn} of cases){
+			if(targetName !== undefined && name !== targetName){
+				continue
+			}
+			await fn()
 		}
 	}
 

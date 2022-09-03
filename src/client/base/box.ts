@@ -6,11 +6,14 @@ type Writable<T> = {-readonly[k in keyof T]: T[k]}
 export interface RBox<T>{
 	(): T
 	subscribe(subscriber: Subscriber<T>): Unsubscribe
-	notify(): void
 	readonly isRBox: true
 	/** Each time stored value changes, revision is incremented
 	 * Can be used to track if value is changed or not without actually storing value */
 	readonly revision: number
+}
+
+interface InternalRBox<T> extends RBox<T>{
+	notify(): void
 }
 
 const defaultStartingRevision = 1
@@ -36,7 +39,7 @@ export interface WBox<T> extends RBox<T>{
 
 // any WBox<T> is also InternalWBox<T>
 // you just should not use any properties of internal one from outside the box framework
-interface InternalWBox<T> extends WBox<T>{
+interface InternalWBox<T> extends WBox<T>, InternalRBox<T>{
 	subscribeForField: WBox<T>["subscribe"]
 	updateByField(newValue: T): void
 }
@@ -218,13 +221,15 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 	To avoid this we employ the following tactics:
 	1. view don't store ANYTHING when noone is subscribed (no list of dependencies, no value, nothing)
 	in this mode view just calls computing function when asked for the value
+	(the only exception is when it knows for sure that cached value is fine, which it does by checking revisions)
 	2. when we HAVE subscribers to view - value is stored, list of dependencies is stored
 	view returns stored value when asked for value in this mode
 
 	This way, you only need to remove all subscribers from view for it to be eligible to be GCed
 	*/
 
-	let hasComputedValue = false
+	let depList = null as null | RBox<unknown>[]
+	let revList = null as null | number[]
 	let value: T | null = null
 	const subDisposers: Unsubscribe[] = []
 	const subDispose = () => {
@@ -232,57 +237,88 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 		subDisposers.length = 0
 	}
 
-	const computeAndSubscribe = () => {
-		subDispose()
+	function shouldRecalcValue(): boolean {
+		if(!depList || depList.length === 0){
+			return true // no value, or no known dependenices - must recalculate
+		}
 
+		for(let i = 0; i < depList.length; i++){
+			if(depList[i]!.revision !== revList![i]){
+				return true
+			}
+		}
+
+		return false // no need to recalc value, no dependencies changed
+	}
+
+	function recalcValueWithoutSetting(): T {
 		const boxesAccessed = new Set<RBox<unknown>>()
 		const newValue = withAccessNotifications(computingFn, box => boxesAccessed.add(box))
 
-		boxesAccessed.forEach(v => subDisposers.push(v.subscribe(computeAndSubscribe)))
+		depList = [...boxesAccessed]
+		revList = []
+		for(let i = 0; i < depList.length; i++){
+			const dep = depList[i]!
+			revList.push(dep.revision)
+		}
 
-		const valueChanged = !hasComputedValue || boxContentCanBeDifferent(value, newValue)
-		hasComputedValue = true
+		return newValue
+	}
+
+	function setValue(hadValue: boolean, newValue: T): T {
+		const valueChanged = !hadValue || boxContentCanBeDifferent(value, newValue)
 		value = newValue
 		if(valueChanged){
 			(result as Writable<RBox<T>>).revision++
-			result.notify()
+			notify()
 		}
-
-		return value
+		return newValue
 	}
 
-	const maybeUnsubscribeFromValues = () => {
-		if(subscribers.size === 0){
-			hasComputedValue = false
-			value = null
-			subDispose()
+	function recalcValueAndResubscribe(): T {
+		subDispose()
+
+		const hadValue = !!depList
+		const newValue = recalcValueWithoutSetting()
+
+		for(let i = 0; i < depList!.length; i++){
+			subDisposers.push(depList![i]!.subscribe(recalcValueAndResubscribe))
 		}
+
+		return setValue(hadValue, newValue)
 	}
 
-	const fn = function viewBox(): T {
+	function viewBox(): T {
 		notifyOnAccess(result)
-		if(!hasComputedValue){
-			if(subscribers.size === 0){
-				return computingFn()
+		if(subscribers.size > 0){
+			if(!shouldRecalcValue()){
+				return value!
 			}
-			return computeAndSubscribe()
+			return recalcValueAndResubscribe()
 		}
-		return value as T
+
+		if(!shouldRecalcValue()){
+			return value!
+		}
+
+		return setValue(false, recalcValueWithoutSetting())
 	}
 
-	const {subscribe, notify, subscribers} = createSubscribeNotify(fn, () => result.revision)
-	const wrappedSubscribe = (listener: Subscriber<T>) => {
-		if(!hasComputedValue){
-			computeAndSubscribe()
+	const {subscribe, notify, subscribers} = createSubscribeNotify(viewBox, () => result.revision)
+	function wrappedSubscribe(listener: Subscriber<T>): Unsubscribe {
+		if(subscribers.size === 0){
+			recalcValueAndResubscribe()
 		}
 		const disposer = subscribe(listener)
 		return () => {
 			disposer()
-			maybeUnsubscribeFromValues()
+			if(subscribers.size === 0){
+				subDispose()
+			}
 		}
 	}
 
-	const result: RBox<T> = Object.assign(fn, {
+	const result: InternalRBox<T> = Object.assign(viewBox, {
 		isRBox: true as const,
 		subscribe: wrappedSubscribe,
 		notify,

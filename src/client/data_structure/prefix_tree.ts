@@ -60,7 +60,7 @@ export class PrefixTree<T> {
 		if(roots){
 			for(const root of roots){
 				let node: PrefixTreeNode<T> | undefined = root
-				for(let i = 0; i < substr.length; i++){
+				for(let i = 1; i < substr.length; i++){
 					node = node!.leaves?.[substr[i]!]
 					if(!node){
 						break
