@@ -6,6 +6,9 @@ import {isPathInsidePath} from "server/utils/is_path_inside_path"
 import {isEnoent} from "server/utils/is_enoent"
 import {errToString} from "server/utils/err_to_string"
 import {readStreamToBuffer} from "server/utils/read_stream_to_buffer"
+import {DbController} from "server/db_controller"
+import {RequestContext} from "server/request_context"
+import {runInAsyncContext} from "server/async_context"
 
 interface HttpServerOptions {
 	readonly port: number
@@ -17,6 +20,7 @@ interface HttpServerOptions {
 	readonly apiMethods: {
 		readonly [name: string]: (...args: never[]) => (unknown | Promise<unknown>)
 	}
+	readonly db: DbController
 }
 
 export class HttpServer {
@@ -38,19 +42,19 @@ export class HttpServer {
 
 	start(): Promise<number> {
 		return new Promise((ok, bad) => {
-			try {
-				this.server.listen(this.opts.port, () => {
-					const addr = this.server.address()
-					if(!addr || typeof(addr) !== "object"){
-						bad(new Error("Server address is not an object: " + addr))
-						return
-					}
-					ok(addr.port)
-				})
-			} catch(e){
-				bad(e)
-			}
+			this.server.listen(this.opts.port, () => {
+				const addr = this.server.address()
+				if(!addr || typeof(addr) !== "object"){
+					bad(new Error("Server address is not an object: " + addr))
+					return
+				}
+				ok(addr.port)
+			})
 		})
+	}
+
+	stop(): Promise<void> {
+		return new Promise((ok, bad) => this.server.close(err => err ? bad(err) : ok()))
 	}
 
 	private async processRequest(req: Http.IncomingMessage, res: Http.ServerResponse): Promise<void> {
@@ -66,6 +70,8 @@ export class HttpServer {
 			const urlStr = req.url || "/"
 			const url = new URL(urlStr, "http://localhost")
 			const path = url.pathname
+			console.log("Got " + method + " to " + urlStr)
+
 			switch(method.toUpperCase()){
 				case "GET":
 					await this.processStaticRequest(path, res)
@@ -132,13 +138,20 @@ export class HttpServer {
 			return await endRequest(res, 404, "Your Api Call Sucks")
 		}
 
-		// TODO: multipart/form-data here
 		const body = await readStreamToBuffer(req, this.opts.inputSizeLimit, this.opts.readTimeoutSeconds * 1000)
 		const parsedBody = JSON.parse(body.toString("utf-8"))
 		const validator = this.validators[methodName]!
 		const methodArgs = validator(parsedBody)
-		const result = await Promise.resolve(apiMethod(...methodArgs as never[]))
+
+		const result = await this.runApiFn(apiMethod, methodArgs)
 		await endRequest(res, 200, "OK", JSON.stringify(result))
+	}
+
+	private runApiFn<T>(fn: (...args: never[]) => T | Promise<T>, args: unknown[]): Promise<T> {
+		return this.opts.db.inTransaction(conn => {
+			const context = new RequestContext(Math.round(Math.random() * 0xffffff) + "", conn)
+			return runInAsyncContext(context, () => Promise.resolve(fn(...args as never[])))
+		})
 	}
 
 }

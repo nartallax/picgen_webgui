@@ -2,3 +2,5 @@ js
 target
 node_modules
 .DS_Store
+test.js
+db.sqlite

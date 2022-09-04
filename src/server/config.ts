@@ -4,6 +4,7 @@ import {promises as Fs} from "fs"
 import {Runtyper} from "@nartallax/runtyper"
 
 interface ConfigFile {
+	readonly dbFilePath: string
 	readonly generationParameters: readonly GenParameterDefinition[]
 	readonly tags: {
 		readonly shape: readonly string[]

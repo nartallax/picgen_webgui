@@ -1,6 +1,10 @@
 import {Runtyper} from "@nartallax/runtyper"
+import {closeAsyncContext, initAsyncContext} from "server/async_context"
 import {config, loadConfig} from "server/config"
+import {DbController} from "server/db_controller"
 import {HttpServer} from "server/http_server"
+import {log} from "server/log"
+import {migrations} from "server/migrations"
 import {ServerApi} from "server/server_api"
 import {errToString} from "server/utils/err_to_string"
 
@@ -16,6 +20,9 @@ export async function main() {
 async function mainInternal(): Promise<void> {
 	await loadConfig()
 
+	const db = new DbController(config.dbFilePath, migrations)
+	await db.init()
+
 	const server = new HttpServer({
 		port: config.port,
 		httpRoot: config.httpRootDir,
@@ -23,11 +30,41 @@ async function mainInternal(): Promise<void> {
 		inputSizeLimit: 1024 * 1024 * 16,
 		readTimeoutSeconds: 3 * 60,
 		cacheDuration: 0,
-		apiMethods: ServerApi
+		apiMethods: ServerApi,
+		db
 	})
+
+	initAsyncContext("picgen-gui")
 
 	Runtyper.cleanup()
 
 	const port = await server.start()
-	console.error("Server started at http://localhost:" + port + "/")
+	log("Server started at http://localhost:" + port + "/")
+
+	process.on("SIGINT", async() => {
+		log("Stop is requested by interrupt signal.")
+
+		try {
+			await server.stop()
+			log("Webserver stopped.")
+		} catch(e){
+			log("Failed to properly stop webserver: " + e)
+		}
+
+		try {
+			await db.waitAllConnectionsClosed()
+			log("All DB connections are closed.")
+		} catch(e){
+			log("Failed to properly close connection to DB: " + e)
+		}
+
+		try {
+			closeAsyncContext()
+			log("Async contexts are closed.")
+		} catch(e){
+			log("Failed to properly close async contexts: " + e)
+		}
+
+		log("Shutdown sequence is completed.")
+	})
 }
