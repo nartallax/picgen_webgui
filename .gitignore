@@ -4,3 +4,4 @@ node_modules
 .DS_Store
 test.js
 db.sqlite
+discord_client_secret.txt

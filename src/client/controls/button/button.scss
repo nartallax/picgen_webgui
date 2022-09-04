@@ -1,0 +1,28 @@
+.button {
+	font-size: 1.35rem;
+	line-height: 1.5em;
+	min-width: 1.5em;
+	box-sizing: content-box;
+	padding: 0.15em;
+	border-radius: 10em;
+	cursor: pointer;
+	color: #fff;
+	font-weight: bold;
+	background-color: #a0c2a5;
+	transition: 0.25s;
+	border: 0.1em solid #a0c2a5;
+
+	&.more-h-padding{
+		padding-left: 0.9em;
+		padding-right: 0.9em;
+	}
+
+	&:hover {
+		background-color: #bdb;
+	}
+
+	&.disabled {
+		cursor: default;
+		background-color: #8a8;
+	}
+}

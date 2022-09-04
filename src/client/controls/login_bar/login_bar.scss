@@ -1,0 +1,24 @@
+.login-bar {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	background-color: #faf4f2;
+	border-radius: 4rem;
+	padding: 0.35rem;
+	margin-bottom: 1vw;
+
+	.login-bar-avatar {
+		height: 3rem;
+		width: 3rem;
+		border-radius: 3rem;
+	}
+
+	.login-bar-nickname {
+		flex-grow: 1;
+		color: #706D6C;
+		font-size: 1.35rem;
+		line-height: 1.5em;
+		padding: 0 0.5em;
+	}
+}

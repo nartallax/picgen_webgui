@@ -29,3 +29,22 @@ export interface BoolGenParamDefinition extends BaseParamDefinition {
 	readonly type: "bool"
 	readonly default: boolean
 }
+
+export type ApiErrorType = "generic" | "not_logged_in"
+
+export interface SuccessApiResponse<T> {
+	result: T
+}
+
+export interface ErrorApiResponse {
+	error: {
+		type: ApiErrorType
+		message: string
+	}
+}
+
+export type ApiResponse<T> = SuccessApiResponse<T> | ErrorApiResponse
+
+export function isSuccessApiResponse(resp: ApiResponse<unknown>): resp is SuccessApiResponse<unknown> {
+	return "result" in resp
+}

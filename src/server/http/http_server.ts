@@ -9,6 +9,11 @@ import {readStreamToBuffer} from "server/utils/read_stream_to_buffer"
 import {DbController} from "server/db_controller"
 import {RequestContext} from "server/request_context"
 import {runInAsyncContext} from "server/async_context"
+import {CookieController} from "server/http/cookie_controller"
+import {ApiResponse} from "common/common_types"
+import {ApiError} from "common/api_error"
+import {log} from "server/log"
+import {DiscordApiClient} from "server/discord_api_client"
 
 interface HttpServerOptions {
 	readonly port: number
@@ -17,10 +22,12 @@ interface HttpServerOptions {
 	readonly apiRoot: string
 	readonly inputSizeLimit: number
 	readonly readTimeoutSeconds: number
+	readonly defaultToHttps: boolean
 	readonly apiMethods: {
 		readonly [name: string]: (...args: never[]) => (unknown | Promise<unknown>)
 	}
 	readonly db: DbController
+	readonly discordApi: DiscordApiClient
 }
 
 export class HttpServer {
@@ -62,26 +69,33 @@ export class HttpServer {
 			req.on("error", err => console.error("Error on HTTP request: " + errToString(err)))
 			res.on("error", err => console.error("Error on HTTP response: " + errToString(err)))
 
-			const method = req.method
+			const method = (req.method || "").toUpperCase()
 			if(!method){
 				return await endRequest(res, 400, "Where Is The Method Name You Fucker")
 			}
 
 			const urlStr = req.url || "/"
-			const url = new URL(urlStr, "http://localhost")
+			const hostHeader = req.headers.host
+			if(!hostHeader){
+				return await endRequest(res, 400, "Where Is Host Header I Require It To Be Present")
+			}
+			const url = new URL(urlStr, (this.opts.defaultToHttps ? "https" : "http") + "://" + hostHeader)
 			const path = url.pathname
-			console.log("Got " + method + " to " + urlStr)
 
-			switch(method.toUpperCase()){
-				case "GET":
-					await this.processStaticRequest(path, res)
-					return
-				case "POST":
-					await this.processApiRequest(path, req, res)
-					return
-				default:
-					await endRequest(res, 405, "Your Method Name Sucks")
-					return
+			if(path.startsWith(this.opts.apiRoot)){
+				if(method !== "GET" && method !== "POST"){
+					await endRequest(res, 405, "Your HTTP Method Name Sucks")
+				}
+				await this.processApiRequest(url, req, res)
+			} else {
+				switch(method){
+					case "GET":
+						await this.processStaticRequest(path, res)
+						return
+					default:
+						await endRequest(res, 400, "What The Fuck Do You Want From Me")
+						return
+				}
 			}
 		} catch(e){
 			console.error(errToString(e))
@@ -127,67 +141,94 @@ export class HttpServer {
 		}
 	}
 
-	private async processApiRequest(path: string, req: Http.IncomingMessage, res: Http.ServerResponse): Promise<void> {
-		if(!path.startsWith(this.opts.apiRoot)){
-			return await endRequest(res, 404, "Your Api Call Sucks")
+	private async getApiBody(methodName: string, req: Http.IncomingMessage): Promise<unknown[]> {
+		let argsObj: Record<string, unknown>
+		if((req.method || "").toUpperCase() !== "POST"){
+			argsObj = {}
+		} else {
+			const body = await readStreamToBuffer(req, this.opts.inputSizeLimit, this.opts.readTimeoutSeconds * 1000)
+			argsObj = JSON.parse(body.toString("utf-8"))
 		}
+		const validator = this.validators[methodName]!
+		return validator(argsObj)
+	}
 
-		const methodName = path.substring(this.opts.apiRoot.length)
+	private async processApiRequest(url: URL, req: Http.IncomingMessage, res: Http.ServerResponse): Promise<void> {
+		const methodName = url.pathname.substring(this.opts.apiRoot.length)
 		const apiMethod = this.opts.apiMethods[methodName]
 		if(!apiMethod){
 			return await endRequest(res, 404, "Your Api Call Sucks")
 		}
 
-		const body = await readStreamToBuffer(req, this.opts.inputSizeLimit, this.opts.readTimeoutSeconds * 1000)
-		const parsedBody = JSON.parse(body.toString("utf-8"))
-		const validator = this.validators[methodName]!
-		const methodArgs = validator(parsedBody)
+		const methodArgs = await this.getApiBody(methodName, req)
+		let result: unknown = null
+		let error: Error | null = null
+		let context: RequestContext | null = null
+		try {
+			[result, context] = await this.runApiMethod(apiMethod, methodArgs, url, req)
+		} catch(e){
+			if(e instanceof Error){
+				log(`Error calling ${methodName}(${JSON.stringify(methodArgs)}): ${e.stack || e.message}`)
+				error = e
+			} else {
+				throw e
+			}
+		}
 
-		const result = await this.runApiFn(apiMethod, methodArgs)
-		await endRequest(res, 200, "OK", JSON.stringify(result))
+		let resp: ApiResponse<unknown>
+		if(error){
+			if(error instanceof ApiError){
+				resp = {error: {type: error.errorType, message: error.message}}
+			} else {
+				resp = {error: {type: "generic", message: "Something is borken on the server UwU"}}
+			}
+			await endRequest(res, 500, "Server Error", JSON.stringify(resp))
+		} else {
+			resp = {result: result === undefined ? null : result}
+			if(context){
+				for(const newCookie of context.cookie.harvestSetCookieLines()){
+					res.setHeader("Set-Cookie", newCookie)
+				}
+				if(context.redirectUrl){
+					res.setHeader("Location", context.redirectUrl)
+					await endRequest(res, 302, "Redirect", JSON.stringify(resp))
+				} else {
+					await endRequest(res, 200, "OK", JSON.stringify(resp))
+				}
+			}
+		}
 	}
 
-	private runApiFn<T>(fn: (...args: never[]) => T | Promise<T>, args: unknown[]): Promise<T> {
-		return this.opts.db.inTransaction(conn => {
-			const context = new RequestContext(Math.round(Math.random() * 0xffffff) + "", conn)
-			return runInAsyncContext(context, () => Promise.resolve(fn(...args as never[])))
+	private runApiMethod<T>(fn: (...args: never[]) => T | Promise<T>, args: unknown[], url: URL, req: Http.IncomingMessage): Promise<[T, RequestContext]> {
+		return this.opts.db.inTransaction(async conn => {
+			const context = new RequestContext(url, new CookieController(req), this.opts.discordApi, conn)
+			const result = await runInAsyncContext(context, () => {
+				return Promise.resolve(fn(...args as never[]))
+			})
+			return [result, context]
 		})
 	}
 
 }
 
 function waitRequestEnd(res: Http.ServerResponse): Promise<void> {
-	return new Promise((ok, bad) => {
-		try {
-			res.end(ok)
-		} catch(e){
-			bad(e)
-		}
-	})
+	return new Promise(ok => res.end(ok))
 }
 
 function endRequest(res: Http.ServerResponse, code: number, codeStr: string, body: string | Buffer = "OwO", headers?: Record<string, string>): Promise<void> {
-	return new Promise((ok, bad) => {
-		try {
-			res.writeHead(code, codeStr, headers)
-			if(typeof(body) === "string"){
-				res.end(body, "utf-8", ok)
-			} else {
-				res.end(body, ok)
-			}
-		} catch(e){
-			bad(e)
+	return new Promise(ok => {
+		res.writeHead(code, codeStr, headers)
+		if(typeof(body) === "string"){
+			res.end(body, "utf-8", ok)
+		} else {
+			res.end(body, ok)
 		}
 	})
 }
 
 function waitReadStreamToEnd(stream: Fs.ReadStream): Promise<void> {
 	return new Promise((ok, bad) => {
-		try {
-			stream.on("error", e => bad(e))
-			stream.on("end", () => ok())
-		} catch(e){
-			bad(e)
-		}
+		stream.on("error", e => bad(e))
+		stream.on("end", () => ok())
 	})
 }

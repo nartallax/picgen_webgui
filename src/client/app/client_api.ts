@@ -1,5 +1,6 @@
 import {ApiClient} from "client/app/api_client"
 import {GenParameterDefinition} from "common/common_types"
+import {User} from "common/entity_types"
 
 export namespace ClientApi {
 
@@ -13,5 +14,14 @@ export namespace ClientApi {
 
 	export const getContentTags = () =>
 		client.call("getContentTags", {}) as Promise<{readonly [tagContent: string]: readonly string[]}>
+
+	export const getDiscordLoginUrl = () =>
+		client.call("getDiscordLoginUrl", {}) as Promise<string>
+
+	export const getUserData = () =>
+		client.call("getUserData", {}) as Promise<User>
+
+	export const logout = () =>
+		client.call("logout", {}) as Promise<void>
 
 }

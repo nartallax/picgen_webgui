@@ -56,7 +56,7 @@ export function tag<K extends keyof HTMLElementTagNameMap = "div">(a?: HTMLTagDe
 	}
 
 	if(description.class){
-		binder = binder || makeClassname(binder, res, description.class, classname => res.className = classname)
+		binder = makeClassname(binder, res, description.class, classname => res.className = classname) || binder
 	}
 
 	if(description.on){

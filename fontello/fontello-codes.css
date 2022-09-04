@@ -13,6 +13,7 @@
 .icon-down-open:before { content: '\e80b'; } /* '' */
 .icon-up-open:before { content: '\e80c'; } /* '' */
 .icon-camera-outline:before { content: '\e80d'; } /* '' */
+.icon-logout:before { content: '\e80e'; } /* '' */
 .icon-bookmark-empty:before { content: '\f097'; } /* '' */
 .icon-docs:before { content: '\f0c5'; } /* '' */
 .icon-moon:before { content: '\f186'; } /* '' */

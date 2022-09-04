@@ -2,7 +2,8 @@ import {Runtyper} from "@nartallax/runtyper"
 import {closeAsyncContext, initAsyncContext} from "server/async_context"
 import {config, loadConfig} from "server/config"
 import {DbController} from "server/db_controller"
-import {HttpServer} from "server/http_server"
+import {DiscordApiClient} from "server/discord_api_client"
+import {HttpServer} from "server/http/http_server"
 import {log} from "server/log"
 import {migrations} from "server/migrations"
 import {ServerApi} from "server/server_api"
@@ -23,7 +24,10 @@ async function mainInternal(): Promise<void> {
 	const db = new DbController(config.dbFilePath, migrations)
 	await db.init()
 
+	const discordApi = new DiscordApiClient(config.discordClientId, config.discordClientSecret)
+
 	const server = new HttpServer({
+		discordApi: discordApi,
 		port: config.port,
 		httpRoot: config.httpRootDir,
 		apiRoot: "/api/",
@@ -31,6 +35,7 @@ async function mainInternal(): Promise<void> {
 		readTimeoutSeconds: 3 * 60,
 		cacheDuration: 0,
 		apiMethods: ServerApi,
+		defaultToHttps: config.defaultToHttps,
 		db
 	})
 

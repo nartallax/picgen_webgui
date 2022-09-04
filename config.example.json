@@ -1,4 +1,8 @@
 {
+	"discordLoginUrl": "https://discord.com/api/oauth2/authorize?client_id=469771750285115392&redirect_uri=http%3A%2F%2Flocalhost%3A22650%2Fapi%2FdiscordOauth2&response_type=code&scope=identify",
+	"defaultToHttps": false,
+	"discordClientId": "469771750285115392",
+	"discordClientSecretFile": "./discord_client_secret.txt",
 	"dbFilePath": "./db.sqlite",
 	"generationParameters": [{
 		"type": "float",

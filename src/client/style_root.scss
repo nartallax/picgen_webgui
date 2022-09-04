@@ -2,7 +2,6 @@
 
 @import "controls/input_styles";
 
-@import "controls/page/page";
 @import "controls/settings_block/settings_block";
 @import "controls/settings_subblock/settings_subblock";
 @import "controls/tag_list/tag_list";
@@ -10,13 +9,28 @@
 @import "controls/number_input/number_input";
 @import "controls/bool_input/bool_input";
 @import "controls/text_input/text_input";
+@import "controls/button/button";
 @import "controls/select_search/select_search";
 @import "controls/prompt_input/prompt_input";
+@import "controls/multi_panel/multi_panel";
+@import "controls/login_bar/login_bar";
+
+@import "controls/main_page/main_page";
+@import "controls/loading_page/loading_page";
+@import "controls/login_page/login_page";
 
 body {
 	width: 100vw;
 	height: 100vh;
 	background-color: #E5D6D2;
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	justify-content: center;
+
+	> * {
+		flex-grow: 1;
+	}
 }
 
 * {

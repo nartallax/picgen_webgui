@@ -3,8 +3,16 @@ import {CLIArgs, getCliArgs} from "server/cli_args"
 import {promises as Fs} from "fs"
 import {Runtyper} from "@nartallax/runtyper"
 
+interface AuxConfigFilesData {
+	readonly discordClientSecret: string
+}
+
 interface ConfigFile {
+	readonly defaultToHttps: boolean
+	readonly discordClientId: string
+	readonly discordClientSecretFile: string
 	readonly dbFilePath: string
+	readonly discordLoginUrl: string
 	readonly generationParameters: readonly GenParameterDefinition[]
 	readonly tags: {
 		readonly shape: readonly string[]
@@ -12,7 +20,7 @@ interface ConfigFile {
 	}
 }
 
-export type Config = CLIArgs & ConfigFile
+export type Config = CLIArgs & ConfigFile & AuxConfigFilesData
 
 export let config: Config = null as unknown as Config
 
@@ -29,8 +37,11 @@ export async function loadConfig(): Promise<void> {
 	const newConfig: ConfigFile = JSON.parse(await Fs.readFile(args.paramsConfig, "utf-8"))
 	configFileValidator(newConfig)
 
+	const discordClientSecret = (await Fs.readFile(newConfig.discordClientSecretFile, "utf-8")).trim()
+
 	config = {
 		...args,
-		...newConfig
+		...newConfig,
+		discordClientSecret
 	}
 }

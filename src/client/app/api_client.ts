@@ -1,3 +1,6 @@
+import {ApiError} from "common/api_error"
+import {ApiResponse, isSuccessApiResponse} from "common/common_types"
+
 export class ApiClient {
 
 	constructor(readonly urlBase: string) {}
@@ -7,7 +10,14 @@ export class ApiClient {
 			method: "POST",
 			body: JSON.stringify(input)
 		})
-		return await resp.json()
+
+		const respData: ApiResponse<unknown> = await resp.json()
+
+		if(isSuccessApiResponse(respData)){
+			return respData.result
+		} else {
+			throw new ApiError(respData.error.type, respData.error.message)
+		}
 	}
 
 }

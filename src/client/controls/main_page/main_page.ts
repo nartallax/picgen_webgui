@@ -1,6 +1,7 @@
 import {ClientApi} from "client/app/client_api"
 import {box, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
+import {LoginBar} from "client/controls/login_bar/login_bar"
 import {ParamsBlock} from "client/controls/params_block/params_block"
 import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
@@ -26,7 +27,7 @@ function updateParamValues(paramValues: {[key: string]: WBox<GenParameterDefinit
 	}
 }
 
-export function Page(): HTMLElement {
+export function MainPage(): HTMLElement {
 
 	const paramValues = {} as {[key: string]: WBox< GenParameterDefinition["default"]>}
 	const paramDefsBox = box(null as null | readonly GenParameterDefinition[])
@@ -61,6 +62,7 @@ export function Page(): HTMLElement {
 
 	return tag({class: "page-root"}, [
 		tag({class: "settings-column"}, [
+			LoginBar(),
 			ParamsBlock({paramDefs: paramDefsBox, paramValues}),
 			TagSearchBlock({
 				selectedContentTags,
