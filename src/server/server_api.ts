@@ -26,14 +26,13 @@ export namespace ServerApi {
 		const context = cont()
 		const accessCode = context.requestUrl.searchParams.get("code")
 		if(!accessCode){
-			cont().redirectUrl = "/"
-			return
+			throw new ApiError("generic", "No code!")
 		}
 		const redirectUrl = new URL(context.requestUrl)
 		redirectUrl.search = ""
 		// why TF this works, but just `/` does not?
 		// I don't understand this API
-		redirectUrl.pathname = "/api/discordOauth2"
+		redirectUrl.pathname = "/api/" + discordOauth2.name
 
 		const token = await context.discordApi.getTokenByCode(accessCode, redirectUrl + "")
 		const discordUser = await context.discordApi.getCurrentUser(token.access_token)

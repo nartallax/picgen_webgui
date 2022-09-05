@@ -14,7 +14,7 @@ export function initAsyncContext(name: string): void {
 
 const contextVarName = "context"
 
-export function runInAsyncContext<T>(context: RequestContext, fn: () => Promise<T>): Promise<T> {
+export function runInAsyncContext<T>(context: RequestContext, fn: () => T | Promise<T>): Promise<T> {
 	const ns = _ns
 	if(!ns){
 		throw new Error("No namespace is created yet!")
@@ -22,7 +22,7 @@ export function runInAsyncContext<T>(context: RequestContext, fn: () => Promise<
 	return ns.runPromise(async() => {
 		ns.set(contextVarName, context)
 		try {
-			return await fn()
+			return await Promise.resolve(fn())
 		} finally {
 			ns.set(contextVarName, null)
 		}

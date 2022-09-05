@@ -48,3 +48,7 @@ export type ApiResponse<T> = SuccessApiResponse<T> | ErrorApiResponse
 export function isSuccessApiResponse(resp: ApiResponse<unknown>): resp is SuccessApiResponse<unknown> {
 	return "result" in resp
 }
+
+export interface ApiNotification<T> {
+	notification: T
+}

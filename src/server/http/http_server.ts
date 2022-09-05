@@ -6,14 +6,10 @@ import {isPathInsidePath} from "server/utils/is_path_inside_path"
 import {isEnoent} from "server/utils/is_enoent"
 import {errToString} from "server/utils/err_to_string"
 import {readStreamToBuffer} from "server/utils/read_stream_to_buffer"
-import {DbController} from "server/db_controller"
-import {RequestContext} from "server/request_context"
-import {runInAsyncContext} from "server/async_context"
-import {CookieController} from "server/http/cookie_controller"
+import {RequestContext, RequestContextFactory} from "server/request_context"
 import {ApiResponse} from "common/common_types"
-import {ApiError} from "common/api_error"
+import {errorToErrorApiResp} from "common/api_error"
 import {log} from "server/log"
-import {DiscordApiClient} from "server/discord_api_client"
 
 interface HttpServerOptions {
 	readonly port: number
@@ -22,17 +18,15 @@ interface HttpServerOptions {
 	readonly apiRoot: string
 	readonly inputSizeLimit: number
 	readonly readTimeoutSeconds: number
-	readonly defaultToHttps: boolean
 	readonly apiMethods: {
 		readonly [name: string]: (...args: never[]) => (unknown | Promise<unknown>)
 	}
-	readonly db: DbController
-	readonly discordApi: DiscordApiClient
+	readonly contextFactory: RequestContextFactory
 }
 
 export class HttpServer {
 
-	private readonly server: Http.Server
+	readonly server: Http.Server
 	private readonly validators: {readonly [name: string]: ReturnType<typeof Runtyper.getObjectParameterChecker>}
 
 	constructor(private readonly opts: HttpServerOptions) {
@@ -79,7 +73,7 @@ export class HttpServer {
 			if(!hostHeader){
 				return await endRequest(res, 400, "Where Is Host Header I Require It To Be Present")
 			}
-			const url = new URL(urlStr, (this.opts.defaultToHttps ? "https" : "http") + "://" + hostHeader)
+			const url = new URL(urlStr, "http://localhost")
 			const path = url.pathname
 
 			if(path.startsWith(this.opts.apiRoot)){
@@ -165,7 +159,9 @@ export class HttpServer {
 		let error: Error | null = null
 		let context: RequestContext | null = null
 		try {
-			[result, context] = await this.runApiMethod(apiMethod, methodArgs, url, req)
+			[result, context] = await this.opts.contextFactory(req, async context => {
+				return [await apiMethod(...methodArgs as never[]), context]
+			})
 		} catch(e){
 			if(e instanceof Error){
 				log(`Error calling ${methodName}(${JSON.stringify(methodArgs)}): ${e.stack || e.message}`)
@@ -177,11 +173,7 @@ export class HttpServer {
 
 		let resp: ApiResponse<unknown>
 		if(error){
-			if(error instanceof ApiError){
-				resp = {error: {type: error.errorType, message: error.message}}
-			} else {
-				resp = {error: {type: "generic", message: "Something is borken on the server UwU"}}
-			}
+			resp = errorToErrorApiResp(error)
 			await endRequest(res, 500, "Server Error", JSON.stringify(resp))
 		} else {
 			resp = {result: result === undefined ? null : result}
@@ -197,16 +189,6 @@ export class HttpServer {
 				}
 			}
 		}
-	}
-
-	private runApiMethod<T>(fn: (...args: never[]) => T | Promise<T>, args: unknown[], url: URL, req: Http.IncomingMessage): Promise<[T, RequestContext]> {
-		return this.opts.db.inTransaction(async conn => {
-			const context = new RequestContext(url, new CookieController(req), this.opts.discordApi, conn)
-			const result = await runInAsyncContext(context, () => {
-				return Promise.resolve(fn(...args as never[]))
-			})
-			return [result, context]
-		})
 	}
 
 }
