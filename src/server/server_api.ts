@@ -1,8 +1,8 @@
-import {GenParameterDefinition} from "common/common_types"
+import {GenParameterDefinition, SimpleListQueryParams} from "common/common_types"
 import {ApiError} from "common/api_error"
 import {cont} from "server/async_context"
 import {config} from "server/config"
-import {User} from "common/entity_types"
+import {GenerationTask, GenerationTaskInputData, Picture, User} from "common/entity_types"
 
 export namespace ServerApi {
 
@@ -39,9 +39,13 @@ export namespace ServerApi {
 		let user = await context.user.mbGetByDiscordId(discordUser.id)
 		if(user){
 			context.user.setDiscordTokenProps(user, token)
+			context.user.setDiscordUserProps(user, discordUser)
 			await context.user.update(user)
 		} else {
-			user = await context.user.create(context.user.makeUser(token, discordUser))
+			const userWithoutId = context.user.makeEmptyUser()
+			context.user.setDiscordTokenProps(userWithoutId, token)
+			context.user.setDiscordUserProps(userWithoutId, discordUser)
+			user = await context.user.create(userWithoutId)
 		}
 
 		context.user.setDiscordCookieToken(user)
@@ -51,12 +55,18 @@ export namespace ServerApi {
 	export async function getUserData(): Promise<User> {
 		const context = cont()
 		const user = await context.user.getCurrent()
-		await context.user.maybeRenewAccessToken(user)
+		await context.user.maybeUpdateDiscordTokenProps(user)
 		if(!user.discordAccessToken){
 			throw new ApiError("not_logged_in", "User is not logged in.")
 		}
+
+		// it's not the best idea to do it here
+		// but we should update this data at some point, right?
 		const discordUser = await context.discordApi.getCurrentUser(user.discordAccessToken)
-		return context.user.makeClientUser(user, discordUser)
+		context.user.setDiscordUserProps(user, discordUser)
+		await context.user.update(user)
+
+		return context.user.stripUserForClient(user)
 	}
 
 	export async function logout(): Promise<void> {
@@ -65,6 +75,22 @@ export namespace ServerApi {
 		context.user.clearLoginFields(user)
 		await context.user.update(user)
 		context.user.deleteDiscordCookieToken()
+	}
+
+	export async function createGenerationTask(inputData: GenerationTaskInputData): Promise<GenerationTask> {
+		return await cont().taskQueue.addToQueue(inputData)
+	}
+
+	export async function listTasks(query: SimpleListQueryParams<GenerationTask>): Promise<{tasks: GenerationTask[], pictures: Picture[]}> {
+		const context = cont()
+		const tasks = await context.generationTask.list(query)
+		const serverPictures = await context.picture.queryAllFieldIncludes("generationTaskId", tasks.map(x => x.id))
+		const pictures = serverPictures.map(pic => context.picture.stripServerData(pic))
+		return {tasks, pictures}
+	}
+
+	export async function getPictureData(pictureId: number): Promise<Buffer> {
+		return await cont().picture.getPictureData(pictureId)
 	}
 
 }

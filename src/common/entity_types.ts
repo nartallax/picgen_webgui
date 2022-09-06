@@ -2,26 +2,43 @@ export interface User {
 	readonly id: number
 	readonly creationTime: number
 	avatarUrl: string
-	displayName: string | null
+	displayName: string
 }
 
-enum GenerationStatus {
-	queued = 1,
-	running = 2,
-	done = 3
+export interface GenerationTaskInputData {
+	prompt: string
+	params: Record<string, unknown>
 }
 
-export interface GenerationTask {
+export const generationTaskStatusList = {
+	queued: 1,
+	running: 2,
+	completed: 3
+}
+
+export type GenerationTaskStatus = keyof typeof generationTaskStatusList
+
+export interface GenerationTask extends GenerationTaskInputData {
 	readonly id: number
 	readonly userId: number
-	status: GenerationStatus
+	status: GenerationTaskStatus
 	readonly creationTime: number
 	startTime: number | null
 	finishTime: number | null
+	expectedPictures: number | null
+	generatedPictures: number
+	runOrder: number
+}
+
+export interface DbGenerationTask extends Omit<GenerationTask, "params" | "status"> {
+	params: string
+	status: number
 }
 
 export interface Picture {
 	readonly id: number
-	readonly generationTaskId: number
+	readonly generationTaskId: number | null
+	readonly ownerUserId: number
 	readonly creationTime: number
+	readonly ext: string
 }

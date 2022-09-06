@@ -2,7 +2,7 @@ import * as WebSocket from "ws"
 import * as Http from "http"
 import {log} from "server/log"
 import {errorToErrorApiResp} from "common/api_error"
-import {ApiNotification} from "common/common_types"
+import {ApiNotification, ApiNotificationWrap} from "common/common_types"
 
 export class WebsocketServer<K extends string | number = string | number> {
 
@@ -57,12 +57,13 @@ export class WebsocketServer<K extends string | number = string | number> {
 		})
 	}
 
-	notifyUser(userKey: K, data: ApiNotification<unknown>): void {
+	sendNotificationToUser(userKey: K, data: ApiNotification): void {
 		const arr = this.userSockets.get(userKey)
 		if(!arr){
 			return
 		}
-		const dataStr = JSON.stringify(data)
+		const wrapped: ApiNotificationWrap = {notification: data}
+		const dataStr = JSON.stringify(wrapped)
 		for(const conn of arr){
 			conn.send(dataStr)
 		}

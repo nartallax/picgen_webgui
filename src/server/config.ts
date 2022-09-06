@@ -8,9 +8,12 @@ interface AuxConfigFilesData {
 }
 
 interface ConfigFile {
+	readonly pictureStorageDir: string
 	readonly defaultToHttps: boolean
 	readonly discordClientId: string
 	readonly discordClientSecretFile: string
+	readonly deleteFilesReceivedFromGenerator: boolean
+	readonly generationCommandTemplate: string
 	readonly dbFilePath: string
 	readonly discordLoginUrl: string
 	readonly generationParameters: readonly GenParameterDefinition[]

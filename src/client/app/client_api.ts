@@ -1,27 +1,36 @@
 import {ApiClient} from "client/app/api_client"
-import {GenParameterDefinition} from "common/common_types"
-import {User} from "common/entity_types"
+import {GenParameterDefinition, SimpleListQueryParams} from "common/common_types"
+import {GenerationTask, GenerationTaskInputData, Picture, User} from "common/entity_types"
 
 export namespace ClientApi {
 
 	const client = new ApiClient("/api/")
 
 	export const getGenerationParameterDefinitions = () =>
-		client.call("getGenerationParameterDefinitions", {}) as Promise<readonly GenParameterDefinition[]>
+		client.call<readonly GenParameterDefinition[]>("getGenerationParameterDefinitions", {})
 
 	export const getShapeTags = () =>
-		client.call("getShapeTags", {}) as Promise<readonly string[]>
+		client.call<readonly string[]>("getShapeTags", {})
 
 	export const getContentTags = () =>
-		client.call("getContentTags", {}) as Promise<{readonly [tagContent: string]: readonly string[]}>
+		client.call<{readonly [tagContent: string]: readonly string[]}>("getContentTags", {})
 
 	export const getDiscordLoginUrl = () =>
-		client.call("getDiscordLoginUrl", {}) as Promise<string>
+		client.call<string>("getDiscordLoginUrl", {})
 
 	export const getUserData = () =>
-		client.call("getUserData", {}) as Promise<User>
+		client.call<User>("getUserData", {})
 
 	export const logout = () =>
-		client.call("logout", {}) as Promise<void>
+		client.call<void>("logout", {})
+
+	export const createGenerationTask = (inputData: GenerationTaskInputData) =>
+		client.call<GenerationTask>("createGenerationTask", {inputData})
+
+	export const listTasks = (inputData: SimpleListQueryParams<GenerationTask>) =>
+		client.call<{tasks: GenerationTask[], pictures: Picture[]}>("listTasks", {inputData})
+
+	export const getPictureData = (pictureId: number) =>
+		client.callForBinary("getPictureData", {pictureId})
 
 }

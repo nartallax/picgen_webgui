@@ -1,12 +1,11 @@
 import {ApiError} from "common/api_error"
 import {User} from "common/entity_types"
 import {DAO} from "server/dao"
-import {DbConnection} from "server/db_controller"
-import {DiscordApiAccessTokenResponse, DiscordApiClient, DiscordApiUser} from "server/discord_api_client"
-import {CookieController} from "server/http/cookie_controller"
+import {DiscordApiAccessTokenResponse, DiscordApiUser} from "server/discord_api_client"
+import {RequestContext, UserlessContext} from "server/request_context"
 import {unixtime} from "server/utils/unixtime"
 
-export interface ServerUser extends Omit<User, "avatarUrl"> {
+export interface ServerUser extends User {
 	discordAccessToken: string | null
 	discordRefreshToken: string | null
 	discordId: string | null
@@ -15,75 +14,30 @@ export interface ServerUser extends Omit<User, "avatarUrl"> {
 
 const timeMarginBeforeRenewal = 15 * 60
 
-export class UserDAO extends DAO<ServerUser> {
+export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extends DAO<ServerUser, C> {
 
-	readonly discordTokenCookieName = "picgen-bot-discord-token"
-
-	constructor(db: DbConnection, private readonly cookie: CookieController, private readonly discordApi: DiscordApiClient) {
-		super(db)
-	}
-
-	setDiscordCookieToken(user: ServerUser): void {
-		if(!user.discordAccessToken){
-			throw new Error("Cannot send discord access token to client: it's empty!")
-		}
-		this.cookie.set(this.discordTokenCookieName, user.discordAccessToken)
-	}
-
-	deleteDiscordCookieToken(): void {
-		this.cookie.delete(this.discordTokenCookieName)
-	}
-
-	async maybeRenewAccessToken(user: ServerUser): Promise<void> {
-		if(!user.discordRefreshToken || !user.discordTokenExpiresAt){
-			return
-		}
-		if(user.discordTokenExpiresAt - timeMarginBeforeRenewal > unixtime()){
-			return
-		}
-		const token = await this.discordApi.getTokenByRefreshToken(user.discordRefreshToken)
-		this.setDiscordTokenProps(user, token)
-		await this.update(user)
-	}
-
-	setDiscordTokenProps(user: ServerUser, token: DiscordApiAccessTokenResponse): void {
+	setDiscordTokenProps(user: Omit<ServerUser, "id">, token: DiscordApiAccessTokenResponse) {
 		user.discordAccessToken = token.access_token
 		user.discordRefreshToken = token.refresh_token
 		user.discordTokenExpiresAt = unixtime() + token.expires_in
 	}
 
-	makeUser(token: DiscordApiAccessTokenResponse, discordUser: DiscordApiUser): Omit<ServerUser, "id"> {
+	setDiscordUserProps(user: Omit<ServerUser, "id">, discordUser: DiscordApiUser): void {
+		user.avatarUrl = discordUser.avatarUrl
+		user.displayName = discordUser.username
+		user.discordId = discordUser.id
+	}
+
+	makeEmptyUser(): Omit<ServerUser, "id"> {
 		return {
-			discordAccessToken: token.access_token,
-			discordRefreshToken: token.refresh_token,
-			discordId: discordUser.id,
-			discordTokenExpiresAt: unixtime() + token.expires_in,
+			discordAccessToken: null,
+			discordRefreshToken: null,
+			discordId: null,
+			discordTokenExpiresAt: null,
 			creationTime: unixtime(),
-			displayName: discordUser.username
+			displayName: "",
+			avatarUrl: ""
 		}
-	}
-
-	clearLoginFields(user: ServerUser): void {
-		user.discordAccessToken = null
-		user.discordRefreshToken = null
-		user.discordTokenExpiresAt = null
-	}
-
-	async mbGetCurrent(): Promise<ServerUser | undefined> {
-		const cookie = this.cookie.get(this.discordTokenCookieName)
-		if(!cookie){
-			return undefined
-		} else {
-			return await this.getByFieldValue("discordAccessToken", cookie)
-		}
-	}
-
-	async getCurrent(): Promise<ServerUser> {
-		const user = await this.mbGetCurrent()
-		if(!user){
-			throw new ApiError("not_logged_in", "User is not logged in")
-		}
-		return user
 	}
 
 	mbGetByDiscordId(discordId: string): Promise<ServerUser | undefined> {
@@ -94,13 +48,64 @@ export class UserDAO extends DAO<ServerUser> {
 		return "users"
 	}
 
-	makeClientUser(user: ServerUser, discordUser: DiscordApiUser): User {
+	stripUserForClient(user: ServerUser): User {
 		return {
-			avatarUrl: discordUser.avatarUrl,
-			displayName: discordUser.username,
+			avatarUrl: user.avatarUrl,
+			displayName: user.displayName,
 			creationTime: user.creationTime,
 			id: user.id
 		}
+	}
+
+	clearLoginFields(user: ServerUser): void {
+		user.discordAccessToken = null
+		user.discordRefreshToken = null
+		user.discordTokenExpiresAt = null
+	}
+
+}
+
+export class CompleteUserDAO extends UserlessUserDAO<RequestContext> {
+
+	readonly discordTokenCookieName = "picgen-bot-discord-token"
+
+	setDiscordCookieToken(user: ServerUser): void {
+		if(!user.discordAccessToken){
+			throw new Error("Cannot send discord access token to client: it's empty!")
+		}
+		this.getContext().cookie.set(this.discordTokenCookieName, user.discordAccessToken)
+	}
+
+	deleteDiscordCookieToken(): void {
+		this.getContext().cookie.delete(this.discordTokenCookieName)
+	}
+
+	async maybeUpdateDiscordTokenProps(user: ServerUser): Promise<void> {
+		if(!user.discordRefreshToken || !user.discordTokenExpiresAt){
+			return
+		}
+		if(user.discordTokenExpiresAt - timeMarginBeforeRenewal > unixtime()){
+			return
+		}
+		const token = await this.getContext().discordApi.getTokenByRefreshToken(user.discordRefreshToken)
+		this.setDiscordTokenProps(user, token)
+	}
+
+	async mbGetCurrent(): Promise<ServerUser | undefined> {
+		const cookie = this.getContext().cookie.get(this.discordTokenCookieName)
+		if(!cookie){
+			return undefined
+		} else {
+			return await this.mbGetByFieldValue("discordAccessToken", cookie)
+		}
+	}
+
+	async getCurrent(): Promise<ServerUser> {
+		const user = await this.mbGetCurrent()
+		if(!user){
+			throw new ApiError("not_logged_in", "User is not logged in")
+		}
+		return user
 	}
 
 }

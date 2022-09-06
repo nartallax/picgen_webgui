@@ -1,3 +1,4 @@
+import {SqliteDbShapeController} from "server/db/sqlite_db_shape_controller"
 import {log} from "server/log"
 import {unixtime} from "server/utils/unixtime"
 import * as Sqlite from "sqlite3"
@@ -21,10 +22,13 @@ export class DbController {
 	private connWaiters = [] as (() => void)[]
 	private openConnectionsCount = 0
 
+	readonly shaper = new SqliteDbShapeController()
+
 	constructor(readonly dbPath: string, readonly migrations: Migration[]) {}
 
 	async init(): Promise<void> {
 		await this.migrate()
+		await this.inTransaction(conn => this.shaper.init(conn))
 	}
 
 	async inTransaction<T>(action: (conn: DbConnectionImpl) => T | Promise<T>): Promise<T> {

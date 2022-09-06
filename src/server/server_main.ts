@@ -1,13 +1,14 @@
 import {Runtyper} from "@nartallax/runtyper"
 import {closeAsyncContext, initAsyncContext} from "server/async_context"
 import {config, loadConfig} from "server/config"
-import {DbController} from "server/db_controller"
+import {DbController} from "server/db/db_controller"
 import {DiscordApiClient} from "server/discord_api_client"
 import {HttpServer} from "server/http/http_server"
 import {WebsocketServer} from "server/http/websocket_server"
 import {log} from "server/log"
 import {migrations} from "server/migrations"
-import {RequestContext} from "server/request_context"
+import {TaskQueueController} from "server/task_queue_controller"
+import {ContextStaticProps, RequestContext} from "server/request_context"
 import {ServerApi} from "server/server_api"
 import {errToString} from "server/utils/err_to_string"
 
@@ -23,15 +24,20 @@ export async function main() {
 async function mainInternal(): Promise<void> {
 	await loadConfig()
 
-	const db = new DbController(config.dbFilePath, migrations)
-	await db.init()
-
-	const contextFactory = RequestContext.makeFactory({
+	const contextStaticProps: ContextStaticProps = {
+		config,
 		db: () => db,
 		discordApi: () => discordApi,
 		defaultToHttps: config.defaultToHttps,
-		websocketServer: () => websocketServer
-	})
+		websocketServer: () => websocketServer,
+		taskQueue: () => taskQueue
+	}
+
+	const contextFactory = RequestContext.makeFactory(contextStaticProps)
+	const userlessContextFactory = RequestContext.makeUserlessFactory(contextStaticProps)
+
+	const db = new DbController(config.dbFilePath, migrations)
+	await db.init()
 
 	const discordApi = new DiscordApiClient(config.discordClientId, config.discordClientSecret)
 
@@ -51,10 +57,13 @@ async function mainInternal(): Promise<void> {
 		return user.id
 	}))
 
+	const taskQueue = new TaskQueueController(userlessContextFactory)
+
 	initAsyncContext("picgen-gui")
 
 	Runtyper.cleanup()
 
+	await taskQueue.init()
 	const port = await server.start()
 	log("Server started at http://localhost:" + port + "/")
 
@@ -87,6 +96,14 @@ async function mainInternal(): Promise<void> {
 			log("Async contexts are closed.")
 		} catch(e){
 			log("Failed to properly close async contexts: " + e)
+		}
+
+		try {
+			log("Shutting down task queue...")
+			await taskQueue.stop()
+			log("Task queue is shut down.")
+		} catch(e){
+			log("Failed to properly shut down task queue: " + e)
 		}
 
 		log("Shutdown sequence is completed.")

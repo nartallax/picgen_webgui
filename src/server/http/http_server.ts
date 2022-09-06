@@ -8,7 +8,7 @@ import {errToString} from "server/utils/err_to_string"
 import {readStreamToBuffer} from "server/utils/read_stream_to_buffer"
 import {RequestContext, RequestContextFactory} from "server/request_context"
 import {ApiResponse} from "common/common_types"
-import {errorToErrorApiResp} from "common/api_error"
+import {ApiError, errorToErrorApiResp} from "common/api_error"
 import {log} from "server/log"
 
 interface HttpServerOptions {
@@ -164,7 +164,8 @@ export class HttpServer {
 			})
 		} catch(e){
 			if(e instanceof Error){
-				log(`Error calling ${methodName}(${JSON.stringify(methodArgs)}): ${e.stack || e.message}`)
+				const errStr = e instanceof ApiError ? e.message : e.stack || e.message
+				log(`Error calling ${methodName}(${JSON.stringify(methodArgs)}): ${errStr}`)
 				error = e
 			} else {
 				throw e
