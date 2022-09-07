@@ -440,4 +440,31 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(subCalls, 0)
 	})
 
+	makeTest("explicit dependency list in views", () => {
+		const a = box(2)
+		const b = box(2)
+		const c = viewBox(() => a() + b(), [a])
+
+		assertEquals(c(), 4)
+		a(3)
+		assertEquals(c(), 5)
+		b(3)
+		assertEquals(c(), 5)
+		a(4)
+		assertEquals(c(), 7)
+
+		let callsCount = 0
+		c.subscribe(() => callsCount++)
+		assertEquals(callsCount, 0)
+		a(5)
+		assertEquals(callsCount, 1)
+		assertEquals(c(), 8)
+		b(4)
+		assertEquals(callsCount, 1)
+		assertEquals(c(), 8)
+		a(6)
+		assertEquals(callsCount, 2)
+		assertEquals(c(), 10)
+	})
+
 })

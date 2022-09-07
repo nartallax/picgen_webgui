@@ -144,7 +144,7 @@ function createSubscribeNotify<T>(getInitialSubscriberValue: () => T | NoKnownVa
 }
 
 const notificationStack: (BoxSubscriber | null)[] = []
-function withAccessNotifications<T>(action: () => T, onAccess: BoxSubscriber): T {
+function withAccessNotifications<T>(action: () => T, onAccess: BoxSubscriber | null): T {
 	notificationStack.push(onAccess)
 	let result: T
 	try {
@@ -211,7 +211,7 @@ export function box<T>(x: T): WBox<T> {
 }
 
 /** Make a RBox that computes its value from other boxes */
-export function viewBox<T>(computingFn: () => T): RBox<T> {
+export function viewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): RBox<T> {
 	/*
 	Here it gets a little tricky.
 	Lifetime of the view is by definition lower than lifetime of values it depends on
@@ -230,7 +230,7 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 	This way, you only need to remove all subscribers from view for it to be eligible to be GCed
 	*/
 
-	let depList = null as null | RBox<unknown>[]
+	let depList = null as null | readonly RBox<unknown>[]
 	let revList = null as null | number[]
 	let value: T | NoKnownValue = noKnownValue
 	const subDisposers: Unsubscribe[] = []
@@ -254,10 +254,16 @@ export function viewBox<T>(computingFn: () => T): RBox<T> {
 	}
 
 	function recalcValueWithoutSetting(): T {
-		const boxesAccessed = new Set<RBox<unknown>>()
-		const newValue = withAccessNotifications(computingFn, box => boxesAccessed.add(box))
+		let newValue: T
+		if(!explicitDependencyList){
+			const boxesAccessed = new Set<RBox<unknown>>()
+			newValue = withAccessNotifications(computingFn, box => boxesAccessed.add(box))
+			depList = [...boxesAccessed]
+		} else {
+			newValue = withAccessNotifications(computingFn, null)
+			depList = explicitDependencyList
+		}
 
-		depList = [...boxesAccessed]
 		revList = []
 		for(let i = 0; i < depList.length; i++){
 			const dep = depList[i]!
@@ -344,14 +350,9 @@ function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey
 		if(value !== noKnownValue){
 			return value as T[K]
 		} else {
-			try {
-				// if we are called from view - we should prevent view to access our parent box
-				// so view will only subscribe to this box, but not to the parent
-				notificationStack.push(null)
-				return parent()[propKey]
-			} finally {
-				notificationStack.pop()
-			}
+			// if we are called from view - we should prevent view to access our parent box
+			// so view will only subscribe to this box, but not to the parent
+			return withAccessNotifications(() => parent()[propKey], null)
 		}
 	}
 
