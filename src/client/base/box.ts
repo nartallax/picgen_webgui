@@ -6,6 +6,7 @@ type Writable<T> = {-readonly[k in keyof T]: T[k]}
 export interface RBox<T>{
 	(): T
 	subscribe(subscriber: Subscriber<T>): Unsubscribe
+	map<R>(mapper: (value: T) => R): RBox<R>
 	/** Each time stored value changes, revision is incremented
 	 * Can be used to track if value is changed or not without actually storing value */
 	readonly revision: number
@@ -204,10 +205,15 @@ export function box<T>(x: T): WBox<T> {
 		subscribeForField,
 		updateByField: function updateByField(newValue: T): void {
 			updateWBoxValue(newValue, true)
-		}
+		},
+		map: mapMethodImpl
 	})
 
 	return result
+}
+
+function mapMethodImpl<T, R>(this: RBox<T>, mapper: (value: T) => R): RBox<R> {
+	return viewBox(() => mapper(this()), [this])
 }
 
 /** Make a RBox that computes its value from other boxes */
@@ -334,10 +340,21 @@ export function viewBox<T>(computingFn: () => T, explicitDependencyList?: readon
 		isRBox: true as const,
 		subscribe: wrappedSubscribe,
 		notify,
-		revision: defaultStartingRevision
+		revision: defaultStartingRevision,
+		map: mapMethodImpl
 	})
 
 	return result
+}
+
+/** The same as viewBox, but have only one dependency
+ * Helps to prevent unwanted accidental dependencies */
+export function mapBox<T, R>(source: MaybeRBoxed<T>, handler: (value: T) => R): RBox<R> {
+	if(isRBox(source)){
+		return source.map(handler as (value: typeof source) => R) // eww
+	} else {
+		return viewBox(() => handler(source as T), []) // what else could I do here
+	}
 }
 
 function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey: K): WBox<T[K]> {
@@ -425,7 +442,8 @@ function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey
 		subscribeForField: (listener: Subscriber<T[K]>) => propertySubWBoxSubscribe(listener, true),
 		updateByField: function updatePropWBoxByField(value: T[K]): void {
 			updatePropertySubWBox(value, true, false)
-		}
+		},
+		map: mapMethodImpl
 	})
 
 	return result
