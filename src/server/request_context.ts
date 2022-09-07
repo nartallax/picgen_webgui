@@ -9,6 +9,7 @@ import {runInAsyncContext} from "server/async_context"
 import {Config} from "server/config"
 import {TaskQueueController} from "server/task_queue_controller"
 import {CompletePictureDAO, UserlessPictureDAO} from "server/entities/picture"
+import {logError} from "server/log"
 
 export interface ContextStaticProps {
 	config: Config
@@ -45,10 +46,18 @@ export class UserlessContext {
 		return new Promise(ok => this.onClosed(ok))
 	}
 
+	private async runCloseWaiter(waiter: () => void) {
+		try {
+			await Promise.resolve(waiter())
+		} catch(e){
+			logError(e)
+		}
+	}
+
 	notifyClosed(): void {
 		if(this.closeWaiters){
 			for(const waiter of this.closeWaiters){
-				waiter()
+				this.runCloseWaiter(waiter)
 			}
 		}
 	}
@@ -77,20 +86,14 @@ export class RequestContext extends UserlessContext {
 	}
 
 	static makeUserlessFactory(baseProps: ContextStaticProps): UserlessContextFactory {
-		return async runner => {
-			return await baseProps.db().inTransaction(conn => {
-				const context = new UserlessContext(
-					baseProps.discordApi(),
-					conn,
-					baseProps.websocketServer(),
-					baseProps.config,
-					baseProps.db(),
-					baseProps.taskQueue()
-				)
-
-				return runner(context)
-			})
-		}
+		return runner => this.runWithContextCreator(baseProps.db(), conn => new UserlessContext(
+			baseProps.discordApi(),
+			conn,
+			baseProps.websocketServer(),
+			baseProps.config,
+			baseProps.db(),
+			baseProps.taskQueue()
+		), runner)
 	}
 
 	static makeFactory(baseProps: ContextStaticProps): RequestContextFactory {
@@ -102,24 +105,37 @@ export class RequestContext extends UserlessContext {
 			}
 			const url = new URL(urlStr, (baseProps.defaultToHttps ? "https" : "http") + "://" + hostHeader)
 
-			return await baseProps.db().inTransaction(async conn => {
-				const context = new RequestContext(
-					url,
-					new CookieController(req),
-					baseProps.discordApi(),
-					conn,
-					baseProps.websocketServer(),
-					baseProps.config,
-					baseProps.db(),
-					baseProps.taskQueue()
-				)
+			return this.runWithContextCreator(baseProps.db(), conn => new RequestContext(
+				url,
+				new CookieController(req),
+				baseProps.discordApi(),
+				conn,
+				baseProps.websocketServer(),
+				baseProps.config,
+				baseProps.db(),
+				baseProps.taskQueue()
+			), runner)
+		}
+	}
 
-				try {
-					return await runInAsyncContext(context, () => runner(context))
-				} finally {
-					context.notifyClosed()
-				}
-			})
+	private static async runWithContextCreator<T extends UserlessContext, R>(db: DbController, creator: (conn: DbConnection) => T, runner: (context: T) => R | Promise<R>): Promise<R> {
+		const {context, result, error} = await db.inTransaction(async conn => {
+			const context = creator(conn)
+
+			try {
+				const result = await runInAsyncContext(context, () => runner(context))
+				return {context, result, error: null}
+			} catch(e){
+				return {context, result: null, error: e}
+			}
+		})
+
+		context.notifyClosed()
+
+		if(error){
+			throw error
+		} else {
+			return result!
 		}
 	}
 

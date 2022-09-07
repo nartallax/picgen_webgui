@@ -12,3 +12,17 @@ export function log(str: string): void {
 	process.stderr.write(str)
 	process.stderr.write("\n")
 }
+
+export function logError(e: unknown): void {
+	log(e instanceof Error ? e.stack || e.message : (e + ""))
+}
+
+export function wrapInCatchLog<T extends unknown[]>(fn: (...args: T) => void): (...args: T) => Promise<void> {
+	return async(...args) => {
+		try {
+			await Promise.resolve(fn(...args))
+		} catch(e){
+			logError(e)
+		}
+	}
+}

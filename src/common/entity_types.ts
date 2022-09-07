@@ -5,9 +5,11 @@ export interface User {
 	displayName: string
 }
 
+export type GenerationTaskParameterValue = number | boolean
+
 export interface GenerationTaskInputData {
 	prompt: string
-	params: Record<string, unknown>
+	params: {[key: string]: GenerationTaskParameterValue}
 }
 
 export const generationTaskStatusList = {

@@ -36,7 +36,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const result = {} as Record<string, unknown>
 		for(const k in input){
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			result[k] = this.fieldFromDb(k as string & keyof T & keyof S, result[k] as any)
+			result[k] = this.fieldFromDb(k as string & keyof T & keyof S, input[k] as any)
 		}
 		return result as T
 	}
@@ -50,7 +50,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const result = {} as Record<string, unknown>
 		for(const k in input){
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			result[k] = this.fieldToDb(k as string & keyof T & keyof S, result[k] as any)
+			result[k] = this.fieldToDb(k as string & keyof T & keyof S, input[k] as any)
 		}
 		return result as S
 	}
@@ -147,7 +147,9 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 			where "${fieldName}" = ?
 			order by "${sortBy}" ${desc ? "desc" : "asc"}
 			${limit > 0 ? "limit " + limit : ""}
-		`, [value])
+		`,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		[this.fieldToDb(fieldName as keyof T & keyof S & string, value as any)])
 		return result.map(x => this.fromDb(x))
 	}
 

@@ -1,11 +1,14 @@
 import {ClientApi} from "client/app/client_api"
-import {box, WBox} from "client/base/box"
+import {WebsocketListener} from "client/app/websocket_listener"
+import {getBinder} from "client/base/binder/binder"
+import {box, unbox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {LoginBar} from "client/controls/login_bar/login_bar"
 import {ParamsBlock} from "client/controls/params_block/params_block"
 import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {GenParameterDefinition} from "common/common_types"
+import {GenerationTask, GenerationTaskParameterValue} from "common/entity_types"
 
 function updateParamValues(paramValues: {[key: string]: WBox<GenParameterDefinition["default"]>}, defs: readonly GenParameterDefinition[]) {
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
@@ -35,6 +38,9 @@ export function MainPage(): HTMLElement {
 	const contentTagBox = box(null as null | {readonly [tagContent: string]: readonly string[]})
 	const selectedContentTags = box([] as string[])
 
+	const knownTasks = box([] as GenerationTask[])
+	const websocket = new WebsocketListener(knownTasks)
+
 	const loadingContentShapeValue = "Loading..."
 	const shapeTagValue = box(loadingContentShapeValue)
 	const shapeTagsBox = box(null as null | readonly string[])
@@ -59,8 +65,7 @@ export function MainPage(): HTMLElement {
 		contentTagBox(contentTags)
 	})()
 
-
-	return tag({class: "page-root"}, [
+	const result = tag({class: "page-root"}, [
 		tag({class: "settings-column"}, [
 			LoginBar(),
 			ParamsBlock({paramDefs: paramDefsBox, paramValues}),
@@ -76,10 +81,24 @@ export function MainPage(): HTMLElement {
 				selectedContentTags: selectedContentTags,
 				shapeValue: shapeTagValue,
 				shapeValues: shapeTagsBox,
-				startGeneration: () => {
-					console.log("start!")
+				startGeneration: async() => {
+					const fullPrompt = shapeTagValue() + " " + promptValue() + selectedContentTags().join(", ")
+					const paramValuesForApi = {} as Record<string, GenerationTaskParameterValue>
+					for(const paramName in paramValues){
+						paramValuesForApi[paramName] = unbox(paramValues[paramName])!
+					}
+					await ClientApi.createGenerationTask({
+						prompt: fullPrompt,
+						params: paramValuesForApi
+					})
 				}
 			})
 		])
 	])
+
+	const binder = getBinder(result)
+	binder.onNodeInserted(() => websocket.start())
+	binder.onNodeRemoved(() => websocket.stop())
+
+	return result
 }

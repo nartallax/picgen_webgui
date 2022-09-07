@@ -32,7 +32,7 @@ export function PromptInput(opts: PromptInputOptions): HTMLElement {
 			input,
 			tag({
 				class: ["prompt-input-generate-button", "icon-brush"],
-				on: {click: opts.startGeneration}
+				on: {click: opts.startGeneration} // TODO: falloff to prevent doubleclicking
 			})
 		]),
 		TagList({

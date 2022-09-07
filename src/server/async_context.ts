@@ -1,5 +1,5 @@
 import * as CLS from "cls-hooked"
-import {RequestContext} from "server/request_context"
+import {RequestContext, UserlessContext} from "server/request_context"
 
 let _ns: CLS.Namespace | null = null
 let _nsName: string | null = null
@@ -12,19 +12,21 @@ export function initAsyncContext(name: string): void {
 	_ns = CLS.createNamespace(name)
 }
 
-const contextVarName = "context"
+const requestContextVarName = "context"
+const userlessContextVarName = "userless_context"
 
-export function runInAsyncContext<T>(context: RequestContext, fn: () => T | Promise<T>): Promise<T> {
+export function runInAsyncContext<T>(context: RequestContext | UserlessContext, fn: () => T | Promise<T>): Promise<T> {
 	const ns = _ns
 	if(!ns){
 		throw new Error("No namespace is created yet!")
 	}
 	return ns.runPromise(async() => {
-		ns.set(contextVarName, context)
+		const varName = context instanceof RequestContext ? requestContextVarName : userlessContextVarName
+		ns.set(varName, context)
 		try {
 			return await Promise.resolve(fn())
 		} finally {
-			ns.set(contextVarName, null)
+			ns.set(varName, null)
 		}
 	})
 }
@@ -41,9 +43,20 @@ export function cont(): RequestContext {
 	if(!_ns){
 		throw new Error("No namespace context is present.")
 	}
-	const context: RequestContext | undefined = _ns.get(contextVarName)
+	const context: RequestContext | undefined = _ns.get(requestContextVarName)
 	if(!context){
 		throw new Error("No context is created for this async sequence")
+	}
+	return context
+}
+
+export function userlessCont(): UserlessContext {
+	if(!_ns){
+		throw new Error("No namespace context is present.")
+	}
+	const context: UserlessContext | undefined = _ns.get(userlessContextVarName)
+	if(!context){
+		throw new Error("No userless context is created for this async sequence")
 	}
 	return context
 }

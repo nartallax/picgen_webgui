@@ -7,6 +7,8 @@ import {makeNodeDataAttacher} from "client/base/node_data_attacher"
 export interface Binder {
 	onNodeInserted(handler: () => void): void
 	onNodeRemoved(handler: () => void): void
+	onNodeInsertedOnce(handler: () => void): void
+	onNodeRemovedOnce(handler: () => void): void
 	clearOnNodeInserted(handler: () => void): void
 	clearOnNodeRemoved(handler: () => void): void
 	watch<T>(box: RBox<T>, handler: (value: T) => void): () => void
@@ -36,6 +38,29 @@ export class BinderImpl implements Binder {
 	}
 	onNodeRemoved(handler: () => void): void {
 		(this.removedHandlers ||= []).push(handler)
+	}
+
+	onNodeInsertedOnce(handler: () => void): void {
+		const wrappedHandler = () => {
+			try {
+				handler()
+			} finally {
+				this.clearOnNodeInserted(wrappedHandler)
+			}
+		}
+
+		this.onNodeInserted(wrappedHandler)
+	}
+	onNodeRemovedOnce(handler: () => void): void {
+		const wrappedHandler = () => {
+			try {
+				handler()
+			} finally {
+				this.clearOnNodeRemoved(wrappedHandler)
+			}
+		}
+
+		this.onNodeRemoved(wrappedHandler)
 	}
 
 	clearOnNodeInserted(handler: () => void): void {

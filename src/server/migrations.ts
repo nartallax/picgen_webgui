@@ -115,9 +115,19 @@ export const migrations: Migration[] = [
 			"params" text not null,
 			"expectedPictures" bigint,
 			"generatedPictures" bigint not null,
-			"runOrder" integer autoincrement,
+			"runOrder" integer,
 			foreign key("userId") references "users"("id")
 		)`)
+
+		await db.run(`create trigger "generationTasksRunOrderAutoincrement"
+			after insert on "generationTasks"
+			when new."runOrder" is null
+			begin
+				update "generationTasks"
+				set "runOrder" = (select IFNULL(MAX("runOrder"), 0) + 1 from "generationTasks")
+				where id = new.id;
+			end
+		`)
 
 		await db.run(`create table "pictures"(
 			"id" integer primary key autoincrement,
@@ -125,10 +135,44 @@ export const migrations: Migration[] = [
 			"ownerUserId" bigint not null,
 			"creationTime" bigint not null,
 			"ext" string not null,
-			foreign key("generationTaskId") references "generationTasks"("id")
+			foreign key("generationTaskId") references "generationTasks"("id"),
 			foreign key("ownerUserId") references "users"("id")
 		)`)
 
+	}},
+
+	{name: "00005", handler: async db => {
+		await db.run(`
+			drop trigger "generationTasksRunOrderAutoincrement"
+		`)
+
+		await db.run(`create trigger "generationTasksRunOrderAutoincrement"
+			after insert on "generationTasks"
+			when new."runOrder" < 0
+			begin
+				update "generationTasks"
+				set "runOrder" = (select IFNULL(MAX("runOrder"), 0) + 1 from "generationTasks")
+				where id = new.id;
+			end
+		`)
+	}},
+
+	{name: "00006", handler: async db => {
+		await db.run(`
+			drop table "pictures"
+		`)
+
+		await db.run(`create table "pictures"(
+			"id" integer primary key autoincrement,
+			"generationTaskId" bigint,
+			"ownerUserId" bigint not null,
+			"creationTime" bigint not null,
+			"ext" string not null,
+			"directLink" string,
+			"fileName" string,
+			foreign key("generationTaskId") references "generationTasks"("id"),
+			foreign key("ownerUserId") references "users"("id")
+		)`)
 	}}
 
 

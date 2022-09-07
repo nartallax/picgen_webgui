@@ -14,6 +14,15 @@ export interface ServerPicture extends Picture {
 	fileName: string | null
 }
 
+let pictureDirCreated = false
+async function createPictureDir(imgDir: string) {
+	if(pictureDirCreated){
+		return
+	}
+	await Fs.mkdir(imgDir, {recursive: true})
+	pictureDirCreated = true
+}
+
 export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> extends DAO<ServerPicture, C> {
 
 	protected getTableName(): string {
@@ -35,6 +44,7 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 	}
 
 	async storeGeneratedPicture(data: Buffer, genTask: GenerationTask, ext: string): Promise<ServerPicture> {
+		await createPictureDir(this.getContext().config.pictureStorageDir)
 		const {fileName, filePath} = await this.findFileName(ext)
 		try {
 			await Fs.writeFile(filePath, data)

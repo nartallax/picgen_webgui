@@ -2,10 +2,10 @@ import {ApiNotification} from "common/common_types"
 import {GenerationTask, GenerationTaskInputData} from "common/entity_types"
 import {cont} from "server/async_context"
 import {Config} from "server/config"
-import {GenRunner} from "server/gen_runner"
-import {log} from "server/log"
+import {GenRunner, GenRunnerCallbacks} from "server/gen_runner"
+import {log, wrapInCatchLog} from "server/log"
 import {UserlessContext, UserlessContextFactory} from "server/request_context"
-import {makeDebounceCollector} from "server/utils/debounce_collect"
+import {DebouncedCollector, makeDebounceCollector} from "server/utils/debounce_collect"
 import {unixtime} from "server/utils/unixtime"
 
 export class TaskQueueController {
@@ -46,7 +46,7 @@ export class TaskQueueController {
 
 		// TODO: fix runOrder here? after creation
 		const result = await context.generationTask.create(genTask)
-		console.log("Enqueued task #" + result.id)
+		log("Enqueued task #" + result.id)
 
 		// just to make queue more uniform
 		context.onClosed(() => this.tryStartNextGeneration())
@@ -97,20 +97,64 @@ export class TaskQueueController {
 		}
 		log(`Starting generation for task #${task.id}`)
 
+		const [update, sendTaskNotification, callbacks] = this.makeTaskCallbacks(task)
+
+		this.runningGeneration = new GenRunner(config, callbacks, task)
+
+		update(() => {
+			task.status = "running"
+			task.startTime = unixtime()
+		})
+		sendTaskNotification({
+			type: "task_started",
+			taskId: task.id,
+			startTime: task.startTime!
+		})
+
+		await this.runningGeneration.waitCompletion()
+
+		log(`Task #${task.id} completed`)
+		update(() => {
+			task.status = "completed"
+			task.finishTime = unixtime()
+		})
+		sendTaskNotification({
+			type: "task_finished",
+			taskId: task.id,
+			finishTime: task.finishTime!
+		})
+
+		await update.waitInvocationsOver()
+		this.runningGeneration = null
+	}
+
+	async stop(): Promise<void> {
+		this.queueIsMoving = false
+		if(this.runningGeneration){
+			this.runningGeneration.process.kill()
+		}
+		await this.waitGenerationEnd()
+	}
+
+	private makeTaskCallbacks(task: GenerationTask): [
+		DebouncedCollector<(context: UserlessContext) => void>,
+		(notification: ApiNotification) => void,
+		GenRunnerCallbacks
+	] {
 		const update = makeDebounceCollector<(context: UserlessContext) => void>(500, updaters => {
-			this.contextFactory(async context => {
+			wrapInCatchLog(() => this.contextFactory(async context => {
 				for(const updater of updaters){
-					updater(context)
+					wrapInCatchLog(updater)(context)
 				}
-				context.generationTask.update(task)
-			})
+				await context.generationTask.update(task)
+			}))()
 		})
 
 		function sendTaskNotification(body: ApiNotification): void {
 			update(context => context.websockets.sendNotificationToUser(task.userId, body))
 		}
 
-		this.runningGeneration = new GenRunner(config, {
+		const callbacks: GenRunnerCallbacks = {
 
 			onErrorMessage: msg => {
 				log(`Task #${task.id} produced error message: ${msg}`)
@@ -159,37 +203,19 @@ export class TaskQueueController {
 					prompt: prompt
 				})
 			}
-		}, task)
+		}
 
-		update(() => {
-			task.status = "running"
-			task.startTime = unixtime()
-		})
-		sendTaskNotification({
-			type: "task_started",
-			taskId: task.id,
-			startTime: task.startTime!
-		})
-
-		await this.runningGeneration.waitCompletion()
-
-		update(() => {
-			task.status = "completed"
-			task.finishTime = unixtime()
-		})
-		sendTaskNotification({
-			type: "task_finished",
-			taskId: task.id,
-			finishTime: task.finishTime!
-		})
-
-		await update.waitInvocationsOver()
-		this.runningGeneration = null
+		return [update, sendTaskNotification, this.wrapCallbacks(callbacks)]
 	}
 
-	async stop(): Promise<void> {
-		this.queueIsMoving = false
-		await this.waitGenerationEnd()
+	private wrapCallbacks(callbacks: GenRunnerCallbacks): GenRunnerCallbacks {
+		const result = {} as Partial<GenRunnerCallbacks>
+		for(const name in callbacks){
+			const callbackFn = callbacks[name as keyof GenRunnerCallbacks]
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			result[name as keyof GenRunnerCallbacks] = wrapInCatchLog(callbackFn as any) as any // argh!
+		}
+		return result as GenRunnerCallbacks
 	}
 
 }

@@ -15,3 +15,18 @@ export async function fileExists(path: string): Promise<boolean> {
 		throw e
 	}
 }
+
+export async function directoryExists(path: string): Promise<boolean> {
+	try {
+		const stat = await Fs.stat(path)
+		if(!stat.isDirectory()){
+			throw new Error(path + " exists, but it's not a directory! Don't know how to react to that.")
+		}
+		return true
+	} catch(e){
+		if(isEnoent(e)){
+			return false
+		}
+		throw e
+	}
+}
