@@ -1,5 +1,5 @@
 import {Binder, getBinder} from "client/base/binder/binder"
-import {isRBox, MaybeRBoxed, unbox} from "client/base/box"
+import {isRBox, MaybeRBoxed, RBox, unbox} from "client/base/box"
 import {ClassNameParts, makeClassname} from "client/base/classname"
 import {Control, isControl} from "client/base/control"
 
@@ -18,9 +18,9 @@ export interface HTMLTagDescription<K extends keyof HTMLElementTagNameMap = keyo
 	}
 }
 
-export type HtmlTaggable = HTMLElement | HTMLTagDescription | Control | null | undefined
+export type HtmlTaggable = HTMLElement | Control | null | undefined
 
-type ChildArray = HtmlTaggable[]
+type ChildArray = HtmlTaggable[] | RBox<HtmlTaggable[]>
 
 export function tag(): HTMLDivElement
 export function tag<K extends keyof HTMLElementTagNameMap = "div">(description: HTMLTagDescription<K>): HTMLElementTagNameMap[K]
@@ -33,7 +33,7 @@ export function tag<K extends keyof HTMLElementTagNameMap = "div">(a?: HTMLTagDe
 	if(!a){
 		description = {}
 		children = b || undefined
-	} else if(Array.isArray(a)){
+	} else if(Array.isArray(a) || isRBox(a)){
 		description = {}
 		children = a
 	} else {
@@ -98,12 +98,17 @@ export function tag<K extends keyof HTMLElementTagNameMap = "div">(a?: HTMLTagDe
 	}
 
 	if(children){
-		for(const child of children){
-			if(!child){
-				continue
-			}
-			res.appendChild(child instanceof HTMLElement ? child : isControl(child) ? child.el : tag(child))
+		const setChildren = (children: HtmlTaggable[]) => {
+			const childTags = children.filter(x => !!x).map(x => isControl(x) ? x.el : x) as HTMLElement[]
+			updateChildren(res, childTags)
 		}
+
+		if(isRBox(children)){
+			(binder ||= getBinder(res)).watch(children, children => {
+				setChildren(children)
+			})
+		}
+		setChildren(unbox(children))
 	}
 
 	return res as HTMLElementTagNameMap[K]
@@ -115,3 +120,30 @@ export function taggableToTag(taggable: HtmlTaggable): HTMLElement | null {
 	}
 	return taggable instanceof HTMLElement ? taggable : isControl(taggable) ? taggable.el : tag(taggable)
 }
+
+function updateChildren(parent: HTMLElement, newChildren: readonly HTMLElement[]): void {
+	for(let i = 0; i < newChildren.length; i++){
+		const childTag = newChildren[i]!
+		const x = parent.children[i]
+		if(x === childTag){
+			continue
+		}
+		if(x){
+			parent.insertBefore(childTag, x)
+		} else {
+			parent.appendChild(childTag)
+		}
+	}
+
+	while(parent.children[newChildren.length]){
+		parent.children[newChildren.length]!.remove()
+	}
+}
+
+// /** Cached renderer for list of elements
+//  * Won't re-render an element if already has one for the value */
+// export function renderArray<T>(src: WBox<T[]>, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]>
+// export function renderArray<T>(src: RBox<T[]>, render: (value: RBox<T>) => HTMLElement): RBox<HTMLElement[]>
+// export function renderArray<T>(src: RBox<T[]>, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]> {
+// 	let map = new Map<T, {box: RBox<T>, }>
+// }
