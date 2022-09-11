@@ -247,12 +247,11 @@ export default makeTestPack("box", makeTest => {
 		const middle = parent.prop("a")
 		const child = middle.prop("b")
 		let parentCalls = 0
-		parent.subscribe(() => parentCalls++)
+		const parentUnsub = parent.subscribe(() => parentCalls++)
 		let childCalls = 0
-		child.subscribe(() => childCalls++)
-		// TODO: same tests, no middle subscriber
+		const childUnsub = child.subscribe(() => childCalls++)
 		let middleCalls = 0
-		middle.subscribe(() => middleCalls++)
+		const middleUnsub = middle.subscribe(() => middleCalls++)
 
 		assertEquals(parentCalls, 0)
 		assertEquals(childCalls, 0)
@@ -268,6 +267,28 @@ export default makeTestPack("box", makeTest => {
 		parent({a: {b: {c: 15}}})
 		assertEquals(parentCalls, 2)
 		assertEquals(childCalls, 2)
+		assertEquals(parent().a.b.c, 15)
+		assertEquals(child().c, 15)
+
+		middle({b: {c: 20}})
+		assertEquals(parentCalls, 3)
+		assertEquals(childCalls, 3)
+		assertEquals(parent().a.b.c, 20)
+		assertEquals(child().c, 20)
+
+		parentUnsub()
+		childUnsub()
+		middleUnsub()
+
+		child({c: 10})
+		assertEquals(parentCalls, 3)
+		assertEquals(childCalls, 3)
+		assertEquals(parent().a.b.c, 10)
+		assertEquals(child().c, 10)
+
+		parent({a: {b: {c: 15}}})
+		assertEquals(parentCalls, 3)
+		assertEquals(childCalls, 3)
 		assertEquals(parent().a.b.c, 15)
 		assertEquals(child().c, 15)
 
@@ -284,9 +305,9 @@ export default makeTestPack("box", makeTest => {
 		const middle = parent.prop("a")
 		const child = middle.prop("b")
 		let parentCalls = 0
-		parent.subscribe(() => parentCalls++)
+		const parentUnsub = parent.subscribe(() => parentCalls++)
 		let childCalls = 0
-		child.subscribe(() => childCalls++)
+		const childUnsub = child.subscribe(() => childCalls++)
 
 		assertEquals(parentCalls, 0)
 		assertEquals(childCalls, 0)
@@ -310,6 +331,27 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(childCalls, 3)
 		assertEquals(parent().a.b.c, 20)
 		assertEquals(child().c, 20)
+
+		parentUnsub()
+		childUnsub()
+
+		child({c: 10})
+		assertEquals(parentCalls, 3)
+		assertEquals(childCalls, 3)
+		assertEquals(parent().a.b.c, 10)
+		assertEquals(child().c, 10)
+
+		parent({a: {b: {c: 15}}})
+		assertEquals(parentCalls, 3)
+		assertEquals(childCalls, 3)
+		assertEquals(parent().a.b.c, 15)
+		assertEquals(child().c, 15)
+
+		middle({b: {c: 20}})
+		assertEquals(parentCalls, 3)
+		assertEquals(childCalls, 3)
+		assertEquals(parent().a.b.c, 20)
+		assertEquals(child().c, 20)
 	})
 
 	makeTest("chain property subboxes with only top sub", () => {
@@ -317,7 +359,7 @@ export default makeTestPack("box", makeTest => {
 		const middle = parent.prop("a")
 		const child = middle.prop("b")
 		let parentCalls = 0
-		parent.subscribe(() => parentCalls++)
+		const unsub = parent.subscribe(() => parentCalls++)
 
 		assertEquals(parentCalls, 0)
 		assertEquals(parent().a.b.c, 5)
@@ -338,7 +380,22 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(parent().a.b.c, 20)
 		assertEquals(child().c, 20)
 
-		// FIXME test what will happen with value after unsub
+		unsub()
+
+		child({c: 10})
+		assertEquals(parentCalls, 3)
+		assertEquals(parent().a.b.c, 10)
+		assertEquals(child().c, 10)
+
+		parent({a: {b: {c: 15}}})
+		assertEquals(parentCalls, 3)
+		assertEquals(parent().a.b.c, 15)
+		assertEquals(child().c, 15)
+
+		middle({b: {c: 20}})
+		assertEquals(parentCalls, 3)
+		assertEquals(parent().a.b.c, 20)
+		assertEquals(child().c, 20)
 	})
 
 	makeTest("chain property subboxes with only bottom sub", () => {
@@ -346,7 +403,7 @@ export default makeTestPack("box", makeTest => {
 		const middle = parent.prop("a")
 		const child = middle.prop("b")
 		let childCalls = 0
-		child.subscribe(() => childCalls++)
+		const unsub = child.subscribe(() => childCalls++)
 
 		assertEquals(childCalls, 0)
 		assertEquals(parent().a.b.c, 5)
@@ -359,6 +416,23 @@ export default makeTestPack("box", makeTest => {
 
 		parent({a: {b: {c: 15}}})
 		assertEquals(childCalls, 2)
+		assertEquals(parent().a.b.c, 15)
+		assertEquals(child().c, 15)
+
+		middle({b: {c: 20}})
+		assertEquals(childCalls, 3)
+		assertEquals(parent().a.b.c, 20)
+		assertEquals(child().c, 20)
+
+		unsub()
+
+		child({c: 10})
+		assertEquals(childCalls, 3)
+		assertEquals(parent().a.b.c, 10)
+		assertEquals(child().c, 10)
+
+		parent({a: {b: {c: 15}}})
+		assertEquals(childCalls, 3)
 		assertEquals(parent().a.b.c, 15)
 		assertEquals(child().c, 15)
 
@@ -495,6 +569,53 @@ export default makeTestPack("box", makeTest => {
 		a(6)
 		assertEquals(callsCount, 2)
 		assertEquals(c(), 10)
+	})
+
+	makeTest("two same-field prop boxes", () => {
+		const p = box({a: 5})
+		const a = p.prop("a")
+		const b = p.prop("a")
+
+		assertEquals(a(), 5)
+		assertEquals(b(), 5)
+
+		a(6)
+		assertEquals(a(), 6)
+		assertEquals(b(), 6)
+		assertEquals(p().a, 6)
+
+		b(7)
+		assertEquals(a(), 7)
+		assertEquals(b(), 7)
+		assertEquals(p().a, 7)
+
+		let callCount = 0
+		let lastBValue = b()
+		const unsub = b.subscribe(v => {
+			lastBValue = v
+			callCount++
+		})
+		assertEquals(callCount, 0)
+		assertEquals(lastBValue, 7)
+		a(8)
+		assertEquals(callCount, 1)
+		assertEquals(lastBValue, 8)
+		b(9)
+		assertEquals(callCount, 2)
+		assertEquals(lastBValue, 9)
+		p({a: 10})
+		assertEquals(callCount, 3)
+		assertEquals(lastBValue, 10)
+
+		unsub()
+		assertEquals(callCount, 3)
+		assertEquals(lastBValue, 10)
+		a(11)
+		assertEquals(callCount, 3)
+		assertEquals(lastBValue, 10)
+		assertEquals(a(), 11)
+		assertEquals(b(), 11)
+		assertEquals(p().a, 11)
 	})
 
 })

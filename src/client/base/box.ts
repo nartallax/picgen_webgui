@@ -81,7 +81,7 @@ export enum BoxDataFlowDirection {
 	 * Is here just to represent direction from where the update came from */
 	external = 0,
 	/** Child-parent flow direction (property and object containing the property)
-	 * Update from child will not trigger other children (except for the same field; FIXME: TEST THIS)
+	 * Update from child will not trigger other children (except for the same field)
 	 * Update from parent won't trigger parent listeners */
 	child = 1,
 	parent = 2,
@@ -95,6 +95,7 @@ export enum BoxDataFlowDirection {
 
 type NoValue = symbol
 const noValue: NoValue = Symbol()
+type PropKey = string | number | symbol
 
 interface ExternalSubscriber<T>{
 	lastKnownRevision: number
@@ -106,6 +107,7 @@ interface InternalSubscriber<T> extends ExternalSubscriber<T>{
 	// those props are here to compare if we should notify when pushing updates
 	direction: BoxDataFlowDirection
 	box: RBox<unknown>
+	propKey: PropKey | undefined
 }
 
 function boxContentCanBeDifferent<T>(oldValue: T, newValue: T): boolean {
@@ -134,8 +136,8 @@ abstract class BoxBase<T> {
 	}
 
 	subscribeWithDirection(direction: BoxDataFlowDirection.external, handler: SubscriberHandlerFn<T>): UnsubscribeFn
-	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box: RBox<unknown>): UnsubscribeFn
-	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>): UnsubscribeFn {
+	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box: RBox<unknown>, propKey: PropKey | undefined): UnsubscribeFn
+	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
 		const value = this.value
 		if(value === noValue){
 			throw new Error("Cannot subscribe to box: no value!")
@@ -151,7 +153,7 @@ abstract class BoxBase<T> {
 			return () => this.externalSubscribers.delete(sub)
 		} else {
 			const sub: InternalSubscriber<T> = {
-				direction, handler, box: box!,
+				direction, handler, box: box!, propKey,
 				lastKnownRevision: this.revision,
 				lastKnownValue: value as T
 			}
@@ -165,17 +167,17 @@ abstract class BoxBase<T> {
 	}
 
 	tryChangeValue(value: T, from: BoxDataFlowDirection.external): void
-	tryChangeValue(value: T, from: BoxDataFlowDirection, box: RBox<unknown>): void
-	tryChangeValue(value: T, from: BoxDataFlowDirection, box?: RBox<unknown>): void {
+	tryChangeValue(value: T, from: BoxDataFlowDirection, box: RBox<unknown>, propKey: PropKey | undefined): void
+	tryChangeValue(value: T, from: BoxDataFlowDirection, box?: RBox<unknown>, propKey?: PropKey): void {
 		const valueChanged = boxContentCanBeDifferent(this.value, value)
 		this.value = value
 		if(valueChanged){
 			this.revision++
-			this.notify(value, from, box)
+			this.notify(value, from, box, propKey)
 		}
 	}
 
-	notify(value: T, from: BoxDataFlowDirection, box: RBox<unknown> | undefined): void {
+	notify(value: T, from: BoxDataFlowDirection, box: RBox<unknown> | undefined, propKey: PropKey | undefined): void {
 		const valueRevision = this.revision
 
 		for(const sub of this.internalSubscribers){
@@ -186,7 +188,7 @@ abstract class BoxBase<T> {
 
 			// if the notification came from property box - it can only change one property
 			// no need to notify other property boxes
-			if(from === BoxDataFlowDirection.child && sub.direction === BoxDataFlowDirection.child){
+			if(from === BoxDataFlowDirection.child && sub.direction === BoxDataFlowDirection.child && sub.propKey !== propKey){
 				continue
 			}
 
@@ -270,21 +272,21 @@ class PropValueBox<P, K extends keyof P> extends ValueBox<P[K]> {
 		if(!this.haveSubscribers()){
 			this.value = this.getPropBoxValue()
 			this.parentUnsub = this.parent.subscribeWithDirection(BoxDataFlowDirection.child, v => {
-				this.tryChangeValue(v[this.propKey], BoxDataFlowDirection.parent, this.parent)
-			}, this)
+				this.tryChangeValue(v[this.propKey], BoxDataFlowDirection.parent, this.parent, this.propKey)
+			}, this, this.propKey)
 		}
 	}
 
-	override subscribeWithDirection(this: PropValueBox<P, K> & WBox<P[K]>, direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<P[K]>, box?: RBox<unknown> | undefined): UnsubscribeFn {
+	override subscribeWithDirection(this: PropValueBox<P, K> & WBox<P[K]>, direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<P[K]>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
 		this.trySubToParent()
-		const unsub = super.subscribeWithDirection(direction, handler, box!)
+		const unsub = super.subscribeWithDirection(direction, handler, box!, propKey)
 		return () => {
 			unsub()
 			this.tryUnsubFromParent()
 		}
 	}
 
-	override notify(this: PropValueBox<P, K> & WBox<P[K]>, value: P[K], from: BoxDataFlowDirection, box: RBox<unknown> | undefined): void {
+	override notify(this: PropValueBox<P, K> & WBox<P[K]>, value: P[K], from: BoxDataFlowDirection, box: RBox<unknown> | undefined, propKey: PropKey | undefined): void {
 		// it's kinda out of place, but anyway
 		// if this box have no subscribers - it should never store value
 		// because it also don't subscribe to parent in that case (because amount of subscriptions should be minimised)
@@ -298,10 +300,10 @@ class PropValueBox<P, K extends keyof P> extends ValueBox<P[K]> {
 		if(from !== BoxDataFlowDirection.parent){
 			const parentObject = this.parent()
 			parentObject[this.propKey] = value
-			this.parent.tryChangeValue(parentObject, BoxDataFlowDirection.child, this)
+			this.parent.tryChangeValue(parentObject, BoxDataFlowDirection.child, this, this.propKey)
 		}
 
-		super.notify(value, from, box)
+		super.notify(value, from, box, propKey)
 	}
 
 }
@@ -329,7 +331,7 @@ function makeValueBox<T>(value: T): ValueBox<T> & WBox<T> {
 		if(args.length < 1){
 			notificationStack.notifyOnAccess(result)
 		} else {
-			result.tryChangeValue(args[0]!, BoxDataFlowDirection.external, result)
+			result.tryChangeValue(args[0]!, BoxDataFlowDirection.external)
 		}
 
 		if(result.value === noValue){
@@ -444,11 +446,11 @@ class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
 		return newValue
 	}
 
-	override subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown> | undefined): UnsubscribeFn {
+	override subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown> | undefined, propKey?: PropKey): UnsubscribeFn {
 		if(!this.haveSubscribers()){
 			this.recalcValueAndResubscribe(true)
 		}
-		const disposer = super.subscribeWithDirection(direction, handler, box!)
+		const disposer = super.subscribeWithDirection(direction, handler, box!, propKey)
 		return () => {
 			disposer()
 			if(!this.haveSubscribers()){
