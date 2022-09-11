@@ -1,166 +1,111 @@
-type Subscriber<T> = (value: T) => void
-type Unsubscribe = () => void
-type Writable<T> = {-readonly[k in keyof T]: T[k]}
+import {addPrototypeToFunction} from "client/base/add_prototype_to_function"
+import {BoxNotificationStack} from "client/base/box_notification_stack"
 
-/** Readonly part of the WBox */
-export interface RBox<T>{
-	(): T
-	subscribe(subscriber: Subscriber<T>): Unsubscribe
+type SubscriberHandlerFn<T = unknown> = (value: T) => void
+type UnsubscribeFn = () => void
+
+
+interface RBoxFields<T>{
+	/** Subscribe to receive new value every time it changes
+	 * Returns function that will remove the subscription */
+	subscribe(handler: SubscriberHandlerFn<T>): UnsubscribeFn
+
+	/** Get a box that will update every time value of this box updates
+	 * It is different from `viewBox(mapper)` because mapped box will only depend on source box
+	 * (`viewBox(mapper)` will depend on all the boxes that mapper calls, which may be more than just this) */
 	map<R>(mapper: (value: T) => R): RBox<R>
+
 	/** Each time stored value changes, revision is incremented
 	 * Can be used to track if value is changed or not without actually storing value */
 	readonly revision: number
 }
+type RBoxCallSignature<T> = () => T
 
-interface InternalRBox<T> extends RBox<T>{
-	notify(value: T): void
-	readonly isRBox: true
+/** Readonly box. You can only look at the value and subscribe to it, but not change that value directly.
+ * Behind this interface could be writeable box, or viewBox, or something else entirely. */
+export type RBox<T> = RBoxCallSignature<T> & RBoxFields<T>
+
+
+interface WBoxFields<T> extends RBoxFields<T>{
+	/** Make property box, a box that contains a value of a property of an object of the value from the current box.
+	 * New box will be linked with the source box, so they will update accordingly.
+	 * Note that if the value of this box is array, value of new box can be undefined.
+	 * Another caveat of the array prop() method is that it is bound to the index, not to the value */
+	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
+	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
 }
+type WBoxCallSignature<T> = RBoxCallSignature<T> & ((newValue: T) => T)
 
-const defaultStartingRevision = 1
+/** Writeable box. Box that you can put value in, as well as look at value inside it and subscribe to it. */
+export type WBox<T> = WBoxCallSignature<T> & WBoxFields<T>
+
 
 export type RBoxOrValue<T> = T | RBox<T>
 export type MaybeRBoxed<T> = [T] extends [RBox<unknown>] ? T : T | RBox<T>
+export type WBoxOrValue<T> = T | WBox<T>
 
-export function isRBox<T>(x: RBoxOrValue<T>): x is RBox<T> {
-	return typeof(x) === "function" && (!!(x as InternalRBox<T>).isRBox)
+/** Make a simple writeable box */
+export const box: <T>(value: T) => WBox<T> = makeValueBox
+/** Make a viewBox, a box that recalculates its value each time any of dependencies changed
+ * In most of cases you can safely omit @param explicitDependencyList
+ * dependency list will be inferred automatically for you from the computing function */
+export const viewBox: <T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]) => RBox<T> = makeViewBox
+
+export function isWBox<T>(x: unknown): x is WBox<T> {
+	return x instanceof ValueBox
+}
+
+export function isRBox<T>(x: unknown): x is RBox<T> {
+	return x instanceof BoxBase
 }
 
 export function unbox<T>(x: RBoxOrValue<T>): T {
 	return isRBox(x) ? x() : x
 }
 
-/** Writable box. Something that can hold value and notify subscribers about changes in the value. */
-export interface WBox<T> extends RBox<T>{
-	(newValue: T): T
-	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
-	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
+
+/*
+============================================================================================
+====== Here public part of box interface ends. Below are gory implementation details. ======
+============================================================================================
+*/
+
+/** Direction of data flow. It represents a relation between two boxes
+ *
+ * A box may want to internally push an update to other boxes,
+ * and direction determines, how this push will trigger other listeners of the same box.
+ *
+ * This idea about directions is required to prevent infinite update loops, especially important in case of object-values that cannot be thoroughly compared */
+export enum BoxDataFlowDirection {
+	/** Technically, not a relation between two boxes
+	 * Is here just to represent direction from where the update came from */
+	external = 0,
+	/** Child-parent flow direction (property and object containing the property)
+	 * Update from child will not trigger other children (except for the same field; FIXME: TEST THIS)
+	 * Update from parent won't trigger parent listeners */
+	child = 1,
+	parent = 2,
+
+	/** Clone-original flow direction
+	 * Update from clone won't trigger this clone listener.
+	 * Update from original won't trigger this original listener. */
+	clone = 3,
+	original = 4
 }
 
-// any WBox<T> is also InternalWBox<T>
-// you just should not use any properties of internal one from outside the box framework
-interface InternalWBox<T> extends WBox<T>, InternalRBox<T>{
-	subscribeForField: WBox<T>["subscribe"]
-	updateByField(newValue: T): void
-	readonly isWBox: true
-}
+type NoValue = symbol
+const noValue: NoValue = Symbol()
 
-
-export type WBoxOrValue<T> = T | WBox<T>
-
-export function isWBox<T>(x: unknown): x is WBox<T> {
-	return typeof(x) === "function" && (!!(x as InternalWBox<T>).isWBox)
-}
-
-type BoxSubscriber<T = unknown> = (box: RBox<T>) => void
-
-interface SubscribeNotify<T>{
-	// TODO: more sophisticated data structure here for performance? keep in mind notify() call specifics
-	subscribers: Set<SubscriberInternal<T>>
-	subscribe(listener: Subscriber<T>): Unsubscribe
-	subscribeForField(listener: Subscriber<T>): Unsubscribe
-	notify(value: T): void
-	notifyByField(value: T): void
-}
-
-interface SubscriberInternal<T>{
-	fn(value: T): void
-	/* Last value that was passed to the subscriber.
-	Sometimes trick with revisions is not enough to properly cull subscriber calls
-	because on next revision, before subscriber is called, value could have changed back and forth */
-	lastKnownValue: T | NoKnownValue
+interface ExternalSubscriber<T>{
 	lastKnownRevision: number
-	readonly isFieldSub: boolean
+	lastKnownValue: T
+	handler: SubscriberHandlerFn<T>
 }
 
-type NoKnownValue = symbol
-const noKnownValue: NoKnownValue = Symbol()
-
-function createSubscribeNotify<T>(getInitialSubscriberValue: () => T | NoKnownValue, getRevision: () => number): SubscribeNotify<T> {
-	const subscribers = new Set<SubscriberInternal<T>>()
-
-	function subscribe(listener: Subscriber<T>, isFieldSub: boolean): Unsubscribe {
-		const sub: SubscriberInternal<T> = {
-			fn: listener,
-			lastKnownValue: getInitialSubscriberValue(),
-			lastKnownRevision: getRevision(),
-			isFieldSub
-		}
-		subscribers.add(sub)
-		return () => subscribers.delete(sub)
-	}
-
-	let lastNotifyWithFieldsSubsRevision = defaultStartingRevision
-	function notify(value: T, includeFieldSubs: boolean): void {
-		const startingRevision = getRevision()
-		if(includeFieldSubs){
-			lastNotifyWithFieldsSubsRevision = startingRevision
-		}
-		const subs = [...subscribers]
-		for(const sub of subs){
-			if(!boxContentCanBeDifferent(sub.lastKnownValue, value)){
-				continue
-			}
-			if(!includeFieldSubs && sub.isFieldSub){
-				continue
-			}
-			if(sub.lastKnownRevision > startingRevision){
-				continue
-			}
-			sub.lastKnownRevision = startingRevision
-			sub.lastKnownValue = value
-			sub.fn(value)
-
-			if(startingRevision !== lastNotifyWithFieldsSubsRevision){
-				// after we invoke subscriber, that subscriber can put a new value in the box
-				// if that happened, we need to stop invoke subscribers
-				// because there already was another round of notify() with most recent value
-				// and there is absolutely no reason to continue this round of notify()
-				// (but we can early-exit only if one of the following rounds of notify() actually included all the subs)
-				// (because otherwise field-subs can sometimes not get the update)
-				break
-			}
-		}
-	}
-
-	// TODO: maybe all this can be a class? or at least a prototype that is assigned to function on creation?
-	// I don't know. Maybe it will be more performant and less memory-hungry, maybe not
-	const subNot: SubscribeNotify<T> = {
-		subscribers,
-		subscribeForField: function subscribeForField(listener: Subscriber<T>): Unsubscribe {
-			return subscribe(listener, true)
-		},
-		subscribe: function subscribeForGeneralPurpose(listener: Subscriber<T>): Unsubscribe {
-			return subscribe(listener, false)
-		},
-		notify: function notifyByGeneralUpdate(value: T) {
-			notify(value, true)
-		},
-		notifyByField: function notifyByfield(value: T) {
-			notify(value, false)
-		}
-	}
-
-	return subNot
-}
-
-const notificationStack: (BoxSubscriber | null)[] = []
-function withAccessNotifications<T>(action: () => T, onAccess: BoxSubscriber | null): T {
-	notificationStack.push(onAccess)
-	let result: T
-	try {
-		result = action()
-	} finally {
-		notificationStack.pop()
-	}
-	return result
-}
-
-function notifyOnAccess(v: RBox<unknown>): void {
-	const stackTop = notificationStack[notificationStack.length - 1]
-	if(stackTop){
-		stackTop(v)
-	}
+interface InternalSubscriber<T> extends ExternalSubscriber<T>{
+	// those props are here to compare if we should notify when pushing updates
+	direction: BoxDataFlowDirection
+	box: RBox<unknown>
 }
 
 function boxContentCanBeDifferent<T>(oldValue: T, newValue: T): boolean {
@@ -169,55 +114,240 @@ function boxContentCanBeDifferent<T>(oldValue: T, newValue: T): boolean {
 	return newValue !== oldValue || (typeof(oldValue) === "object" && oldValue !== null)
 }
 
-/** Make a plain simple WBox */
-export function box<T>(x: T): WBox<T> {
-	let value: T = x
+const notificationStack = new BoxNotificationStack<RBox<unknown>>()
 
-	function updateWBoxValue(newValue: T, byField: boolean) {
-		if(boxContentCanBeDifferent(value, newValue)){
-			(result as Writable<WBox<T>>).revision++
-			value = newValue
-			if(byField){
-				notifyByField(newValue)
-			} else {
-				notify(newValue)
+/** Base for every Box */
+abstract class BoxBase<T> {
+
+	/** Revision is incremented each time value changes */
+	revision = 1
+
+	/** Internal subscribers are subscribers that make up a graph of boxes */
+	private internalSubscribers = new Set<InternalSubscriber<T>>()
+	/** External subscribers are subscribers that receive data outside of boxes graph */
+	private externalSubscribers = new Set<ExternalSubscriber<T>>()
+
+	constructor(public value: T | NoValue) {}
+
+	haveSubscribers(): boolean {
+		return this.internalSubscribers.size > 0 || this.externalSubscribers.size > 0
+	}
+
+	subscribeWithDirection(direction: BoxDataFlowDirection.external, handler: SubscriberHandlerFn<T>): UnsubscribeFn
+	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box: RBox<unknown>): UnsubscribeFn
+	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>): UnsubscribeFn {
+		const value = this.value
+		if(value === noValue){
+			throw new Error("Cannot subscribe to box: no value!")
+		}
+
+		if(direction === BoxDataFlowDirection.external){
+			const sub: ExternalSubscriber<T> = {
+				handler,
+				lastKnownRevision: this.revision,
+				lastKnownValue: value as T
 			}
-		}
-	}
-
-	const fn = function wbox(...args: [] | [T]): T {
-		if(args.length < 1){
-			notifyOnAccess(result)
+			this.externalSubscribers.add(sub)
+			return () => this.externalSubscribers.delete(sub)
 		} else {
-			updateWBoxValue(args[0]!, false)
+			const sub: InternalSubscriber<T> = {
+				direction, handler, box: box!,
+				lastKnownRevision: this.revision,
+				lastKnownValue: value as T
+			}
+			this.internalSubscribers.add(sub)
+			return () => this.internalSubscribers.delete(sub)
 		}
-
-		return value
 	}
 
-	const {subscribe, notify, notifyByField, subscribeForField} = createSubscribeNotify<T>(() => value, () => result.revision)
-	const result: InternalWBox<T> = Object.assign(fn, {
-		isRBox: true as const,
-		isWBox: true as const,
-		subscribe, notify,
-		revision: defaultStartingRevision,
-		prop: makePropertySubBox,
-		subscribeForField,
-		updateByField: function updateByField(newValue: T): void {
-			updateWBoxValue(newValue, true)
-		},
-		map: mapMethodImpl
-	})
+	subscribe(handler: SubscriberHandlerFn<T>): UnsubscribeFn {
+		return this.subscribeWithDirection(BoxDataFlowDirection.external, handler)
+	}
+
+	tryChangeValue(value: T, from: BoxDataFlowDirection.external): void
+	tryChangeValue(value: T, from: BoxDataFlowDirection, box: RBox<unknown>): void
+	tryChangeValue(value: T, from: BoxDataFlowDirection, box?: RBox<unknown>): void {
+		const valueChanged = boxContentCanBeDifferent(this.value, value)
+		this.value = value
+		if(valueChanged){
+			this.revision++
+			this.notify(value, from, box)
+		}
+	}
+
+	notify(value: T, from: BoxDataFlowDirection, box: RBox<unknown> | undefined): void {
+		const valueRevision = this.revision
+
+		for(const sub of this.internalSubscribers){
+			// if the notification came from the same box - we should not notify it again
+			if(sub.box === box){
+				continue
+			}
+
+			// if the notification came from property box - it can only change one property
+			// no need to notify other property boxes
+			if(from === BoxDataFlowDirection.child && sub.direction === BoxDataFlowDirection.child){
+				continue
+			}
+
+			this.maybeCallSubscriber(sub, value, valueRevision)
+		}
+
+		if(valueRevision < this.revision){
+			// this simple cutoff will only work well for external subscribers
+			// for anything else there is a risk of not invoking a subscriber at all
+			// (this check is a simple optimisation and can be turned off without noticeable change in behaviour)
+			return
+		}
+
+		for(const sub of this.externalSubscribers){
+			this.maybeCallSubscriber(sub, value, valueRevision)
+		}
+
+	}
+
+	private maybeCallSubscriber(sub: ExternalSubscriber<T>, value: T, valueRevision: number): void {
+		if(sub.lastKnownRevision > valueRevision){
+			return
+		}
+
+		// revision update should be strictly BEFORE content diff cutoff
+		// because if we detect that value is the same and there is previous notify iteration running with different value,
+		// then, without updating revision, that older iteration will invoke the handler with outdated value
+		// which is big no-no
+		sub.lastKnownRevision = valueRevision
+		if(!boxContentCanBeDifferent(sub.lastKnownValue, value)){
+			return
+		}
+		sub.lastKnownValue = value
+		sub.handler(value)
+	}
+
+	map<R>(this: RBox<T>, mapper: (value: T) => R): RBox<R> {
+		return makeViewBox(() => mapper(this()), [this])
+	}
+
+}
+
+/** Just a box that just contains value */
+class ValueBox<T> extends BoxBase<T> implements WBoxFields<T> {
+
+	prop<K extends keyof T>(this: ValueBox<T> & WBox<T>, propKey: K): WBox<T[K]> {
+		return makePropBox(this, propKey)
+	}
+
+}
+
+class PropValueBox<P, K extends keyof P> extends ValueBox<P[K]> {
+
+	private parentUnsub = null as UnsubscribeFn | null
+
+	constructor(readonly parent: ValueBox<P> & WBox<P>, readonly propKey: K) {
+		super(noValue)
+	}
+
+	getPropBoxValue(): P[K] {
+		if(this.value !== noValue){
+			return this.value as P[K]
+		} else {
+			// if we are called from view calc function - we should prevent view to access our parent box
+			// so view will only subscribe to this box, but not to the parent
+			return notificationStack.withAccessNotifications(() => this.parent()[this.propKey], null)
+		}
+	}
+
+	private tryUnsubFromParent() {
+		if(!this.haveSubscribers()){
+			if(this.parentUnsub){
+				this.parentUnsub()
+				this.parentUnsub = null
+			}
+			this.value = noValue
+		}
+	}
+
+	private trySubToParent(this: PropValueBox<P, K> & WBox<P[K]>): void {
+		if(!this.haveSubscribers()){
+			this.value = this.getPropBoxValue()
+			this.parentUnsub = this.parent.subscribeWithDirection(BoxDataFlowDirection.child, v => {
+				this.tryChangeValue(v[this.propKey], BoxDataFlowDirection.parent, this.parent)
+			}, this)
+		}
+	}
+
+	override subscribeWithDirection(this: PropValueBox<P, K> & WBox<P[K]>, direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<P[K]>, box?: RBox<unknown> | undefined): UnsubscribeFn {
+		this.trySubToParent()
+		const unsub = super.subscribeWithDirection(direction, handler, box!)
+		return () => {
+			unsub()
+			this.tryUnsubFromParent()
+		}
+	}
+
+	override notify(this: PropValueBox<P, K> & WBox<P[K]>, value: P[K], from: BoxDataFlowDirection, box: RBox<unknown> | undefined): void {
+		// it's kinda out of place, but anyway
+		// if this box have no subscribers - it should never store value
+		// because it also don't subscribe to parent in that case (because amount of subscriptions should be minimised)
+		if(!this.haveSubscribers()){
+			this.value = noValue
+		}
+
+		// this is also a little out of place
+		// think of this block as a notification to parent that child value is changed
+		// (although this is not conventional call to subscription)
+		if(from !== BoxDataFlowDirection.parent){
+			const parentObject = this.parent()
+			parentObject[this.propKey] = value
+			this.parent.tryChangeValue(parentObject, BoxDataFlowDirection.child, this)
+		}
+
+		super.notify(value, from, box)
+	}
+
+}
+
+function makePropBox<P, K extends keyof P>(parent: ValueBox<P> & WBox<P>, key: K): WBox<P[K]> {
+
+	function propertyValueBox(...args: [] | (P[K])[]): P[K] {
+		if(args.length === 0){
+			notificationStack.notifyOnAccess(result)
+		} else {
+			result.tryChangeValue(args[0]!, BoxDataFlowDirection.external)
+		}
+
+		return result.getPropBoxValue()
+	}
+
+	const result = addPrototypeToFunction(propertyValueBox, new PropValueBox(parent, key))
 
 	return result
 }
 
-function mapMethodImpl<T, R>(this: RBox<T>, mapper: (value: T) => R): RBox<R> {
-	return viewBox(() => mapper(this()), [this])
+function makeValueBox<T>(value: T): ValueBox<T> & WBox<T> {
+
+	function valueBox(...args: T[]): T {
+		if(args.length < 1){
+			notificationStack.notifyOnAccess(result)
+		} else {
+			result.tryChangeValue(args[0]!, BoxDataFlowDirection.external, result)
+		}
+
+		if(result.value === noValue){
+			// should never happen
+			throw new Error("After executing valueBox the value is absent!")
+		}
+
+		return result.value as T
+	}
+
+	const result = addPrototypeToFunction(valueBox, new ValueBox(value))
+
+	return result
 }
 
-/** Make a RBox that computes its value from other boxes */
-export function viewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): RBox<T> {
+
+class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
+
 	/*
 	Here it gets a little tricky.
 	Lifetime of the view is by definition lower than lifetime of values it depends on
@@ -235,23 +365,33 @@ export function viewBox<T>(computingFn: () => T, explicitDependencyList?: readon
 
 	This way, you only need to remove all subscribers from view for it to be eligible to be GCed
 	*/
+	private depList = null as null | readonly RBox<unknown>[]
+	private revList = null as null | number[]
+	private subDisposers: UnsubscribeFn[] = []
+	private onDependencyListUpdated = null as null | (() => void)
 
-	let depList = null as null | readonly RBox<unknown>[]
-	let revList = null as null | number[]
-	let value: T | NoKnownValue = noKnownValue
-	const subDisposers: Unsubscribe[] = []
-	const subDispose = () => {
-		subDisposers.forEach(x => x())
-		subDisposers.length = 0
+	constructor(
+		private readonly computingFn: () => T,
+		private readonly explicitDependencyList: readonly RBox<unknown>[] | undefined) {
+		super(noValue)
 	}
 
-	function shouldRecalcValue(): boolean {
-		if(!depList || depList.length === 0){
+	subDispose(): void {
+		this.subDisposers.forEach(x => x())
+		this.subDisposers.length = 0
+	}
+
+	shouldRecalcValue(): boolean {
+		if(this.value === noValue){
+			return true // no value? let's recalculate
+		}
+
+		if(!this.depList || this.depList.length === 0){
 			return true // no value, or no known dependenices - must recalculate
 		}
 
-		for(let i = 0; i < depList.length; i++){
-			if(depList[i]!.revision !== revList![i]){
+		for(let i = 0; i < this.depList.length; i++){
+			if(this.depList[i]!.revision !== this.revList![i]){
 				return true
 			}
 		}
@@ -259,192 +399,83 @@ export function viewBox<T>(computingFn: () => T, explicitDependencyList?: readon
 		return false // no need to recalc value, no dependencies changed
 	}
 
-	function recalcValueWithoutSetting(): T {
+	recalcValueWithoutSetting(): T {
 		let newValue: T
-		if(!explicitDependencyList){
+		if(!this.explicitDependencyList){
 			const boxesAccessed = new Set<RBox<unknown>>()
-			newValue = withAccessNotifications(computingFn, box => boxesAccessed.add(box))
-			depList = [...boxesAccessed]
+			newValue = notificationStack.withAccessNotifications(this.computingFn, box => boxesAccessed.add(box))
+			this.depList = [...boxesAccessed]
 		} else {
-			newValue = withAccessNotifications(computingFn, null)
-			depList = explicitDependencyList
+			newValue = notificationStack.withAccessNotifications(this.computingFn, null)
+			this.depList = this.explicitDependencyList
 		}
 
-		revList = []
+		const depList = this.depList
+		const revList = this.revList ||= new Array(this.depList.length)
 		for(let i = 0; i < depList.length; i++){
-			const dep = depList[i]!
-			revList.push(dep.revision)
+			revList[i] = depList[i]!.revision
 		}
 
 		return newValue
 	}
 
-	function setValue(newValue: T): T {
-		const valueChanged = boxContentCanBeDifferent(value, newValue)
-		value = newValue
-		if(valueChanged){
-			(result as Writable<RBox<T>>).revision++
-			notify(newValue)
-		}
-		return newValue
-	}
+	recalcValueAndResubscribe(canSkipCalc: boolean): T {
+		this.subDispose()
 
-	function doOnDependencyUpdated() {
-		recalcValueAndResubscribe(false)
-	}
+		const shouldCalc = !canSkipCalc || this.shouldRecalcValue()
+		const newValue = shouldCalc ? this.recalcValueWithoutSetting() : this.value as T
 
-	function recalcValueAndResubscribe(canSkipCalc: boolean): T {
-		subDispose()
-
-		const shouldCalc = !canSkipCalc || shouldRecalcValue()
-		const newValue = shouldCalc ? recalcValueWithoutSetting() : value as T
-
-		for(let i = 0; i < depList!.length; i++){
-			subDisposers.push(depList![i]!.subscribe(doOnDependencyUpdated))
-		}
-
-		return shouldCalc ? setValue(newValue) : newValue
-	}
-
-	function viewBox(): T {
-		notifyOnAccess(result)
-		if(subscribers.size > 0){
-			if(!shouldRecalcValue()){
-				return value as T
+		const depList = this.depList!
+		if(depList.length > 0){
+			const doOnDependencyUpdated = this.onDependencyListUpdated ||= () => this.recalcValueAndResubscribe(false)
+			for(let i = 0; i < depList.length; i++){
+				this.subDisposers.push(depList[i]!.subscribe(doOnDependencyUpdated))
 			}
-			return recalcValueAndResubscribe(false)
 		}
 
-		if(!shouldRecalcValue()){
-			return value as T
+		if(shouldCalc){
+			// always external here because viewBoxes don't really participate in box graph
+			// box graph is required to prevent update loops through defining data flow directions
+			// viewBox always have the same dataflow direction; you can't possibly flow data "upstream" of the viewBox
+			// therefore it's safe to use external here
+			this.tryChangeValue(newValue, BoxDataFlowDirection.external)
 		}
 
-		return setValue(recalcValueWithoutSetting())
+		return newValue
 	}
 
-	const {subscribe, notify, subscribers} = createSubscribeNotify<T>(() => value, () => result.revision)
-	function wrappedSubscribe(listener: Subscriber<T>): Unsubscribe {
-		if(subscribers.size === 0){
-			recalcValueAndResubscribe(true)
+	override subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown> | undefined): UnsubscribeFn {
+		if(!this.haveSubscribers()){
+			this.recalcValueAndResubscribe(true)
 		}
-		const disposer = subscribe(listener)
+		const disposer = super.subscribeWithDirection(direction, handler, box!)
 		return () => {
 			disposer()
-			if(subscribers.size === 0){
-				subDispose()
+			if(!this.haveSubscribers()){
+				this.subDispose()
 			}
 		}
 	}
 
-	const result: InternalRBox<T> = Object.assign(viewBox, {
-		isRBox: true as const,
-		subscribe: wrappedSubscribe,
-		notify,
-		revision: defaultStartingRevision,
-		map: mapMethodImpl
-	})
-
-	return result
 }
 
-/** The same as viewBox, but have only one dependency
- * Helps to prevent unwanted accidental dependencies */
-export function mapBox<T, R>(source: MaybeRBoxed<T>, handler: (value: T) => R): RBox<R> {
-	if(isRBox(source)){
-		return source.map(handler as (value: typeof source) => R) // eww
-	} else {
-		return viewBox(() => handler(source as T), []) // what else could I do here
-	}
-}
+function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): ViewBox<T> & RBox<T> {
+	function viewBox(): T {
+		notificationStack.notifyOnAccess(result)
 
-function makePropertySubBox<T, K extends keyof T>(this: InternalWBox<T>, propKey: K): WBox<T[K]> {
-	let value: T[K] | NoKnownValue = noKnownValue
-	let parentUnsub = null as Unsubscribe | null
-	// eslint-disable-next-line @typescript-eslint/no-this-alias
-	const parent = this
-
-	function getPropWBoxValue(): T[K] {
-		if(value !== noKnownValue){
-			return value as T[K]
-		} else {
-			// if we are called from view - we should prevent view to access our parent box
-			// so view will only subscribe to this box, but not to the parent
-			return withAccessNotifications(() => parent()[propKey], null)
-		}
-	}
-
-	const {subscribe, notify, subscribeForField, notifyByField, subscribers} = createSubscribeNotify<T[K]>(() => value, () => result.revision)
-
-	function updatePropertySubWBox(newValue: T[K], byField: boolean, skipParentUpdate: boolean) {
-		if(boxContentCanBeDifferent(value, newValue)){
-			if(value !== noKnownValue){
-				// if value is absent, that means that we are detached from parent and should not receive updates
-				value = newValue;
-				(result as Writable<WBox<T[K]>>).revision++
-			}
-			if(!skipParentUpdate){
-				const parentObject = parent()
-				parentObject[propKey] = newValue
-				parent.updateByField(parentObject)
-			}
-			if(byField){
-				notifyByField(newValue)
-			} else {
-				notify(newValue)
-			}
-		}
-	}
-
-	function propertySubWBox(...args: [] | (T[K])[]): T[K] {
-		if(args.length === 0){
-			notifyOnAccess(result)
-		} else {
-			updatePropertySubWBox(args[0]!, false, false)
+		if(!result.shouldRecalcValue()){
+			return result.value as T
 		}
 
-		return getPropWBoxValue()
-	}
-
-	function tryUnsubFromParent() {
-		if(subscribers.size === 0){
-			value = noKnownValue
-			if(parentUnsub){
-				parentUnsub()
-			}
+		if(result.haveSubscribers()){
+			return result.recalcValueAndResubscribe(false)
 		}
+
+		const value = result.recalcValueWithoutSetting()
+		result.tryChangeValue(value, BoxDataFlowDirection.external)
+		return value
 	}
 
-	function trySubToParent(): void {
-		if(subscribers.size === 0){
-			value = getPropWBoxValue()
-			parentUnsub = parent.subscribeForField(v => {
-				updatePropertySubWBox(v[propKey], false, true)
-			})
-		}
-	}
-
-	function propertySubWBoxSubscribe(listener: Subscriber<T[K]>, forField: boolean): Unsubscribe {
-		trySubToParent()
-		const unsub = (forField ? subscribeForField : subscribe)(listener)
-		return () => {
-			unsub()
-			tryUnsubFromParent()
-		}
-	}
-
-	const result: InternalWBox<T[K]> = Object.assign(propertySubWBox, {
-		isRBox: true as const,
-		isWBox: true as const,
-		subscribe: (listener: Subscriber<T[K]>) => propertySubWBoxSubscribe(listener, false),
-		notify,
-		revision: defaultStartingRevision,
-		prop: makePropertySubBox,
-		subscribeForField: (listener: Subscriber<T[K]>) => propertySubWBoxSubscribe(listener, true),
-		updateByField: function updatePropWBoxByField(value: T[K]): void {
-			updatePropertySubWBox(value, true, false)
-		},
-		map: mapMethodImpl
-	})
-
+	const result = addPrototypeToFunction(viewBox, new ViewBox(computingFn, explicitDependencyList))
 	return result
 }

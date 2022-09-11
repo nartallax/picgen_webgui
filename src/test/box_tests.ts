@@ -154,6 +154,7 @@ export default makeTestPack("box", makeTest => {
 			callsCount++
 		})
 
+		assertEquals(callsCount, 0)
 		b(1)
 		assertEquals(callsCount, 0)
 		assertEquals(lastVisibleValue, 0)
@@ -336,6 +337,8 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(parentCalls, 3)
 		assertEquals(parent().a.b.c, 20)
 		assertEquals(child().c, 20)
+
+		// FIXME test what will happen with value after unsub
 	})
 
 	makeTest("chain property subboxes with only bottom sub", () => {
