@@ -235,49 +235,67 @@ abstract class BoxBase<T> {
 class ValueBox<T> extends BoxBase<T> implements WBoxFields<T> {
 
 	prop<K extends keyof T>(this: ValueBox<T> & WBox<T>, propKey: K): WBox<T[K]> {
+		// by the way, I could store propbox in some sort of map in the parent valuebox
+		// and later, if someone asks for propbox for the same field, I'll give them the same propbox
+		// this will simplify data logistics a little and possibly reduce memory consumption
+		// however, I don't want to do that because it's relatively rare case - to have two propboxes on same field at the same time
+		// and storing a reference to them in the parent will make them uneligible for GC, which is not very good
+		// (not very bad either, there's a finite amount of them. but it's still something to avoid)
 		return makePropBox(this, propKey)
 	}
 
+	// clone(): WBox<T> {
+	// 	const clone = makeValueBox(this.value)
+	// 	// this.subscribeWithDirection(BoxDataFlowDirection.)
+	// }
+
 }
 
-class PropValueBox<P, K extends keyof P> extends ValueBox<P[K]> {
+/** Box that is subscribed to one other box only when it has its own subscriber(s)
+ * Usually that other box is viewed as upstream; source of data that this box is derived from */
+abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> extends ValueBox<T> {
 
-	private parentUnsub = null as UnsubscribeFn | null
-
-	constructor(readonly parent: ValueBox<P> & WBox<P>, readonly propKey: K) {
+	private upstreamUnsub = null as UnsubscribeFn | null
+	constructor(readonly upstream: ValueBox<U> & WBox<U>, readonly propKey: K) {
 		super(noValue)
 	}
 
-	getPropBoxValue(): P[K] {
+	protected abstract getValueFromUpstream(upstreamObject: U): T
+	protected abstract setValueIntoUpstream(upstreamObject: U, value: T): void
+	protected abstract getUpstreamDirection(): BoxDataFlowDirection
+	protected abstract getDownstreamDirection(): BoxDataFlowDirection
+
+	getBoxValue(): T {
 		if(this.value !== noValue){
-			return this.value as P[K]
+			return this.value as T
 		} else {
-			// if we are called from view calc function - we should prevent view to access our parent box
+			// if we are called from view calc function - we should prevent view to access our upstream box
 			// so view will only subscribe to this box, but not to the parent
-			return notificationStack.withAccessNotifications(() => this.parent()[this.propKey], null)
+			return notificationStack.withAccessNotifications(() => this.getValueFromUpstream(this.upstream()), null)
 		}
 	}
 
 	private tryUnsubFromParent() {
 		if(!this.haveSubscribers()){
-			if(this.parentUnsub){
-				this.parentUnsub()
-				this.parentUnsub = null
+			if(this.upstreamUnsub){
+				this.upstreamUnsub()
+				this.upstreamUnsub = null
 			}
 			this.value = noValue
 		}
 	}
 
-	private trySubToParent(this: PropValueBox<P, K> & WBox<P[K]>): void {
+	private trySubToParent(this: ValueBoxWithUpstream<T> & WBox<T>): void {
 		if(!this.haveSubscribers()){
-			this.value = this.getPropBoxValue()
-			this.parentUnsub = this.parent.subscribeWithDirection(BoxDataFlowDirection.child, v => {
-				this.tryChangeValue(v[this.propKey], BoxDataFlowDirection.parent, this.parent, this.propKey)
+			this.value = this.getBoxValue()
+			this.upstreamUnsub = this.upstream.subscribeWithDirection(this.getDownstreamDirection(), v => {
+				const ourValue = this.getValueFromUpstream(v)
+				this.tryChangeValue(ourValue, this.getUpstreamDirection(), this.upstream, this.propKey)
 			}, this, this.propKey)
 		}
 	}
 
-	override subscribeWithDirection(this: PropValueBox<P, K> & WBox<P[K]>, direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<P[K]>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
+	override subscribeWithDirection(this: ValueBoxWithUpstream<T> & WBox<T>, direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
 		this.trySubToParent()
 		const unsub = super.subscribeWithDirection(direction, handler, box!, propKey)
 		return () => {
@@ -286,10 +304,10 @@ class PropValueBox<P, K extends keyof P> extends ValueBox<P[K]> {
 		}
 	}
 
-	override notify(this: PropValueBox<P, K> & WBox<P[K]>, value: P[K], from: BoxDataFlowDirection, box: RBox<unknown> | undefined, propKey: PropKey | undefined): void {
+	override notify(this: ValueBoxWithUpstream<T> & WBox<T>, value: T, from: BoxDataFlowDirection, box: RBox<unknown> | undefined, propKey: PropKey | undefined): void {
 		// it's kinda out of place, but anyway
 		// if this box have no subscribers - it should never store value
-		// because it also don't subscribe to parent in that case (because amount of subscriptions should be minimised)
+		// because it also don't subscribe to upstream in that case (because amount of subscriptions should be minimised)
 		if(!this.haveSubscribers()){
 			this.value = noValue
 		}
@@ -297,13 +315,33 @@ class PropValueBox<P, K extends keyof P> extends ValueBox<P[K]> {
 		// this is also a little out of place
 		// think of this block as a notification to parent that child value is changed
 		// (although this is not conventional call to subscription)
-		if(from !== BoxDataFlowDirection.parent){
-			const parentObject = this.parent()
-			parentObject[this.propKey] = value
-			this.parent.tryChangeValue(parentObject, BoxDataFlowDirection.child, this, this.propKey)
+		if(from !== this.getUpstreamDirection()){
+			const upstreamObject = this.upstream()
+			this.setValueIntoUpstream(upstreamObject, value)
+			this.upstream.tryChangeValue(upstreamObject, this.getDownstreamDirection(), this, this.propKey)
 		}
 
 		super.notify(value, from, box, propKey)
+	}
+
+}
+
+class PropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U, K> {
+
+	protected override getValueFromUpstream(upstreamObject: U): U[K] {
+		return upstreamObject[this.propKey]
+	}
+
+	protected override setValueIntoUpstream(upstreamObject: U, value: U[K]): void {
+		upstreamObject[this.propKey] = value
+	}
+
+	protected override getUpstreamDirection(): BoxDataFlowDirection {
+		return BoxDataFlowDirection.parent
+	}
+
+	protected override getDownstreamDirection(): BoxDataFlowDirection {
+		return BoxDataFlowDirection.child
 	}
 
 }
@@ -317,7 +355,7 @@ function makePropBox<P, K extends keyof P>(parent: ValueBox<P> & WBox<P>, key: K
 			result.tryChangeValue(args[0]!, BoxDataFlowDirection.external)
 		}
 
-		return result.getPropBoxValue()
+		return result.getBoxValue()
 	}
 
 	const result = addPrototypeToFunction(propertyValueBox, new PropValueBox(parent, key))
