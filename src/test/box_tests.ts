@@ -85,21 +85,21 @@ export default makeTestPack("box", makeTest => {
 		b({a: 10})
 		assertEquals(calls, 1)
 		b(b())
+		assertEquals(calls, 1)
+		b(null)
 		assertEquals(calls, 2)
 		b(null)
-		assertEquals(calls, 3)
-		b(null)
-		assertEquals(calls, 3)
+		assertEquals(calls, 2)
 
 		const obj = {b: 5}
 		b(obj)
-		assertEquals(calls, 4)
+		assertEquals(calls, 3)
 		b(obj)
-		assertEquals(calls, 5)
+		assertEquals(calls, 3)
 		b(5)
-		assertEquals(calls, 6)
+		assertEquals(calls, 4)
 		b(5)
-		assertEquals(calls, 6)
+		assertEquals(calls, 4)
 	})
 
 	makeTest("view only subscribes to direct dependencies", () => {

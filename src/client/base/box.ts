@@ -80,17 +80,17 @@ export enum BoxDataFlowDirection {
 	/** Technically, not a relation between two boxes
 	 * Is here just to represent direction from where the update came from */
 	external = 0,
-	/** Child-parent flow direction (property and object containing the property)
-	 * Update from child will not trigger other children (except for the same field)
-	 * Update from parent won't trigger parent listeners */
-	child = 1,
-	parent = 2,
 
-	/** Clone-original flow direction
-	 * Update from clone won't trigger this clone listener.
-	 * Update from original won't trigger this original listener. */
-	clone = 3,
-	original = 4
+	/** Upstream is "parent" for a box.
+	 * Downstream box can be clone of upstream, or property of upstream. */
+	upstream = 1,
+
+	/** Property of an object/array.
+	 * Update from property box will not trigger other property boxes (except for the same field) */
+	property = 2,
+
+	/** Clone of original value. */
+	clone = 3
 }
 
 type NoValue = symbol
@@ -105,15 +105,9 @@ interface ExternalSubscriber<T>{
 
 interface InternalSubscriber<T> extends ExternalSubscriber<T>{
 	// those props are here to compare if we should notify when pushing updates
-	direction: BoxDataFlowDirection
+	direction: BoxDataFlowDirection.clone | BoxDataFlowDirection.property
 	box: RBox<unknown>
 	propKey: PropKey | undefined
-}
-
-function boxContentCanBeDifferent<T>(oldValue: T, newValue: T): boolean {
-	// we check non-null objects separately
-	// because even if reference did not change, some fields could
-	return newValue !== oldValue || (typeof(oldValue) === "object" && oldValue !== null)
 }
 
 const notificationStack = new BoxNotificationStack<RBox<unknown>>()
@@ -135,8 +129,13 @@ abstract class BoxBase<T> {
 		return this.internalSubscribers.size > 0 || this.externalSubscribers.size > 0
 	}
 
+	/*
+	// actual overloads are those
+	// it's just too inconvenient to have them in place
 	subscribeWithDirection(direction: BoxDataFlowDirection.external, handler: SubscriberHandlerFn<T>): UnsubscribeFn
-	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box: RBox<unknown>, propKey: PropKey | undefined): UnsubscribeFn
+	subscribeWithDirection(direction: BoxDataFlowDirection.clone, handler: SubscriberHandlerFn<T>, box: RBox<unknown>): UnsubscribeFn
+	subscribeWithDirection(direction: BoxDataFlowDirection.property, handler: SubscriberHandlerFn<T>, box: RBox<unknown>, propKey: PropKey): UnsubscribeFn
+	*/
 	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
 		const value = this.value
 		if(value === noValue){
@@ -151,9 +150,17 @@ abstract class BoxBase<T> {
 			}
 			this.externalSubscribers.add(sub)
 			return () => this.externalSubscribers.delete(sub)
+		} else if(direction === BoxDataFlowDirection.upstream){
+			throw new Error("Upstream cannot possibly subscribe to anything.")
 		} else {
+			if(!box){
+				throw new Error("Subscriber from direction " + direction + " must be a box.")
+			}
+			if(direction === BoxDataFlowDirection.property && propKey === undefined){
+				throw new Error("Subscriber from property direction must have a property key.")
+			}
 			const sub: InternalSubscriber<T> = {
-				direction, handler, box: box!, propKey,
+				direction, handler, box, propKey,
 				lastKnownRevision: this.revision,
 				lastKnownValue: value as T
 			}
@@ -169,7 +176,12 @@ abstract class BoxBase<T> {
 	tryChangeValue(value: T, from: BoxDataFlowDirection.external): void
 	tryChangeValue(value: T, from: BoxDataFlowDirection, box: RBox<unknown>, propKey: PropKey | undefined): void
 	tryChangeValue(value: T, from: BoxDataFlowDirection, box?: RBox<unknown>, propKey?: PropKey): void {
-		const valueChanged = boxContentCanBeDifferent(this.value, value)
+		// yes, objects can be changed without the change of reference, so this check will fail on such change
+		// it is explicit decision. that way, better performance can be achieved.
+		// because it's much better to explicitly ask user to tell us if something is changed or not
+		// (by cloning the object, changing the clone and setting the clone back into the box)
+		// otherwise (in cases of large box graphs) it may lead to awfully degraded performance
+		const valueChanged = this.value !== value
 		this.value = value
 		if(valueChanged){
 			this.revision++
@@ -188,7 +200,7 @@ abstract class BoxBase<T> {
 
 			// if the notification came from property box - it can only change one property
 			// no need to notify other property boxes
-			if(from === BoxDataFlowDirection.child && sub.direction === BoxDataFlowDirection.child && sub.propKey !== propKey){
+			if(from === BoxDataFlowDirection.property && sub.direction === BoxDataFlowDirection.property && sub.propKey !== propKey){
 				continue
 			}
 
@@ -218,7 +230,7 @@ abstract class BoxBase<T> {
 		// then, without updating revision, that older iteration will invoke the handler with outdated value
 		// which is big no-no
 		sub.lastKnownRevision = valueRevision
-		if(!boxContentCanBeDifferent(sub.lastKnownValue, value)){
+		if(sub.lastKnownValue === value){
 			return
 		}
 		sub.lastKnownValue = value
@@ -234,6 +246,8 @@ abstract class BoxBase<T> {
 /** Just a box that just contains value */
 class ValueBox<T> extends BoxBase<T> implements WBoxFields<T> {
 
+	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
+	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
 	prop<K extends keyof T>(this: ValueBox<T> & WBox<T>, propKey: K): WBox<T[K]> {
 		// by the way, I could store propbox in some sort of map in the parent valuebox
 		// and later, if someone asks for propbox for the same field, I'll give them the same propbox
@@ -241,13 +255,23 @@ class ValueBox<T> extends BoxBase<T> implements WBoxFields<T> {
 		// however, I don't want to do that because it's relatively rare case - to have two propboxes on same field at the same time
 		// and storing a reference to them in the parent will make them uneligible for GC, which is not very good
 		// (not very bad either, there's a finite amount of them. but it's still something to avoid)
-		return makePropBox(this, propKey)
+		let boxObj: PropValueBox<T, K>
+		const weAreArray = Array.isArray(this.value)
+		const propertyIsNumber = typeof(propKey) === "number"
+		// few bad casts here. eww.
+		if(weAreArray && propertyIsNumber){
+			boxObj = new ArrayPropValueBox<unknown>(this as unknown as ValueBox<unknown[]> & WBox<unknown[]>, propKey as K & number) as unknown as PropValueBox<T, K>
+		} else if(!weAreArray && !propertyIsNumber){
+			boxObj = new ObjectPropValueBox(this, propKey as K & (string | symbol)) as unknown as PropValueBox<T, K>
+		} else {
+			throw new Error(`Value of the box is ${weAreArray ? "" : "not "}array, but the property key is ${propertyIsNumber ? "" : "not "}number. This is inconsistent and not allowed.`)
+		}
+		return makeUpstreamBox(boxObj)
 	}
 
-	// clone(): WBox<T> {
-	// 	const clone = makeValueBox(this.value)
-	// 	// this.subscribeWithDirection(BoxDataFlowDirection.)
-	// }
+	clone(this: ValueBox<T> & WBox<T>): WBox<T> {
+		return makeUpstreamBox(new CloneValueBox(this, undefined))
+	}
 
 }
 
@@ -261,8 +285,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 	}
 
 	protected abstract getValueFromUpstream(upstreamObject: U): T
-	protected abstract setValueIntoUpstream(upstreamObject: U, value: T): void
-	protected abstract getUpstreamDirection(): BoxDataFlowDirection
+	protected abstract setValueIntoUpstream(upstreamObject: U, value: T): U
 	protected abstract getDownstreamDirection(): BoxDataFlowDirection
 
 	getBoxValue(): T {
@@ -290,7 +313,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 			this.value = this.getBoxValue()
 			this.upstreamUnsub = this.upstream.subscribeWithDirection(this.getDownstreamDirection(), v => {
 				const ourValue = this.getValueFromUpstream(v)
-				this.tryChangeValue(ourValue, this.getUpstreamDirection(), this.upstream, this.propKey)
+				this.tryChangeValue(ourValue, BoxDataFlowDirection.upstream, this.upstream, this.propKey)
 			}, this, this.propKey)
 		}
 	}
@@ -315,9 +338,8 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 		// this is also a little out of place
 		// think of this block as a notification to parent that child value is changed
 		// (although this is not conventional call to subscription)
-		if(from !== this.getUpstreamDirection()){
-			const upstreamObject = this.upstream()
-			this.setValueIntoUpstream(upstreamObject, value)
+		if(from !== BoxDataFlowDirection.upstream){
+			const upstreamObject = this.setValueIntoUpstream(this.upstream(), value)
 			this.upstream.tryChangeValue(upstreamObject, this.getDownstreamDirection(), this, this.propKey)
 		}
 
@@ -326,29 +348,59 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 
 }
 
-class PropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U, K> {
+abstract class PropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U, K> {
 
 	protected override getValueFromUpstream(upstreamObject: U): U[K] {
 		return upstreamObject[this.propKey]
 	}
 
-	protected override setValueIntoUpstream(upstreamObject: U, value: U[K]): void {
-		upstreamObject[this.propKey] = value
-	}
-
-	protected override getUpstreamDirection(): BoxDataFlowDirection {
-		return BoxDataFlowDirection.parent
-	}
-
 	protected override getDownstreamDirection(): BoxDataFlowDirection {
-		return BoxDataFlowDirection.child
+		return BoxDataFlowDirection.property
 	}
 
 }
 
-function makePropBox<P, K extends keyof P>(parent: ValueBox<P> & WBox<P>, key: K): WBox<P[K]> {
+class ObjectPropValueBox<U, K extends keyof U & (string | symbol)> extends PropValueBox<U, K> {
+	protected override setValueIntoUpstream(upstreamObject: U, value: U[K]): U {
+		if(Array.isArray(upstreamObject)){
+			throw new Error(`Upstream object became an array! Cannot properly clone it to set the property "${this.propKey.toString()}" value.`)
+		}
+		return {
+			...upstreamObject,
+			[this.propKey]: value
+		}
+	}
+}
 
-	function propertyValueBox(...args: [] | (P[K])[]): P[K] {
+class ArrayPropValueBox<E> extends PropValueBox<E[], number> {
+	protected override setValueIntoUpstream(upstreamObject: E[], value: E): E[] {
+		if(!Array.isArray(upstreamObject)){
+			throw new Error(`Upstream object is not array anymore! Cannot properly clone it to set the property "${this.propKey}" value.`)
+		}
+		const newArr = [...upstreamObject]
+		newArr[this.propKey] = value
+		return newArr
+	}
+}
+
+class CloneValueBox<T> extends ValueBoxWithUpstream<T, T> {
+
+	protected override getValueFromUpstream(upstreamObject: T): T {
+		return upstreamObject
+	}
+
+	protected override setValueIntoUpstream(_: T, value: T): T {
+		return value
+	}
+
+	protected override getDownstreamDirection(): BoxDataFlowDirection {
+		return BoxDataFlowDirection.clone
+	}
+}
+
+function makeUpstreamBox<T, U, K>(instance: ValueBoxWithUpstream<T, U, K>): ValueBoxWithUpstream<T, U, K> & WBox<T> {
+
+	function propertyValueBox(...args: T[]): T {
 		if(args.length === 0){
 			notificationStack.notifyOnAccess(result)
 		} else {
@@ -358,7 +410,7 @@ function makePropBox<P, K extends keyof P>(parent: ValueBox<P> & WBox<P>, key: K
 		return result.getBoxValue()
 	}
 
-	const result = addPrototypeToFunction(propertyValueBox, new PropValueBox(parent, key))
+	const result = addPrototypeToFunction(propertyValueBox, instance)
 
 	return result
 }
