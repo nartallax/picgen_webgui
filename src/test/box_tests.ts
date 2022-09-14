@@ -442,7 +442,7 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(child().c, 20)
 	})
 
-	makeTest("views don't calculate when noone is subscribed", () => {
+	makeTest("views calculations when noone is subscribed", () => {
 		const b = box(5)
 		let calcCount = 0
 		const view = viewBox(() => {
@@ -454,14 +454,14 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(view(), 10)
 		assertEquals(calcCount, 1)
 		assertEquals(view(), 10)
-		assertEquals(calcCount, 1)
+		assertEquals(calcCount, 2)
 
 		b(6)
-		assertEquals(calcCount, 1)
-		assertEquals(view(), 12)
 		assertEquals(calcCount, 2)
 		assertEquals(view(), 12)
-		assertEquals(calcCount, 2)
+		assertEquals(calcCount, 3)
+		assertEquals(view(), 12)
+		assertEquals(calcCount, 4)
 	})
 
 	makeTest("view only subscribes to param box, not to the parent box", () => {
@@ -526,7 +526,7 @@ export default makeTestPack("box", makeTest => {
 		a(3)
 		assertEquals(c(), 5)
 		b(3)
-		assertEquals(c(), 5)
+		assertEquals(c(), 6)
 		a(4)
 		assertEquals(c(), 7)
 
@@ -553,7 +553,7 @@ export default makeTestPack("box", makeTest => {
 		a(3)
 		assertEquals(c(), 5)
 		b(3)
-		assertEquals(c(), 5)
+		assertEquals(c(), 6)
 		a(4)
 		assertEquals(c(), 7)
 
@@ -617,5 +617,26 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(b(), 11)
 		assertEquals(p().a, 11)
 	})
+
+	makeTest("prop of viewbox", () => {
+		const parent = box({a: 5})
+		const view = viewBox(() => ({...parent(), b: parent().a * 2}))
+		const propA1 = view.prop("a")
+		const propA2 = view.prop("a")
+		const propB = view.prop("b")
+
+		assertEquals(propA1(), 5)
+		assertEquals(propA2(), 5)
+		assertEquals(propB(), 10)
+
+		parent({a: 6})
+
+		assertEquals(propA1(), 6)
+		assertEquals(propA2(), 6)
+		assertEquals(propB(), 12)
+
+	})
+
+	// TODO: test for prop of viewbox
 
 })
