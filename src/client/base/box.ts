@@ -556,14 +556,11 @@ class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
 	To avoid this we employ the following tactics:
 	1. view don't store ANYTHING when noone is subscribed (no list of dependencies, no value, nothing)
 	in this mode view just calls computing function when asked for the value
-	(the only exception is when it knows for sure that cached value is fine, which it does by checking revisions)
 	2. when we HAVE subscribers to view - value is stored, list of dependencies is stored
 	view returns stored value when asked for value in this mode
 
 	This way, you only need to remove all subscribers from view for it to be eligible to be GCed
 	*/
-	private depList = null as null | readonly RBox<unknown>[]
-	private revList = null as null | number[]
 	private subDisposers: UnsubscribeFn[] = []
 	private onDependencyListUpdated = null as null | (() => void)
 
@@ -573,77 +570,59 @@ class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
 		super(noValue)
 	}
 
-	subDispose(): void {
+	private subDispose(): void {
 		this.subDisposers.forEach(x => x())
 		this.subDisposers.length = 0
 	}
 
-	shouldRecalcValue(): boolean {
+	private shouldRecalcValue(): boolean {
 		if(this.value === noValue){
 			return true // no value? let's recalculate
 		}
 
-		if(!this.depList || this.depList.length === 0){
-			return true // no value, or no known dependenices - must recalculate
+		if(this.subDisposers.length === 0){
+			// we are not subscribed to anyone
+			// that means calcFunction either is constant expression, or depends on some plain variables that can change
+			// better recalculate
+			return true
 		}
 
-		for(let i = 0; i < this.depList.length; i++){
-			if(this.depList[i]!.revision !== this.revList![i]){
-				return true
-			}
-		}
-
-		return false // no need to recalc value, no dependencies changed
+		return false // we have value, no need to do anything
 	}
 
-	recalcValueWithoutSetting(): T {
+	private recalcValueAndResubscribe(): T {
+		this.subDispose()
+
 		let newValue: T
+		let depList: readonly RBox<unknown>[]
 		if(!this.explicitDependencyList){
 			const boxesAccessed = new Set<RBox<unknown>>()
 			newValue = notificationStack.withAccessNotifications(this.computingFn, box => boxesAccessed.add(box))
-			this.depList = [...boxesAccessed]
+			depList = [...boxesAccessed]
 		} else {
 			newValue = notificationStack.withAccessNotifications(this.computingFn, null)
-			this.depList = this.explicitDependencyList
+			depList = this.explicitDependencyList
 		}
 
-		const depList = this.depList
-		const revList = this.revList ||= new Array(this.depList.length)
-		for(let i = 0; i < depList.length; i++){
-			revList[i] = depList[i]!.revision
-		}
-
-		return newValue
-	}
-
-	recalcValueAndResubscribe(canSkipCalc: boolean): T {
-		this.subDispose()
-
-		const shouldCalc = !canSkipCalc || this.shouldRecalcValue()
-		const newValue = shouldCalc ? this.recalcValueWithoutSetting() : this.value as T
-
-		const depList = this.depList!
 		if(depList.length > 0){
-			const doOnDependencyUpdated = this.onDependencyListUpdated ||= () => this.recalcValueAndResubscribe(false)
+			const doOnDependencyUpdated = this.onDependencyListUpdated ||= () => this.recalcValueAndResubscribe()
 			for(let i = 0; i < depList.length; i++){
 				this.subDisposers.push(depList[i]!.subscribe(doOnDependencyUpdated))
 			}
 		}
 
-		if(shouldCalc){
-			// always external here because viewBoxes don't really participate in box graph
-			// box graph is required to prevent update loops through defining data flow directions
-			// viewBox always have the same dataflow direction; you can't possibly flow data "upstream" of the viewBox
-			// therefore it's safe to use external here
-			this.tryChangeValue(newValue, BoxDataFlowDirection.external)
-		}
+		// always external here because viewBoxes don't really participate in box graph
+		// box graph is required to prevent update loops through defining data flow directions
+		// viewBox always have the same dataflow direction; you can't possibly flow data "upstream" of the viewBox
+		// therefore it's safe to use external here
+		this.tryChangeValue(newValue, BoxDataFlowDirection.external)
 
 		return newValue
 	}
 
 	override subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown> | undefined, propKey?: PropKey): UnsubscribeFn {
 		if(!this.haveSubscribers()){
-			this.recalcValueAndResubscribe(true)
+			this.recalcValueAndResubscribe()
 		}
 		const disposer = super.subscribeWithDirection(direction, handler, box!, propKey)
 		return () => {
@@ -661,13 +640,7 @@ class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
 			return this.value as T
 		}
 
-		if(this.haveSubscribers()){
-			return this.recalcValueAndResubscribe(false)
-		}
-
-		const value = this.recalcValueWithoutSetting()
-		// this.tryChangeValue(value, BoxDataFlowDirection.external)
-		return value
+		return notificationStack.withAccessNotifications(this.computingFn, null)
 	}
 
 	prop<K extends keyof T>(this: ViewBox<T> & RBox<T>, propKey: K): RBox<T[K]> {
