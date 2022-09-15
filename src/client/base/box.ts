@@ -259,11 +259,13 @@ abstract class BoxBase<T> {
 }
 
 /** Just a box that just contains value */
-class ValueBox<T> extends BoxBase<T> implements WBoxFields<T> {
+class ValueBox<T> extends (BoxBase as {
+	new<T>(value: T | NoValue): BoxBase<T> & WBoxCallSignature<T> & RBoxCallSignature<T>
+})<T> implements WBoxFields<T> {
 
 	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
 	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
-	prop<K extends keyof T>(this: ValueBox<T> & WBox<T>, propKey: K): WBox<T[K]> {
+	prop<K extends keyof T>(propKey: K): WBox<T[K]> {
 		// by the way, I could store propbox in some sort of map in the parent valuebox
 		// and later, if someone asks for propbox for the same field, I'll give them the same propbox
 		// this will simplify data logistics a little and possibly reduce memory consumption
@@ -275,7 +277,7 @@ class ValueBox<T> extends BoxBase<T> implements WBoxFields<T> {
 		const propertyIsNumber = typeof(propKey) === "number"
 		// few bad casts here. eww.
 		if(weAreArray && propertyIsNumber){
-			boxObj = new ArrayPropValueBox<unknown>(this as unknown as ValueBox<unknown[]> & WBox<unknown[]>, propKey as K & number) as unknown as PropValueBox<T, K>
+			boxObj = new ArrayPropValueBox<unknown>(this as unknown as ValueBox<unknown[]>, propKey as K & number) as unknown as PropValueBox<T, K>
 		} else if(!weAreArray && !propertyIsNumber){
 			boxObj = new ObjectPropValueBox(this, propKey as K & (string | symbol)) as unknown as PropValueBox<T, K>
 		} else {
@@ -284,7 +286,7 @@ class ValueBox<T> extends BoxBase<T> implements WBoxFields<T> {
 		return makeUpstreamBox(boxObj)
 	}
 
-	wrapArrayElements<E, K extends keyof E>(this: ValueBox<E[]> & WBox<E[]>, idPropKey: K): WBox<WBox<E>[]> {
+	wrapArrayElements<E, K extends keyof E>(this: ValueBox<E[]>, idPropKey: K): WBox<WBox<E>[]> {
 		return makeUpstreamBox(new ArrayWrapValueBox<E, K>(this, idPropKey))
 	}
 
@@ -292,10 +294,10 @@ class ValueBox<T> extends BoxBase<T> implements WBoxFields<T> {
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
  * Usually that other box is viewed as upstream; source of data that this box is derived from */
-abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> extends ValueBox<T> {
+abstract class ValueBoxWithUpstream<T, U = unknown, K extends (keyof U & PropKey) | undefined = (keyof U & PropKey) | undefined> extends ValueBox<T> {
 
-	private upstreamUnsub = null as UnsubscribeFn | null
-	constructor(readonly upstream: ValueBox<U> & WBox<U>, readonly propKey: K) {
+	private upstreamUnsub: UnsubscribeFn | null = null
+	constructor(readonly upstream: ValueBox<U>, readonly propKey: K) {
 		super(noValue)
 	}
 
@@ -325,7 +327,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 		return notificationStack.withAccessNotifications(() => this.upstream(), null)
 	}
 
-	tryUpdateUpstreamSub(this: ValueBoxWithUpstream<T> & WBox<T>): void {
+	tryUpdateUpstreamSub(): void {
 		const shouldBeSub = this.shouldBeSubscribed()
 		if(shouldBeSub && !this.upstreamUnsub){
 			this.subToParent()
@@ -343,7 +345,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 		this.value = noValue
 	}
 
-	private subToParent(this: ValueBoxWithUpstream<T> & WBox<T>): void {
+	private subToParent(): void {
 		if(this.upstreamUnsub){
 			throw new Error("Assertion failed")
 		}
@@ -356,7 +358,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 		}, this, this.propKey)
 	}
 
-	override subscribeWithDirection(this: ValueBoxWithUpstream<T> & WBox<T>, direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
+	override subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
 		if(this.value === noValue){
 			this.value = this.getBoxValue()
 		}
@@ -368,7 +370,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 		}
 	}
 
-	override notify(this: ValueBoxWithUpstream<T> & WBox<T>, value: T, from: BoxDataFlowDirection, box: RBox<unknown> | undefined, propKey: PropKey | undefined): void {
+	override notify(value: T, from: BoxDataFlowDirection, box: RBox<unknown> | undefined, propKey: PropKey | undefined): void {
 		// it's kinda out of place, but anyway
 		// if this box have no subscribers - it should never store value
 		// because it also don't subscribe to upstream in that case (because amount of subscriptions should be minimised)
@@ -427,16 +429,16 @@ class ArrayPropValueBox<E> extends PropValueBox<E[], number> {
 }
 
 interface ArrayElementWrap<E> {
-	box: ValueBox<E> & WBox<E>
+	box: ValueBox<E>
 	unsub: UnsubscribeFn
 	index: number
 }
 
-class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<(ValueBox<E> & WBox<E>)[], E[]> {
+class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<ValueBox<E>[], E[]> {
 
 	private keyBoxMap = new Map<E[K], ArrayElementWrap<E>>()
 
-	constructor(upstream: ValueBox<E[]> & WBox<E[]>, readonly idPropKey: K) {
+	constructor(upstream: ValueBox<E[]>, readonly idPropKey: K) {
 		super(upstream, undefined)
 	}
 
@@ -445,11 +447,11 @@ class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<(Valu
 	}
 
 	override afterTransferToFnObj(): void {
-		(this as unknown as ValueBoxWithUpstream<E[]> & WBox<E[]>).tryUpdateUpstreamSub()
+		this.tryUpdateUpstreamSub()
 	}
 
 	private onElementValueUpdatedBound: ((elValue: E) => void) | null = null
-	private onElementValueUpdated(this: ArrayWrapValueBox<E, K> & WBox<E[]>, elValue: E): void {
+	private onElementValueUpdated(elValue: E): void {
 		const key = elValue[this.idPropKey]
 		const elWrap = this.keyBoxMap.get(key)
 		if(!elWrap){
@@ -468,12 +470,12 @@ class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<(Valu
 		}
 	}
 
-	private subToElBox(this: ArrayWrapValueBox<E, K> & WBox<E[]>, box: WBox<E> & ValueBox<E>): UnsubscribeFn {
+	private subToElBox(box: WBox<E> & ValueBox<E>): UnsubscribeFn {
 		const listener = this.onElementValueUpdatedBound ||= this.onElementValueUpdated.bind(this)
 		return box.subscribeWithDirection(BoxDataFlowDirection.upstream, listener, this)
 	}
 
-	protected override extractValueFromUpstream(this: ArrayWrapValueBox<E, K> & WBox<E[]>, upstreamObject: E[]): (ValueBox<E> & WBox<E>)[] {
+	protected override extractValueFromUpstream(upstreamObject: E[]): ValueBox<E>[] {
 		const leftOverKeys = new Set([...this.keyBoxMap.keys()])
 		const result = upstreamObject.map((item, index) => {
 			const key = item[this.idPropKey]
@@ -496,10 +498,10 @@ class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<(Valu
 		return result
 	}
 
-	protected override buildUpstreamValue(this: ArrayWrapValueBox<E, K> & WBox<E[]>, value: (ValueBox<E> & WBox<E>)[]): E[] {
+	protected override buildUpstreamValue(value: ValueBox<E>[]): E[] {
 		return notificationStack.withAccessNotifications(() => {
 			const leftOverKeys = new Set([...this.keyBoxMap.keys()])
-			const result = [] as E[]
+			const result: E[] = []
 
 			for(let i = 0; i < value.length; i++){
 				const box = value[i]!
@@ -534,7 +536,7 @@ class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<(Valu
 
 }
 
-function makeUpstreamBox<T, U, K>(instance: ValueBoxWithUpstream<T, U, K>): ValueBoxWithUpstream<T, U, K> & WBox<T> {
+function makeUpstreamBox<T, U, K extends (keyof U & PropKey) | undefined>(instance: ValueBoxWithUpstream<T, U, K>): ValueBoxWithUpstream<T, U, K> {
 
 	function upstreamValueBox(...args: T[]): T {
 		if(args.length === 0){
@@ -554,7 +556,7 @@ function makeUpstreamBox<T, U, K>(instance: ValueBoxWithUpstream<T, U, K>): Valu
 	return result
 }
 
-function makeValueBox<T>(value: T): ValueBox<T> & WBox<T> {
+function makeValueBox<T>(value: T): ValueBox<T> {
 
 	function valueBox(...args: T[]): T {
 		if(args.length < 1){
@@ -577,7 +579,9 @@ function makeValueBox<T>(value: T): ValueBox<T> & WBox<T> {
 }
 
 
-class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
+class ViewBox<T> extends (BoxBase as {
+	new<T>(value: T | NoValue): BoxBase<T> & RBoxCallSignature<T>
+})<T> implements RBoxFields<T> {
 
 	/*
 	Here it gets a little tricky.
@@ -596,7 +600,7 @@ class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
 	This way, you only need to remove all subscribers from view for it to be eligible to be GCed
 	*/
 	private subDisposers: UnsubscribeFn[] = []
-	private onDependencyListUpdated = null as null | (() => void)
+	private onDependencyListUpdated: null | (() => void) = null
 
 	constructor(
 		private readonly computingFn: () => T,
@@ -668,7 +672,7 @@ class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
 		}
 	}
 
-	getValue(this: ViewBox<T> & RBox<T>): T {
+	getValue(): T {
 		notificationStack.notifyOnAccess(this)
 
 		if(!this.shouldRecalcValue()){
@@ -678,13 +682,13 @@ class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
 		return notificationStack.withAccessNotifications(this.computingFn, null)
 	}
 
-	prop<K extends keyof T>(this: ViewBox<T> & RBox<T>, propKey: K): RBox<T[K]> {
+	prop<K extends keyof T>(propKey: K): RBox<T[K]> {
 		return this.map(v => v[propKey])
 	}
 
 }
 
-function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): ViewBox<T> & RBox<T> {
+function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): ViewBox<T> {
 	function viewBox(): T {
 		return result.getValue()
 	}
