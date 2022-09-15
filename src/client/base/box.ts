@@ -38,14 +38,8 @@ interface WBoxFields<T> extends RBoxFields<T>{
 	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
 	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
 
-	/** Wrap each individual element of the array into its own box.
-	 * It is implied that elements are objects;
-	 * Element boxes bound to keys within array (and not to indices).
-	 * @param idPropKey should be a property of something that resembles unique identifier
-	 * The only two requirements unique identifier has are:
-	 * 1. They must be unique within one array
-	 * 2. They must stay the same all the lifetime of the object; i.e. they should never change inside the box */
-	wrapArrayElements<E, K extends keyof E>(this: WBox<E[]>, idPropKey: K): WBox<WBox<E>[]>
+	/** This really helps Typescript sometimes better infer stuff */
+	readonly thisHelpsTypings?: true
 }
 type WBoxCallSignature<T> = RBoxCallSignature<T> & ((newValue: T) => T)
 
@@ -104,10 +98,7 @@ export enum BoxDataFlowDirection {
 
 	/** Property of an object/array.
 	 * Update from property box will not trigger other property boxes (except for the same field) */
-	property = 2,
-
-	/** Clone of original value. */
-	clone = 3
+	property = 2
 }
 
 type NoValue = symbol
@@ -286,10 +277,6 @@ class ValueBox<T> extends (BoxBase as {
 		return makeUpstreamBox(boxObj)
 	}
 
-	wrapArrayElements<E, K extends keyof E>(this: ValueBox<E[]>, idPropKey: K): WBox<WBox<E>[]> {
-		return makeUpstreamBox(new ArrayWrapValueBox<E, K>(this, idPropKey))
-	}
-
 }
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
@@ -426,114 +413,6 @@ class ArrayPropValueBox<E> extends PropValueBox<E[], number> {
 		newArr[this.propKey] = value
 		return newArr
 	}
-}
-
-interface ArrayElementWrap<E> {
-	box: ValueBox<E>
-	unsub: UnsubscribeFn
-	index: number
-}
-
-class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<ValueBox<E>[], E[]> {
-
-	private keyBoxMap = new Map<E[K], ArrayElementWrap<E>>()
-
-	constructor(upstream: ValueBox<E[]>, readonly idPropKey: K) {
-		super(upstream, undefined)
-	}
-
-	protected override shouldBeSubscribed(): boolean {
-		return true
-	}
-
-	override afterTransferToFnObj(): void {
-		this.tryUpdateUpstreamSub()
-	}
-
-	private onElementValueUpdatedBound: ((elValue: E) => void) | null = null
-	private onElementValueUpdated(elValue: E): void {
-		const key = elValue[this.idPropKey]
-		const elWrap = this.keyBoxMap.get(key)
-		if(!elWrap){
-			throw new Error("There is no registered item for key " + key)
-		}
-		const newUpstreamArray = [...this.getUpstreamValue()]
-		newUpstreamArray[elWrap.index] = elValue
-		this.upstream.tryChangeValue(newUpstreamArray, BoxDataFlowDirection.clone, this, undefined)
-	}
-
-	private disposeOutdatedBoxes(keys: ReadonlySet<E[K]>): void {
-		for(const key of keys){
-			const {unsub} = this.keyBoxMap.get(key)!
-			unsub()
-			this.keyBoxMap.delete(key)
-		}
-	}
-
-	private subToElBox(box: WBox<E> & ValueBox<E>): UnsubscribeFn {
-		const listener = this.onElementValueUpdatedBound ||= this.onElementValueUpdated.bind(this)
-		return box.subscribeWithDirection(BoxDataFlowDirection.upstream, listener, this)
-	}
-
-	protected override extractValueFromUpstream(upstreamObject: E[]): ValueBox<E>[] {
-		const leftOverKeys = new Set([...this.keyBoxMap.keys()])
-		const result = upstreamObject.map((item, index) => {
-			const key = item[this.idPropKey]
-			const elWrap = this.keyBoxMap.get(key)
-			if(elWrap){
-				elWrap.index = index
-				elWrap.box(item)
-				leftOverKeys.delete(key)
-				return elWrap.box
-			}
-
-			const box = makeValueBox(item)
-			const unsub = this.subToElBox(box)
-			this.keyBoxMap.set(key, {box, unsub, index})
-			return box
-		})
-
-		this.disposeOutdatedBoxes(leftOverKeys)
-
-		return result
-	}
-
-	protected override buildUpstreamValue(value: ValueBox<E>[]): E[] {
-		return notificationStack.withAccessNotifications(() => {
-			const leftOverKeys = new Set([...this.keyBoxMap.keys()])
-			const result: E[] = []
-
-			for(let i = 0; i < value.length; i++){
-				const box = value[i]!
-				const elValue = box()
-				result.push(elValue)
-				const key = elValue[this.idPropKey]
-				const elWrap = this.keyBoxMap.get(key)
-				if(elWrap){
-					leftOverKeys.delete(key)
-					if(elWrap.box !== box){
-						elWrap.unsub()
-						elWrap.unsub = this.subToElBox(box)
-						elWrap.box = box
-					}
-					elWrap.index = i
-				} else {
-					this.keyBoxMap.set(key, {
-						box,
-						index: i,
-						unsub: this.subToElBox(box)
-					})
-				}
-			}
-			this.disposeOutdatedBoxes(leftOverKeys)
-			return result
-		}, null)
-	}
-
-	protected override getDownstreamDirection(): BoxDataFlowDirection {
-		return BoxDataFlowDirection.clone
-	}
-
 }
 
 function makeUpstreamBox<T, U, K extends (keyof U & PropKey) | undefined>(instance: ValueBoxWithUpstream<T, U, K>): ValueBoxWithUpstream<T, U, K> {

@@ -649,47 +649,4 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(notifyCount, 2)
 	})
 
-	makeTest("array el wrap", () => {
-		const arr = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
-		const wrap = arr.wrapArrayElements("id")
-		const box1 = wrap()[0]!
-		box1({id: 1, name: "11"})
-
-		assertEquals(arr()[0]!.id, 1)
-		assertEquals(arr()[0]!.name, "11")
-
-		arr([...arr(), {id: 4, name: "4"}])
-		const box4 = wrap()[3]!
-		assertEquals(box4().id, 4)
-		assertEquals(box4().name, "4")
-
-		const box2 = wrap()[1]!
-		let notifyCount = 0
-		let lastKnownBox2Value = box2()
-		box2.subscribe(v => {
-			lastKnownBox2Value = v
-			notifyCount++
-		})
-
-		arr([arr()[0]!, {id: 2, name: "uwu"}, arr()[2]!, arr()[3]!])
-		assertEquals(notifyCount, 1)
-		assertEquals(lastKnownBox2Value.name, "uwu")
-
-		arr([{id: 2, name: "uwu"}, arr()[3]!])
-		assertEquals(notifyCount, 2)
-		assertEquals(lastKnownBox2Value.name, "uwu")
-		assertEquals(wrap()[0], box2)
-
-		wrap([wrap()[1]!, box({id: 10, name: "ayaya"}), wrap()[0]!])
-		assertEquals(notifyCount, 2)
-		assertEquals(lastKnownBox2Value.name, "uwu")
-
-		const box10 = wrap()[1]!
-		assertEquals(box10().name, "ayaya")
-		assertEquals(arr()[0]!.name, "4")
-		assertEquals(arr()[1]!.name, "ayaya")
-		assertEquals(arr()[2]!.name, "uwu")
-
-	})
-
 })

@@ -3,7 +3,7 @@ import {isWBox, RBox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 
 interface TagListOptions {
-	values: RBox<readonly string[]> | WBox<string[]>
+	values: WBox<string[]> | RBox<readonly string[]>
 	onclick?(tagStr: string): void
 	center?: boolean
 }
