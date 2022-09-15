@@ -299,9 +299,17 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 		super(noValue)
 	}
 
+	afterTransferToFnObj(): void {
+		// nothing here, to be overriden
+	}
+
 	protected abstract extractValueFromUpstream(upstreamObject: U): T
 	protected abstract buildUpstreamValue(value: T): U
 	protected abstract getDownstreamDirection(): BoxDataFlowDirection
+
+	protected shouldBeSubscribed(): boolean {
+		return this.haveSubscribers()
+	}
 
 	getBoxValue(): T {
 		if(this.value !== noValue){
@@ -317,32 +325,46 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 		return notificationStack.withAccessNotifications(() => this.upstream(), null)
 	}
 
-	private tryUnsubFromParent() {
-		if(!this.haveSubscribers()){
-			if(this.upstreamUnsub){
-				this.upstreamUnsub()
-				this.upstreamUnsub = null
-			}
-			this.value = noValue
+	tryUpdateUpstreamSub(this: ValueBoxWithUpstream<T> & WBox<T>): void {
+		const shouldBeSub = this.shouldBeSubscribed()
+		if(shouldBeSub && !this.upstreamUnsub){
+			this.subToParent()
+		} else if(!shouldBeSub && this.upstreamUnsub){
+			this.unsubFromParent()
 		}
 	}
 
-	private trySubToParent(this: ValueBoxWithUpstream<T> & WBox<T>): void {
-		if(!this.haveSubscribers()){
-			this.value = this.getBoxValue()
-			this.upstreamUnsub = this.upstream.subscribeWithDirection(this.getDownstreamDirection(), v => {
-				const ourValue = this.extractValueFromUpstream(v)
-				this.tryChangeValue(ourValue, BoxDataFlowDirection.upstream, this.upstream, this.propKey)
-			}, this, this.propKey)
+	private unsubFromParent() {
+		if(!this.upstreamUnsub){
+			throw new Error("Assertion failed")
 		}
+		this.upstreamUnsub()
+		this.upstreamUnsub = null
+		this.value = noValue
+	}
+
+	private subToParent(this: ValueBoxWithUpstream<T> & WBox<T>): void {
+		if(this.upstreamUnsub){
+			throw new Error("Assertion failed")
+		}
+		if(this.value === noValue){
+			this.value = this.getBoxValue()
+		}
+		this.upstreamUnsub = this.upstream.subscribeWithDirection(this.getDownstreamDirection(), v => {
+			const ourValue = this.extractValueFromUpstream(v)
+			this.tryChangeValue(ourValue, BoxDataFlowDirection.upstream, this.upstream, this.propKey)
+		}, this, this.propKey)
 	}
 
 	override subscribeWithDirection(this: ValueBoxWithUpstream<T> & WBox<T>, direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
-		this.trySubToParent()
+		if(this.value === noValue){
+			this.value = this.getBoxValue()
+		}
 		const unsub = super.subscribeWithDirection(direction, handler, box!, propKey)
+		this.tryUpdateUpstreamSub()
 		return () => {
 			unsub()
-			this.tryUnsubFromParent()
+			this.tryUpdateUpstreamSub()
 		}
 	}
 
@@ -350,7 +372,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K = PropKey | undefined> ext
 		// it's kinda out of place, but anyway
 		// if this box have no subscribers - it should never store value
 		// because it also don't subscribe to upstream in that case (because amount of subscriptions should be minimised)
-		if(!this.haveSubscribers()){
+		if(!this.shouldBeSubscribed()){
 			this.value = noValue
 		}
 
@@ -418,6 +440,14 @@ class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<(Valu
 		super(upstream, undefined)
 	}
 
+	protected override shouldBeSubscribed(): boolean {
+		return true
+	}
+
+	override afterTransferToFnObj(): void {
+		(this as unknown as ValueBoxWithUpstream<E[]> & WBox<E[]>).tryUpdateUpstreamSub()
+	}
+
 	private onElementValueUpdatedBound: ((elValue: E) => void) | null = null
 	private onElementValueUpdated(this: ArrayWrapValueBox<E, K> & WBox<E[]>, elValue: E): void {
 		const key = elValue[this.idPropKey]
@@ -450,6 +480,7 @@ class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<(Valu
 			const elWrap = this.keyBoxMap.get(key)
 			if(elWrap){
 				elWrap.index = index
+				elWrap.box(item)
 				leftOverKeys.delete(key)
 				return elWrap.box
 			}
@@ -505,17 +536,20 @@ class ArrayWrapValueBox<E, K extends keyof E> extends ValueBoxWithUpstream<(Valu
 
 function makeUpstreamBox<T, U, K>(instance: ValueBoxWithUpstream<T, U, K>): ValueBoxWithUpstream<T, U, K> & WBox<T> {
 
-	function propertyValueBox(...args: T[]): T {
+	function upstreamValueBox(...args: T[]): T {
 		if(args.length === 0){
 			notificationStack.notifyOnAccess(result)
 		} else {
 			result.tryChangeValue(args[0]!, BoxDataFlowDirection.external)
 		}
 
-		return result.getBoxValue()
+		const boxvalue = result.getBoxValue()
+		return boxvalue
 	}
 
-	const result = addPrototypeToFunction(propertyValueBox, instance)
+	const result = addPrototypeToFunction(upstreamValueBox, instance)
+
+	result.afterTransferToFnObj()
 
 	return result
 }
@@ -629,6 +663,7 @@ class ViewBox<T> extends BoxBase<T> implements RBoxFields<T> {
 			disposer()
 			if(!this.haveSubscribers()){
 				this.subDispose()
+				this.value = noValue
 			}
 		}
 	}
