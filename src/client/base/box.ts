@@ -114,8 +114,7 @@ interface ExternalSubscriber<T>{
 interface InternalSubscriber<T> extends ExternalSubscriber<T>{
 	// those props are here to compare if we should notify when pushing updates
 	direction: BoxDataFlowDirection
-	box: RBox<unknown>
-	propKey: PropKey | undefined
+	box: RBoxBase<unknown>
 }
 
 const notificationStack = new BoxNotificationStack<RBox<unknown>>()
@@ -137,14 +136,11 @@ abstract class BoxBase<T> {
 		return this.internalSubscribers.size > 0 || this.externalSubscribers.size > 0
 	}
 
-	/*
-	// actual overloads are those
-	// it's just too inconvenient to have them in place
-	subscribeWithDirection(direction: BoxDataFlowDirection.external, handler: SubscriberHandlerFn<T>): UnsubscribeFn
-	subscribeWithDirection(direction: BoxDataFlowDirection.clone, handler: SubscriberHandlerFn<T>, box: RBox<unknown>): UnsubscribeFn
-	subscribeWithDirection(direction: BoxDataFlowDirection.property, handler: SubscriberHandlerFn<T>, box: RBox<unknown>, propKey: PropKey): UnsubscribeFn
-	*/
-	subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
+	getPropKey(): PropKey | undefined {
+		return undefined
+	}
+
+	subscribeWithDirection<B>(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): UnsubscribeFn {
 		const value = this.value
 		if(value === noValue){
 			throw new Error("Cannot subscribe to box: no value!")
@@ -162,11 +158,8 @@ abstract class BoxBase<T> {
 			if(!box){
 				throw new Error("Subscriber from direction " + direction + " must be a box.")
 			}
-			if(direction === BoxDataFlowDirection.property && propKey === undefined){
-				throw new Error("Subscriber from property direction must have a property key.")
-			}
 			const sub: InternalSubscriber<T> = {
-				direction, handler, box, propKey,
+				direction, handler, box: box as RBoxBase<unknown>,
 				lastKnownRevision: this.revision,
 				lastKnownValue: value as T
 			}
@@ -180,8 +173,8 @@ abstract class BoxBase<T> {
 	}
 
 	tryChangeValue(value: T, from: BoxDataFlowDirection.external): void
-	tryChangeValue(value: T, from: BoxDataFlowDirection, box: RBox<unknown>, propKey: PropKey | undefined): void
-	tryChangeValue(value: T, from: BoxDataFlowDirection, box?: RBox<unknown>, propKey?: PropKey): void {
+	tryChangeValue<B>(value: T, from: BoxDataFlowDirection, box: RBoxBase<B>): void
+	tryChangeValue<B>(value: T, from: BoxDataFlowDirection, box?: RBoxBase<B>): void {
 		// yes, objects can be changed without the change of reference, so this check will fail on such change
 		// it is explicit decision. that way, better performance can be achieved.
 		// because it's much better to explicitly ask user to tell us if something is changed or not
@@ -191,11 +184,11 @@ abstract class BoxBase<T> {
 		this.value = value
 		if(valueChanged){
 			this.revision++
-			this.notify(value, from, box, propKey)
+			this.notify(value, from, box)
 		}
 	}
 
-	notify(value: T, from: BoxDataFlowDirection, box: RBox<unknown> | undefined, propKey: PropKey | undefined): void {
+	notify<B>(value: T, from: BoxDataFlowDirection, box: RBoxBase<B> | undefined): void {
 		const valueRevision = this.revision
 
 		for(const sub of this.internalSubscribers){
@@ -206,7 +199,10 @@ abstract class BoxBase<T> {
 
 			// if the notification came from property box - it can only change one property
 			// no need to notify other property boxes
-			if(from === BoxDataFlowDirection.property && sub.direction === BoxDataFlowDirection.property && sub.propKey !== propKey){
+			// I'm not sure this optimisation is working or profitable; cannot properly test for it
+			// it does not break anything (so far); so, if anything goes wrong by weird reasons - we can safely disable it
+			const subBoxPropKey = sub.box.getPropKey()
+			if(box && from === BoxDataFlowDirection.property && sub.direction === BoxDataFlowDirection.property && subBoxPropKey !== undefined && sub.box.getPropKey() !== box.getPropKey()){
 				continue
 			}
 
@@ -249,6 +245,8 @@ abstract class BoxBase<T> {
 
 }
 
+type RBoxBase<T> = BoxBase<T> & RBox<T>
+
 /** Just a box that just contains value */
 class ValueBox<T> extends (BoxBase as {
 	new<T>(value: T | NoValue): BoxBase<T> & WBoxCallSignature<T> & RBoxCallSignature<T>
@@ -263,14 +261,14 @@ class ValueBox<T> extends (BoxBase as {
 		// however, I don't want to do that because it's relatively rare case - to have two propboxes on same field at the same time
 		// and storing a reference to them in the parent will make them uneligible for GC, which is not very good
 		// (not very bad either, there's a finite amount of them. but it's still something to avoid)
-		let boxObj: PropValueBox<T, K>
+		let boxObj: FixedPropValueBox<T, K>
 		const weAreArray = Array.isArray(this.value)
 		const propertyIsNumber = typeof(propKey) === "number"
 		// few bad casts here. eww.
 		if(weAreArray && propertyIsNumber){
-			boxObj = new ArrayPropValueBox<unknown>(this as unknown as ValueBox<unknown[]>, propKey as K & number) as unknown as PropValueBox<T, K>
+			boxObj = new FixedArrayPropValueBox<unknown>(this as unknown as ValueBox<unknown[]>, propKey as K & number) as unknown as FixedPropValueBox<T, K>
 		} else if(!weAreArray && !propertyIsNumber){
-			boxObj = new ObjectPropValueBox(this, propKey as K & (string | symbol)) as unknown as PropValueBox<T, K>
+			boxObj = new FixedObjectPropValueBox(this, propKey as K & (string | symbol)) as unknown as FixedPropValueBox<T, K>
 		} else {
 			throw new Error(`Value of the box is ${weAreArray ? "" : "not "}array, but the property key is ${propertyIsNumber ? "" : "not "}number. This is inconsistent and not allowed.`)
 		}
@@ -281,20 +279,15 @@ class ValueBox<T> extends (BoxBase as {
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
  * Usually that other box is viewed as upstream; source of data that this box is derived from */
-abstract class ValueBoxWithUpstream<T, U = unknown, K extends (keyof U & PropKey) | undefined = (keyof U & PropKey) | undefined> extends ValueBox<T> {
+abstract class ValueBoxWithUpstream<T, U = unknown> extends ValueBox<T> {
 
 	private upstreamUnsub: UnsubscribeFn | null = null
-	constructor(readonly upstream: ValueBox<U>, readonly propKey: K) {
+	constructor(readonly upstream: ValueBox<U>) {
 		super(noValue)
-	}
-
-	afterTransferToFnObj(): void {
-		// nothing here, to be overriden
 	}
 
 	protected abstract extractValueFromUpstream(upstreamObject: U): T
 	protected abstract buildUpstreamValue(value: T): U
-	protected abstract getDownstreamDirection(): BoxDataFlowDirection
 
 	protected shouldBeSubscribed(): boolean {
 		return this.haveSubscribers()
@@ -339,17 +332,17 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K extends (keyof U & PropKey
 		if(this.value === noValue){
 			this.value = this.getBoxValue()
 		}
-		this.upstreamUnsub = this.upstream.subscribeWithDirection(this.getDownstreamDirection(), v => {
+		this.upstreamUnsub = this.upstream.subscribeWithDirection(BoxDataFlowDirection.property, v => {
 			const ourValue = this.extractValueFromUpstream(v)
-			this.tryChangeValue(ourValue, BoxDataFlowDirection.upstream, this.upstream, this.propKey)
-		}, this, this.propKey)
+			this.tryChangeValue(ourValue, BoxDataFlowDirection.upstream, this.upstream)
+		}, this)
 	}
 
-	override subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown>, propKey?: PropKey): UnsubscribeFn {
+	override subscribeWithDirection<B>(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): UnsubscribeFn {
 		if(this.value === noValue){
 			this.value = this.getBoxValue()
 		}
-		const unsub = super.subscribeWithDirection(direction, handler, box!, propKey)
+		const unsub = super.subscribeWithDirection(direction, handler, box)
 		this.tryUpdateUpstreamSub()
 		return () => {
 			unsub()
@@ -357,7 +350,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K extends (keyof U & PropKey
 		}
 	}
 
-	override notify(value: T, from: BoxDataFlowDirection, box: RBox<unknown> | undefined, propKey: PropKey | undefined): void {
+	override notify<B>(value: T, from: BoxDataFlowDirection, box: RBoxBase<B> | undefined): void {
 		// it's kinda out of place, but anyway
 		// if this box have no subscribers - it should never store value
 		// because it also don't subscribe to upstream in that case (because amount of subscriptions should be minimised)
@@ -370,27 +363,31 @@ abstract class ValueBoxWithUpstream<T, U = unknown, K extends (keyof U & PropKey
 		// (although this is not conventional call to subscription)
 		if(from !== BoxDataFlowDirection.upstream){
 			const upstreamObject = this.buildUpstreamValue(value)
-			this.upstream.tryChangeValue(upstreamObject, this.getDownstreamDirection(), this, this.propKey)
+			this.upstream.tryChangeValue(upstreamObject, BoxDataFlowDirection.property, this)
 		}
 
-		super.notify(value, from, box, propKey)
+		super.notify(value, from, box)
 	}
 
 }
 
-abstract class PropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U, K> {
+abstract class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U> {
+
+	constructor(upstream: ValueBox<U>, protected readonly propKey: K) {
+		super(upstream)
+	}
+
+	override getPropKey(): PropKey | undefined {
+		return this.propKey
+	}
 
 	protected override extractValueFromUpstream(upstreamObject: U): U[K] {
 		return upstreamObject[this.propKey]
 	}
 
-	protected override getDownstreamDirection(): BoxDataFlowDirection {
-		return BoxDataFlowDirection.property
-	}
-
 }
 
-class ObjectPropValueBox<U, K extends keyof U & (string | symbol)> extends PropValueBox<U, K> {
+class FixedObjectPropValueBox<U, K extends keyof U & (string | symbol)> extends FixedPropValueBox<U, K> {
 	protected override buildUpstreamValue(value: U[K]): U {
 		const upstreamObject = this.getUpstreamValue()
 		if(Array.isArray(upstreamObject)){
@@ -403,7 +400,8 @@ class ObjectPropValueBox<U, K extends keyof U & (string | symbol)> extends PropV
 	}
 }
 
-class ArrayPropValueBox<E> extends PropValueBox<E[], number> {
+class FixedArrayPropValueBox<E> extends FixedPropValueBox<E[], number> {
+
 	protected override buildUpstreamValue(value: E): E[] {
 		const upstreamObject = this.getUpstreamValue()
 		if(!Array.isArray(upstreamObject)){
@@ -415,7 +413,21 @@ class ArrayPropValueBox<E> extends PropValueBox<E[], number> {
 	}
 }
 
-function makeUpstreamBox<T, U, K extends (keyof U & PropKey) | undefined>(instance: ValueBoxWithUpstream<T, U, K>): ValueBoxWithUpstream<T, U, K> {
+// TODO: test two array element value boxes on same prop key... is this possible at all?
+// or something like array element value box and just prop box. will the updates travel properly?
+// class ArrayElementValueBox<T, K extends keyof T> extends ValueBoxWithUpstream<T, T[]> {
+
+// 	constructor(readonly keyValue: T[K], public index: number, upstream: ValueBox<T[]>) {
+// 		super(upstream, undefined)
+// 	}
+
+// 	protected override extractValueFromUpstream(upstreamObject: T[]): T {
+
+// 	}
+
+// }
+
+function makeUpstreamBox<T, U>(instance: ValueBoxWithUpstream<T, U>): ValueBoxWithUpstream<T, U> {
 
 	function upstreamValueBox(...args: T[]): T {
 		if(args.length === 0){
@@ -429,8 +441,6 @@ function makeUpstreamBox<T, U, K extends (keyof U & PropKey) | undefined>(instan
 	}
 
 	const result = addPrototypeToFunction(upstreamValueBox, instance)
-
-	result.afterTransferToFnObj()
 
 	return result
 }
@@ -537,11 +547,11 @@ class ViewBox<T> extends (BoxBase as {
 		return newValue
 	}
 
-	override subscribeWithDirection(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBox<unknown> | undefined, propKey?: PropKey): UnsubscribeFn {
+	override subscribeWithDirection<B>(direction: BoxDataFlowDirection, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B> | undefined): UnsubscribeFn {
 		if(!this.haveSubscribers()){
 			this.recalcValueAndResubscribe()
 		}
-		const disposer = super.subscribeWithDirection(direction, handler, box!, propKey)
+		const disposer = super.subscribeWithDirection(direction, handler, box)
 		return () => {
 			disposer()
 			if(!this.haveSubscribers()){

@@ -140,10 +140,20 @@ function updateChildren(parent: HTMLElement, newChildren: readonly HTMLElement[]
 	}
 }
 
-// /** Cached renderer for list of elements
-//  * Won't re-render an element if already has one for the value */
-// export function renderArray<T>(src: WBox<T[]>, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]>
-// export function renderArray<T>(src: RBox<T[]>, render: (value: RBox<T>) => HTMLElement): RBox<HTMLElement[]>
-// export function renderArray<T>(src: RBox<T[]>, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]> {
-// 	let map = new Map<T, {box: RBox<T>, }>
+/** Cached renderer for list of elements
+ * Won't re-render an element if already has one for the value */
+// export function renderArray<T, K>(src: WBox<T[]>, getKey: (value: T) => K, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]>
+// export function renderArray<T, K>(src: RBox<T[]>, getKey: (value: T) => K, render: (value: RBox<T>) => HTMLElement): RBox<HTMLElement[]>
+// export function renderArray<T, K>(src: RBox<T[]>, getKey: (value: T) => K, keyProp: K, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]> {
+// 	const map = new Map<K, {box: WBox<T>, el: HTMLElement}>()
+
+// 	return src.map(arr => {
+// 		return arr.map(item => {
+// 			const key = getKey(item)
+// 			const wrap = map.get(key)
+// 			if(!wrap){
+// 				box =
+// 			}
+// 		})
+// 	})
 // }
