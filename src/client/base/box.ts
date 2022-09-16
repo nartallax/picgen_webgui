@@ -45,7 +45,7 @@ interface WBoxFields<T> extends RBoxFields<T>{
 	 * Similarity of values is checked by keys. Key is what @param getKey returns.
 	 * The only constraint on what key should be is it should be unique across the array. And it is compared by value.
 	 * So you can have object-keys, they just must be the same objects every time, otherwise it won't work well.
-	 * If original array is shrinked, excess boxes are detached from it and won't receive any updates,
+	 * If original array is shrinked, excess boxes are detached from it and will always throw on read/write of the value,
 	 * even if array grows again with values having same keys. */
 	wrapElements<E, K>(this: WBox<E[]>, getKey: (element: E) => K): RBox<WBox<E>[]>
 
@@ -260,8 +260,8 @@ class ValueBox<T> extends (BoxBase as {
 abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = ValueBox<U>> extends ValueBox<T> {
 
 	private upstreamUnsub: UnsubscribeFn | null = null
-	constructor(readonly upstream: B) {
-		super(noValue)
+	constructor(readonly upstream: B, value: T | NoValue) {
+		super(value)
 	}
 
 	protected abstract extractValueFromUpstream(upstreamObject: U): T
@@ -292,7 +292,10 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = Valu
 	}
 
 	getBoxValue(): T {
-		if(this.value !== noValue){
+		// just checking if we have value before returning it is not enough
+		// sometimes when we have value we can be not subscribed
+		// that means that our value can be outdated and we need to fetch new one regardless
+		if(this.value !== noValue && this.upstreamUnsub !== null){
 			return this.value as T
 		} else {
 			return this.fetchValueFromUpstream()
@@ -366,7 +369,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = Valu
 abstract class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U> {
 
 	constructor(upstream: ValueBox<U>, protected readonly propKey: K) {
-		super(upstream)
+		super(upstream, noValue)
 	}
 
 	protected override extractValueFromUpstream(upstreamObject: U): U[K] {
@@ -574,9 +577,21 @@ function makeViewBoxByClassInstance<T, B extends ViewBox<T>>(instance: B): B {
 	return result
 }
 
+// TODO: test:
+// upstream has value, take a wrap-array, take a box
+// update value in upstream array once, with the same keys, but different values
+// update value in upstream array second time, with different keys
+// between the updates check/not check value of the element wrap box
+// check what is in the box after both of updates
+
+// TODO: test
+// upstream has value, take a wrap-array, take a box
+// update upstream, adding value at the start
+// check the value in the box
 class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
 	private readonly childMap = new Map<K, ArrayElementValueBox<T, K>>()
+	private lastKnownUpstreamRevision = -1
 
 	constructor(readonly upstream: ViewBox<T[]> | ValueBox<T[]>, private readonly getKey: (value: T) => K) {
 		super([upstream])
@@ -586,23 +601,23 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 	// and then maybe updates to upstream will fuckup something, or updates to element
 	// and vice-versa
 	protected override calculateValue(): ValueBox<T>[] {
+		this.lastKnownUpstreamRevision = this.upstream.revision
 		const outdatedKeys = new Set(this.childMap.keys())
 
 		const upstreamArray = notificationStack.withAccessNotifications(this.upstream, null)
 		if(!Array.isArray(upstreamArray)){
 			throw new Error("Assertion failed: upstream value is not array for array-wrap box")
 		}
-		const result = upstreamArray.map((item, index) => {
+		const result = upstreamArray.map(item => {
 			const key = this.getKey(item)
 			let box = this.childMap.get(key)
 			if(box){
 				if(!outdatedKeys.has(key)){
 					throw new Error("Constraint violated, key is not unique: " + key)
 				}
-				box.index = index
 				box.tryChangeValue(item, this)
 			} else {
-				box = makeUpstreamBox(new ArrayElementValueBox(index, key, this))
+				box = makeUpstreamBox(new ArrayElementValueBox(key, item, this))
 				this.childMap.set(key, box)
 			}
 
@@ -621,14 +636,22 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 		return result
 	}
 
+	tryUpdateChildrenValues(): void {
+		if(this.lastKnownUpstreamRevision === this.upstream.revision){
+			return
+		}
+		this.calculateValue()
+	}
+
 	notifyValueChanged(value: T, box: ArrayElementValueBox<T, K>): void {
 		if(!isWBox(this.upstream)){
 			// should be prevented by typechecker anyway
-			throw new Error("You cannot change the value of upstream array through wrap-box")
+			throw new Error("You cannot change the value of upstream array in readonly box through wrap-box")
 		}
 
 		const key = this.getKey(value)
 		const existingBox = this.childMap.get(key)
+		const oldBoxKey = box.key
 		if(!existingBox){
 			this.childMap.delete(box.key)
 			this.childMap.set(key, box)
@@ -637,12 +660,32 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 			throw new Error("Constraint violated, key is not unique: " + key)
 		}
 
+		// Q: why do we search for key here?
+		// A: see explaination in element wrap impl
 		let upstreamValue = notificationStack.withAccessNotifications(this.upstream, null)
 		upstreamValue = [...upstreamValue]
-		if(upstreamValue.length < box.index){
-			throw new Error("Assertion failed, upstream array is smaller than wrapped element index")
+		let index = -1
+		for(let i = 0; i < upstreamValue.length; i++){
+			const item = upstreamValue[i]!
+			const itemKey = this.getKey(item)
+			if(itemKey === oldBoxKey){
+				// we can just break on the first found key, I'm just all about assertions
+				// btw maybe this assertion will break some of legitimate use cases..?
+				if(index >= 0){
+					throw new Error("Constraint violated, key is not unique: " + oldBoxKey)
+				}
+				index = i
+			}
 		}
-		upstreamValue[box.index] = value
+
+		if(index < 0){
+			// value with old key is not found
+			// that means the box was detached before it received an update
+			box.dispose()
+			box.throwDetachedError()
+		}
+
+		upstreamValue[index] = value
 		this.upstream.tryChangeValue(upstreamValue, this)
 	}
 
@@ -652,18 +695,11 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 
 	private disposed = false
 
-	// FIXME: do we need index?
-	constructor(public index: number, public key: K, upstream: ArrayValueWrapViewBox<T, K>) {
-		super(upstream)
+	constructor(public key: K, value: T, upstream: ArrayValueWrapViewBox<T, K>) {
+		super(upstream, value)
 	}
 
-	/** Detach this box from upstream.
-	 * After that, it should behave just like a normal basic value box.
-	 *
-	 * We need to pass value here because if this box is not subscribed when detachments occurs, it may not have a value
-	 * And it's not allowed for a value box to not have a value */
-	dispose(value: T): void {
-		this.value = value
+	dispose(): void {
 		this.disposed = true
 		this.tryUpdateUpstreamSub()
 	}
@@ -674,11 +710,39 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 	}
 
 	protected override fetchValueFromUpstream(): T {
-		const arr = notificationStack.withAccessNotifications(this.upstream.upstream, null)
-		if(arr.length < this.index){
-			throw new Error("Assertion failed: upstream array is too small, cannot fetch value from it")
+		// this is bad, but I don't see a better solution
+		// thing is, when you're not subscribed - you have absolutely zero guarantees that upstream did not change
+		// (and you can't be always subscribed because it will create memory leak)
+		// this has two consequences:
+		// 1. you can't rely that `index` stays the same
+		// (so you cannot just grab upstream, take value on the index and expect it to be the value you're after)
+		// 2. you can't rely that your value is still in the array at all
+		// (so you may become detached at arbitrary moment, possibly with outdated value)
+		// we combat those two consequences with following countermeasures:
+		// 1. when we need to get the value, we ALWAYS receive value from wrapper box. no exceptions.
+		// alternative to that will be grabbing upstream array, iterating over each item and checking for key equality
+		// but this will be terrible for performance
+		// 2. we forbid accessing detached values at all
+		// this is bad because two things: it can unexpectedly break, and it is inconsistent
+		// I mean, who knows when exactly value disappeared from upstream array if we was not subscribed to it?
+		// noone knows! and by that reason box may become detached (if update happened during absence of value),
+		// or not (if it did not happen, or happened after value with the same key appears in array again)
+		// what can go wrong, usage-wise?
+		// well, if user stores element wrapper boxes - he should be prepared that sometimes they can throw
+		this.checkNotDisposed()
+		this.upstream.tryUpdateChildrenValues()
+		this.checkNotDisposed() // second check, we may become disposed after update
+		return this.value as T
+	}
+
+	private checkNotDisposed(): void {
+		if(this.disposed){
+			this.throwDetachedError()
 		}
-		return arr[this.index]!
+	}
+
+	throwDetachedError(): void {
+		throw new Error("Element wrap box for key " + anythingToString(this.key) + " is no longer attached to an upstream box, because upstream box does not have this key, or did not have this key in some time in the past after this box was created.")
 	}
 
 	protected override extractValueFromUpstream(): T {
@@ -699,17 +763,20 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 	}
 
 	protected notifyUpstreamOnChange(value: T): void {
+		this.checkNotDisposed()
 		this.upstream.notifyValueChanged(value, this)
 	}
 
 	protected override getEmptyValue(): NoValue | T {
-		if(!this.disposed){
-			return noValue
-		}
-		if(this.value === noValue){
-			throw new Error("Assertion failed: array element wrap box does not have value after being disposed.")
-		}
-		return this.value
+		return this.disposed ? noValue : this.value
 	}
 
+}
+
+function anythingToString(x: unknown): string {
+	if(typeof(x) === "symbol"){
+		return x.toString()
+	} else {
+		return x + ""
+	}
 }
