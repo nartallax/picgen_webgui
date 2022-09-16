@@ -502,8 +502,11 @@ abstract class ViewBox<T> extends (BoxBase as {
 		return false // we have value, no need to do anything
 	}
 
-	private recalcValueAndResubscribe(): T {
-		this.subDispose()
+	private recalcValueAndResubscribe(): void {
+		// we preserve list of our old subscriptions to drop them only at the end of the method
+		// we do that because some box implementations can change its internal state dramatically when they have 0 subs
+		// and to prevent them going back and forth, we first create new subscribers, and only then let go old ones
+		const oldSubDisposers = [...this.subDisposers]
 
 		let newValue: T
 		let depList: readonly RBox<unknown>[]
@@ -517,23 +520,28 @@ abstract class ViewBox<T> extends (BoxBase as {
 			depList = this.explicitDependencyList
 		}
 
+		// we can safely not pass a box here
+		// because box is only used to prevent notifications to go back to original box
+		// and we should never be subscribed to itself, because it's not really possible
+		this.tryChangeValue(newValue)
+
 		if(depList.length > 0){
 			const doOnDependencyUpdated = this.onDependencyListUpdated ||= () => this.recalcValueAndResubscribe()
 			for(let i = 0; i < depList.length; i++){
 				this.subDisposers.push(depList[i]!.subscribe(doOnDependencyUpdated))
 			}
 		}
-
-		// we can safely not pass a box here
-		// because box is only used to prevent notifications to go back to original box
-		// and we should never be subscribed to itself, because it's not really possible
-		this.tryChangeValue(newValue)
-
-		return newValue
+		for(const subDisposer of oldSubDisposers){
+			subDisposer()
+		}
+		// ew. maybe there is some more efficient structure for that...?
+		this.subDisposers = this.subDisposers.slice(oldSubDisposers.length)
 	}
 
 	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B> | undefined): UnsubscribeFn {
-		if(!this.haveSubscribers()){
+		if(this.value === noValue){
+			// because we must have a value before doSubscribe can be called
+			// FIXME: why exactly?
 			this.recalcValueAndResubscribe()
 		}
 		const disposer = super.doSubscribe(external, handler, box)
@@ -664,7 +672,7 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 		// Q: why do we search for key here?
 		// A: see explaination in element wrap impl
 		// (in short, index could change between updates, that's why we don't rely on them)
-		// FIXME: bring back index and use it when we are subscribed, because then it is guaranteed to be consistent with the upstreamё
+		// FIXME: bring back index and use it when we are subscribed, because then it is guaranteed to be consistent with the upstream
 		let upstreamValue = notificationStack.withAccessNotifications(this.upstream, null)
 		upstreamValue = [...upstreamValue]
 		let index = -1
