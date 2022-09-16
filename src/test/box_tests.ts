@@ -1,5 +1,11 @@
-import {viewBox, box} from "client/base/box"
+import {viewBox, box, RBox, WBox} from "client/base/box"
 import {assertEquals, makeTestPack} from "test/test_utils"
+
+interface RBoxInternal<T> extends RBox<T> {
+	haveSubscribers(): boolean
+}
+
+type WBoxInternal<T> = WBox<T> & RBoxInternal<T>
 
 export default makeTestPack("box", makeTest => {
 
@@ -625,34 +631,273 @@ export default makeTestPack("box", makeTest => {
 	})
 
 	makeTest("prop of viewbox", () => {
-		const parent = box({a: 5})
-		const view = viewBox(() => ({...parent(), b: parent().a * 2}))
-		const propA1 = view.prop("a")
-		const propA2 = view.prop("a")
-		const propB = view.prop("b")
+		const parent = box({a: 5}) as WBoxInternal<{a: number}>
+		const view = viewBox(() => ({...parent(), b: parent().a * 2})) as RBoxInternal<{a: number, b: number}>
+		const propA1 = view.prop("a") as RBoxInternal<number>
+		const propA2 = view.prop("a") as RBoxInternal<number>
+		const propB = view.prop("b") as RBoxInternal<number>
 
 		assertEquals(propA1(), 5)
 		assertEquals(propA2(), 5)
 		assertEquals(propB(), 10)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(view.haveSubscribers(), false)
+		assertEquals(propA1.haveSubscribers(), false)
+		assertEquals(propA2.haveSubscribers(), false)
+		assertEquals(propB.haveSubscribers(), false)
 
 		parent({a: 6})
 
 		assertEquals(propA1(), 6)
 		assertEquals(propA2(), 6)
 		assertEquals(propB(), 12)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(view.haveSubscribers(), false)
+		assertEquals(propA1.haveSubscribers(), false)
+		assertEquals(propA2.haveSubscribers(), false)
+		assertEquals(propB.haveSubscribers(), false)
 
 		let notifyCount = 0
 		const unsub = propA1.subscribe(() => notifyCount++)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(view.haveSubscribers(), true)
+		assertEquals(propA1.haveSubscribers(), true)
+		assertEquals(propA2.haveSubscribers(), false)
+		assertEquals(propB.haveSubscribers(), false)
+
 		parent({a: 7})
 		assertEquals(propA1(), 7)
 		assertEquals(notifyCount, 1)
+
 		parent({a: 8})
 		assertEquals(propA1(), 8)
 		assertEquals(notifyCount, 2)
+
 		unsub()
 		parent({a: 9})
 		assertEquals(propA1(), 9)
 		assertEquals(notifyCount, 2)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(view.haveSubscribers(), false)
+		assertEquals(propA1.haveSubscribers(), false)
+		assertEquals(propA2.haveSubscribers(), false)
+		assertEquals(propB.haveSubscribers(), false)
+	})
+
+	// FIXME: same test for array-wraps, and chains of them
+	// FIXME: mix and match all the chain subscription tests
+	makeTest("viewboxes are unsubscribing properly", () => {
+		const b = box(5)
+		const v = viewBox(() => b() * 2)
+
+		const rb = b as RBoxInternal<number>
+		const rv = v as RBoxInternal<number>
+
+		assertEquals(rb.haveSubscribers(), false)
+		assertEquals(rv.haveSubscribers(), false)
+		assertEquals(v(), 10)
+		assertEquals(rb.haveSubscribers(), false)
+		assertEquals(rv.haveSubscribers(), false)
+
+		let notifyCount = 0
+		const unsub = v.subscribe(() => notifyCount++)
+		assertEquals(notifyCount, 0)
+		assertEquals(rb.haveSubscribers(), true)
+		assertEquals(rv.haveSubscribers(), true)
+		assertEquals(v(), 10)
+
+		b(6)
+		assertEquals(notifyCount, 1)
+		assertEquals(rb.haveSubscribers(), true)
+		assertEquals(rv.haveSubscribers(), true)
+		assertEquals(v(), 12)
+
+		unsub()
+		assertEquals(notifyCount, 1)
+		assertEquals(rb.haveSubscribers(), false)
+		assertEquals(rv.haveSubscribers(), false)
+	})
+
+	makeTest("chain viewboxes are unsubscribing properly", () => {
+		const b = box(5)
+		const v = viewBox(() => b() * 2)
+		const vv = viewBox(() => v() - 2)
+
+		const rb = b as RBoxInternal<number>
+		const rv = v as RBoxInternal<number>
+		const rvv = vv as RBoxInternal<number>
+
+		assertEquals(rb.haveSubscribers(), false)
+		assertEquals(rv.haveSubscribers(), false)
+		assertEquals(rvv.haveSubscribers(), false)
+		assertEquals(vv(), 8)
+		assertEquals(rb.haveSubscribers(), false)
+		assertEquals(rv.haveSubscribers(), false)
+		assertEquals(rvv.haveSubscribers(), false)
+
+		let notifyCount = 0
+		const unsub = vv.subscribe(() => notifyCount++)
+		assertEquals(notifyCount, 0)
+		assertEquals(rb.haveSubscribers(), true)
+		assertEquals(rv.haveSubscribers(), true)
+		assertEquals(rvv.haveSubscribers(), true)
+		assertEquals(vv(), 8)
+
+		b(6)
+		assertEquals(notifyCount, 1)
+		assertEquals(rb.haveSubscribers(), true)
+		assertEquals(rv.haveSubscribers(), true)
+		assertEquals(rvv.haveSubscribers(), true)
+		assertEquals(vv(), 10)
+
+		unsub()
+		assertEquals(notifyCount, 1)
+		assertEquals(rb.haveSubscribers(), false)
+		assertEquals(rv.haveSubscribers(), false)
+		assertEquals(rvv.haveSubscribers(), false)
+	})
+
+	makeTest("propboxes are unsubscribing properly", () => {
+		const parent = box({a: 5}) as WBoxInternal<{a: number}>
+		const child = parent.prop("a") as WBoxInternal<number>
+
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+
+		parent({a: 6})
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+		assertEquals(child(), 6)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+
+		child(7)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+		assertEquals(parent().a, 7)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+
+		let parentNotifyCount = 0
+		const unsubParent = parent.subscribe(() => parentNotifyCount++)
+		assertEquals(parentNotifyCount, 0)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), false)
+		assertEquals(child(), 7)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), false)
+
+		parent({a: 8})
+		assertEquals(parentNotifyCount, 1)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), false)
+		assertEquals(child(), 8)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), false)
+
+		let childNotifyCount = 0
+		const unsubChild = child.subscribe(() => childNotifyCount++)
+		assertEquals(parentNotifyCount, 1)
+		assertEquals(childNotifyCount, 0)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), true)
+
+		child(9)
+		assertEquals(parentNotifyCount, 2)
+		assertEquals(childNotifyCount, 1)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), true)
+		assertEquals(child(), 9)
+		assertEquals(parent().a, 9)
+
+		unsubParent()
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), true)
+
+		unsubChild()
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+	})
+
+	makeTest("chain propboxes are unsubscribing properly", () => {
+		const parent = box({a: {b: 5}}) as WBoxInternal<{a: {b: number}}>
+		const middle = parent.prop("a") as WBoxInternal<{b: number}>
+		const child = middle.prop("b") as WBoxInternal<number>
+
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+
+		parent({a: {b: 6}})
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+		assertEquals(child(), 6)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+
+		child(7)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+		assertEquals(parent().a.b, 7)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+
+		let parentNotifyCount = 0
+		const unsubParent = parent.subscribe(() => parentNotifyCount++)
+		assertEquals(parentNotifyCount, 0)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), false)
+		assertEquals(child(), 7)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), false)
+
+		parent({a: {b: 8}})
+		assertEquals(parentNotifyCount, 1)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), false)
+		assertEquals(child(), 8)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), false)
+
+		let childNotifyCount = 0
+		const unsubChild = child.subscribe(() => childNotifyCount++)
+		assertEquals(parentNotifyCount, 1)
+		assertEquals(childNotifyCount, 0)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), true)
+
+		child(9)
+		assertEquals(parentNotifyCount, 2)
+		assertEquals(childNotifyCount, 1)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), true)
+		assertEquals(child(), 9)
+		assertEquals(parent().a.b, 9)
+
+		unsubParent()
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(child.haveSubscribers(), true)
+
+		unsubChild()
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(child.haveSubscribers(), false)
+	})
+
+	makeTest("array wraps", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}]) as WBoxInternal<{id: number, name: string}[]>
+		const wrapper = parent.wrapElements(x => x.id)
+		const box1 = wrapper()[0]!
+		const box2 = wrapper()[1]!
+
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "1")
+		assertEquals(box2().name, "2")
+
+		parent([parent()[0]!, {id: 2, name: "22"}])
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "1")
+		assertEquals(box2().name, "22")
+
+
 	})
 
 })

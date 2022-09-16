@@ -19,9 +19,10 @@ interface RBoxFields<T>{
 	 * Can be used to track if value is changed or not without actually storing value */
 	readonly revision: number
 
-	/** Property box, like WBox can produce, just for RBox they are read-only as well */
+	/* Those methods are similar to wbox's ones, just those produce readonly boxes */
 	prop<K extends keyof T & (string | symbol)>(propKey: K): RBox<T[K]>
 	prop<K extends keyof T & number>(propKey: K): RBox<T[K] | undefined>
+	wrapElements<E, K>(this: WBox<E[]>, getKey: (element: E) => K): RBox<RBox<E>[]>
 }
 type RBoxCallSignature<T> = () => T
 
@@ -37,6 +38,16 @@ interface WBoxFields<T> extends RBoxFields<T>{
 	 * Another caveat of the array prop() method is that it is bound to the index, not to the value */
 	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
 	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
+
+	/** If this box contains array, make a rbox that contains each element of this array wrapped in box
+	 *
+	 * Elements are bound to the values, not to the indices, so if the array is reordered - same values will stay in the same boxes
+	 * Similarity of values is checked by keys. Key is what @param getKey returns.
+	 * The only constraint on what key should be is it should be unique across the array. And it is compared by value.
+	 * So you can have object-keys, they just must be the same objects every time, otherwise it won't work well.
+	 * If original array is shrinked, excess boxes are detached from it and won't receive any updates,
+	 * even if array grows again with values having same keys. */
+	wrapElements<E, K>(this: WBox<E[]>, getKey: (element: E) => K): RBox<WBox<E>[]>
 
 	/** This really helps Typescript sometimes better infer stuff */
 	readonly thisHelpsTypings?: true
@@ -206,6 +217,10 @@ abstract class BoxBase<T> {
 		return makeViewBox(() => mapper(this()), [this])
 	}
 
+	wrapElements<E, K>(this: ViewBox<E[]> | ValueBox<E[]>, getKey: (element: E) => K): ViewBox<ValueBox<E>[]> {
+		return makeViewBoxByClassInstance<ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(new ArrayValueWrapViewBox(this, getKey))
+	}
+
 }
 
 type RBoxBase<T> = BoxBase<T> & RBox<T>
@@ -242,32 +257,46 @@ class ValueBox<T> extends (BoxBase as {
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
  * Usually that other box is viewed as upstream; source of data that this box is derived from */
-abstract class ValueBoxWithUpstream<T, U = unknown> extends ValueBox<T> {
+abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = ValueBox<U>> extends ValueBox<T> {
 
 	private upstreamUnsub: UnsubscribeFn | null = null
-	constructor(readonly upstream: ValueBox<U>) {
+	constructor(readonly upstream: B) {
 		super(noValue)
 	}
 
 	protected abstract extractValueFromUpstream(upstreamObject: U): T
 	protected abstract buildUpstreamValue(value: T): U
 
+	protected fetchValueFromUpstream(): T {
+		return this.extractValueFromUpstream(this.getUpstreamValue())
+	}
+
 	protected shouldBeSubscribed(): boolean {
 		return this.haveSubscribers()
+	}
+
+	protected doOnUpstreamChange(upstreamValue: U): void {
+		const ourValue = this.extractValueFromUpstream(upstreamValue)
+		this.tryChangeValue(ourValue, this.upstream)
+	}
+
+	protected notifyUpstreamOnChange(value: T): void {
+		const upstreamObject = this.buildUpstreamValue(value)
+		this.upstream.tryChangeValue(upstreamObject, this)
+	}
+
+	protected getUpstreamValue(): U {
+		// if we are called from view calc function - we should prevent view to access our upstream box
+		// so view will only subscribe to this box, but not to the parent
+		return notificationStack.withAccessNotifications(this.upstream, null)
 	}
 
 	getBoxValue(): T {
 		if(this.value !== noValue){
 			return this.value as T
 		} else {
-			// if we are called from view calc function - we should prevent view to access our upstream box
-			// so view will only subscribe to this box, but not to the parent
-			return notificationStack.withAccessNotifications(() => this.extractValueFromUpstream(this.upstream()), null)
+			return this.fetchValueFromUpstream()
 		}
-	}
-
-	protected getUpstreamValue(): U {
-		return notificationStack.withAccessNotifications(() => this.upstream(), null)
 	}
 
 	tryUpdateUpstreamSub(): void {
@@ -285,7 +314,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown> extends ValueBox<T> {
 		}
 		this.upstreamUnsub()
 		this.upstreamUnsub = null
-		this.value = noValue
+		this.value = this.getEmptyValue()
 	}
 
 	private subToParent(): void {
@@ -295,10 +324,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown> extends ValueBox<T> {
 		if(this.value === noValue){
 			this.value = this.getBoxValue()
 		}
-		this.upstreamUnsub = this.upstream.doSubscribe(false, v => {
-			const ourValue = this.extractValueFromUpstream(v)
-			this.tryChangeValue(ourValue, this.upstream)
-		}, this)
+		this.upstreamUnsub = this.upstream.doSubscribe(false, this.doOnUpstreamChange.bind(this), this)
 	}
 
 	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): UnsubscribeFn {
@@ -318,18 +344,21 @@ abstract class ValueBoxWithUpstream<T, U = unknown> extends ValueBox<T> {
 		// if this box have no subscribers - it should never store value
 		// because it also don't subscribe to upstream in that case (because amount of subscriptions should be minimised)
 		if(!this.shouldBeSubscribed()){
-			this.value = noValue
+			this.value = this.getEmptyValue()
 		}
 
 		// this is also a little out of place
 		// think of this block as a notification to parent that child value is changed
 		// (although this is not conventional call to subscription)
 		if(box as unknown !== this.upstream){
-			const upstreamObject = this.buildUpstreamValue(value)
-			this.upstream.tryChangeValue(upstreamObject, this)
+			this.notifyUpstreamOnChange(value)
 		}
 
 		super.notify(value, box)
+	}
+
+	protected getEmptyValue(): T | NoValue {
+		return noValue
 	}
 
 }
@@ -359,6 +388,7 @@ class FixedObjectPropValueBox<U, K extends keyof U & (string | symbol)> extends 
 	}
 }
 
+// FIXME: delete this, it won't work well anyway
 class FixedArrayPropValueBox<E> extends FixedPropValueBox<E[], number> {
 
 	protected override buildUpstreamValue(value: E): E[] {
@@ -372,21 +402,7 @@ class FixedArrayPropValueBox<E> extends FixedPropValueBox<E[], number> {
 	}
 }
 
-// TODO: test two array element value boxes on same prop key... is this possible at all?
-// or something like array element value box and just prop box. will the updates travel properly?
-// class ArrayElementValueBox<T, K extends keyof T> extends ValueBoxWithUpstream<T, T[]> {
-
-// 	constructor(readonly keyValue: T[K], public index: number, upstream: ValueBox<T[]>) {
-// 		super(upstream, undefined)
-// 	}
-
-// 	protected override extractValueFromUpstream(upstreamObject: T[]): T {
-
-// 	}
-
-// }
-
-function makeUpstreamBox<T, U>(instance: ValueBoxWithUpstream<T, U>): ValueBoxWithUpstream<T, U> {
+function makeUpstreamBox<T, U, B>(instance: ValueBoxWithUpstream<T, U> & B): ValueBoxWithUpstream<T, U> & B {
 
 	function upstreamValueBox(...args: T[]): T {
 		if(args.length === 0){
@@ -395,8 +411,7 @@ function makeUpstreamBox<T, U>(instance: ValueBoxWithUpstream<T, U>): ValueBoxWi
 			result.tryChangeValue(args[0]!)
 		}
 
-		const boxvalue = result.getBoxValue()
-		return boxvalue
+		return result.getBoxValue()
 	}
 
 	const result = addPrototypeToFunction(upstreamValueBox, instance)
@@ -427,7 +442,7 @@ function makeValueBox<T>(value: T): ValueBox<T> {
 }
 
 
-class ViewBox<T> extends (BoxBase as {
+abstract class ViewBox<T> extends (BoxBase as {
 	new<T>(value: T | NoValue): BoxBase<T> & RBoxCallSignature<T>
 })<T> implements RBoxFields<T> {
 
@@ -450,9 +465,10 @@ class ViewBox<T> extends (BoxBase as {
 	private subDisposers: UnsubscribeFn[] = []
 	private onDependencyListUpdated: null | (() => void) = null
 
-	constructor(
-		private readonly computingFn: () => T,
-		private readonly explicitDependencyList: readonly RBox<unknown>[] | undefined) {
+	private boundCalcVal: (() => T) | null = null
+	protected abstract calculateValue(): T
+
+	constructor(private readonly explicitDependencyList: readonly RBox<unknown>[] | undefined) {
 		super(noValue)
 	}
 
@@ -481,12 +497,13 @@ class ViewBox<T> extends (BoxBase as {
 
 		let newValue: T
 		let depList: readonly RBox<unknown>[]
+		const calc = this.boundCalcVal ||= this.calculateValue.bind(this)
 		if(!this.explicitDependencyList){
 			const boxesAccessed = new Set<RBox<unknown>>()
-			newValue = notificationStack.withAccessNotifications(this.computingFn, box => boxesAccessed.add(box))
+			newValue = notificationStack.withAccessNotifications(calc, box => boxesAccessed.add(box))
 			depList = [...boxesAccessed]
 		} else {
-			newValue = notificationStack.withAccessNotifications(this.computingFn, null)
+			newValue = notificationStack.withAccessNotifications(calc, null)
 			depList = this.explicitDependencyList
 		}
 
@@ -526,7 +543,8 @@ class ViewBox<T> extends (BoxBase as {
 			return this.value as T
 		}
 
-		return notificationStack.withAccessNotifications(this.computingFn, null)
+		const calc = this.boundCalcVal ||= this.calculateValue.bind(this)
+		return notificationStack.withAccessNotifications(calc, null)
 	}
 
 	prop<K extends keyof T>(propKey: K): RBox<T[K]> {
@@ -535,11 +553,163 @@ class ViewBox<T> extends (BoxBase as {
 
 }
 
+class ComputingFnViewBox<T> extends ViewBox<T> {
+
+	constructor(protected readonly calculateValue: () => T, explicitDependencyList: readonly RBox<unknown>[] | undefined) {
+		super(explicitDependencyList)
+	}
+
+}
+
 function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): ViewBox<T> {
+	return makeViewBoxByClassInstance<T, ViewBox<T>>(new ComputingFnViewBox(computingFn, explicitDependencyList))
+}
+
+function makeViewBoxByClassInstance<T, B extends ViewBox<T>>(instance: B): B {
 	function viewBox(): T {
 		return result.getValue()
 	}
 
-	const result = addPrototypeToFunction(viewBox, new ViewBox(computingFn, explicitDependencyList))
+	const result = addPrototypeToFunction(viewBox, instance)
 	return result
+}
+
+class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
+
+	private readonly childMap = new Map<K, ArrayElementValueBox<T, K>>()
+
+	constructor(readonly upstream: ViewBox<T[]> | ValueBox<T[]>, private readonly getKey: (value: T) => K) {
+		super([upstream])
+	}
+
+	// TODO: test for two subscriptions: first array wrap subscribes to upstream, then view subscribes to upstream
+	// and then maybe updates to upstream will fuckup something, or updates to element
+	// and vice-versa
+	protected override calculateValue(): ValueBox<T>[] {
+		const outdatedKeys = new Set(this.childMap.keys())
+
+		const upstreamArray = notificationStack.withAccessNotifications(this.upstream, null)
+		if(!Array.isArray(upstreamArray)){
+			throw new Error("Assertion failed: upstream value is not array for array-wrap box")
+		}
+		const result = upstreamArray.map((item, index) => {
+			const key = this.getKey(item)
+			let box = this.childMap.get(key)
+			if(box){
+				if(!outdatedKeys.has(key)){
+					throw new Error("Constraint violated, key is not unique: " + key)
+				}
+				box.index = index
+				box.tryChangeValue(item, this)
+			} else {
+				box = makeUpstreamBox(new ArrayElementValueBox(index, key, this))
+				this.childMap.set(key, box)
+			}
+
+			outdatedKeys.delete(key)
+
+			return box
+		})
+
+		for(const key of outdatedKeys){
+			// const box = this.childMap.get(key)!
+			// FIXME: dispose
+			// box.dispose()
+			this.childMap.delete(key)
+		}
+
+		return result
+	}
+
+	notifyValueChanged(value: T, box: ArrayElementValueBox<T, K>): void {
+		if(!isWBox(this.upstream)){
+			// should be prevented by typechecker anyway
+			throw new Error("You cannot change the value of upstream array through wrap-box")
+		}
+
+		const key = this.getKey(value)
+		const existingBox = this.childMap.get(key)
+		if(!existingBox){
+			this.childMap.delete(box.key)
+			this.childMap.set(key, box)
+			box.key = key
+		} else if(existingBox !== box){
+			throw new Error("Constraint violated, key is not unique: " + key)
+		}
+
+		let upstreamValue = notificationStack.withAccessNotifications(this.upstream, null)
+		upstreamValue = [...upstreamValue]
+		if(upstreamValue.length < box.index){
+			throw new Error("Assertion failed, upstream array is smaller than wrapped element index")
+		}
+		upstreamValue[box.index] = value
+		this.upstream.tryChangeValue(upstreamValue, this)
+	}
+
+}
+
+class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], ArrayValueWrapViewBox<T, K>> {
+
+	private disposed = false
+
+	// FIXME: do we need index?
+	constructor(public index: number, public key: K, upstream: ArrayValueWrapViewBox<T, K>) {
+		super(upstream)
+	}
+
+	/** Detach this box from upstream.
+	 * After that, it should behave just like a normal basic value box.
+	 *
+	 * We need to pass value here because if this box is not subscribed when detachments occurs, it may not have a value
+	 * And it's not allowed for a value box to not have a value */
+	dispose(value: T): void {
+		this.value = value
+		this.disposed = true
+		this.tryUpdateUpstreamSub()
+	}
+
+	protected override shouldBeSubscribed(): boolean {
+		// TODO: test unsub on dispose
+		return !this.disposed && super.shouldBeSubscribed()
+	}
+
+	protected override fetchValueFromUpstream(): T {
+		const arr = notificationStack.withAccessNotifications(this.upstream.upstream, null)
+		if(arr.length < this.index){
+			throw new Error("Assertion failed: upstream array is too small, cannot fetch value from it")
+		}
+		return arr[this.index]!
+	}
+
+	protected override extractValueFromUpstream(): T {
+		throw new Error("This method should never be called on this box")
+	}
+
+	protected override buildUpstreamValue(): ValueBox<T>[] {
+		throw new Error("This method should never be called on this box")
+	}
+
+	protected override doOnUpstreamChange(): void {
+		// nothing. upstream will put value into this box by itself
+		// element box must never subscribe to upstream-of-upstream array-box directly, or pull values by itself
+		// this way its index can sometimes be outdated and he can pull wrong value from upstream
+		// instead, element box must force parent view to subscribe to upstream
+		// so parent view can handle down proper index and value at the same time
+		// so, we still subscribe to upstream, just so it is subscribed to upstream-of-upstream and deliver updates
+	}
+
+	protected notifyUpstreamOnChange(value: T): void {
+		this.upstream.notifyValueChanged(value, this)
+	}
+
+	protected override getEmptyValue(): NoValue | T {
+		if(!this.disposed){
+			return noValue
+		}
+		if(this.value === noValue){
+			throw new Error("Assertion failed: array element wrap box does not have value after being disposed.")
+		}
+		return this.value
+	}
+
 }
