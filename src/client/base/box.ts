@@ -17,6 +17,11 @@ interface RBoxFields<T>{
 
 	/** Each time stored value changes, revision is incremented
 	 * Can be used to track if value is changed or not without actually storing value */
+	// FIXME: test that it is really incremented each time value is changed
+	// I mean, it can be revision on viewBox that noone is subscribed to
+	// and it can just not recalc its own value
+	// if it is the case - we should hide the revision from public interface
+	// and even maybe make it private to BoxBase
 	readonly revision: number
 
 	/* Those methods are similar to wbox's ones, just those produce readonly boxes */
@@ -46,7 +51,9 @@ interface WBoxFields<T> extends RBoxFields<T>{
 	 * The only constraint on what key should be is it should be unique across the array. And it is compared by value.
 	 * So you can have object-keys, they just must be the same objects every time, otherwise it won't work well.
 	 * If original array is shrinked, excess boxes are detached from it and will always throw on read/write of the value,
-	 * even if array grows again with values having same keys. */
+	 * even if array grows again with values having same keys.
+	 *
+	 * Can behave weirdly/inconsistently if there are no subscribers to this box or children boxes. */
 	wrapElements<E, K>(this: WBox<E[]>, getKey: (element: E) => K): RBox<WBox<E>[]>
 
 	/** This really helps Typescript sometimes better infer stuff */
@@ -662,6 +669,8 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
 		// Q: why do we search for key here?
 		// A: see explaination in element wrap impl
+		// (in short, index could change between updates, that's why we don't rely on them)
+		// FIXME: bring back index and use it when we are subscribed, because then it is guaranteed to be consistent with the upstreamё
 		let upstreamValue = notificationStack.withAccessNotifications(this.upstream, null)
 		upstreamValue = [...upstreamValue]
 		let index = -1
