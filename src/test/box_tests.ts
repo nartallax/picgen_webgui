@@ -1,5 +1,5 @@
 import {viewBox, box, RBox, WBox} from "client/base/box"
-import {assertEquals, makeTestPack} from "test/test_utils"
+import {assertEquals, assertThrows, makeTestPack} from "test/test_utils"
 
 interface RBoxInternal<T> extends RBox<T> {
 	haveSubscribers(): boolean
@@ -882,7 +882,7 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(child.haveSubscribers(), false)
 	})
 
-	makeTest("array wraps", () => {
+	makeTest("array wraps without subscribers", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}]) as WBoxInternal<{id: number, name: string}[]>
 		const wrapper = parent.wrapElements(x => x.id)
 		const box1 = wrapper()[0]!
@@ -897,7 +897,171 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(box1().name, "1")
 		assertEquals(box2().name, "22")
 
+		parent([{id: 3, name: "3"}, parent()[0]!, {id: 2, name: "222"}])
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "1")
+		assertEquals(box2().name, "222")
 
+		// changing the id within the box
+		box2({id: 4, name: "4"})
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "1")
+		assertEquals(box2().name, "4")
+		assertEquals(box2().id, 4)
+		assertEquals(parent()[2]!, box2())
+
+		parent([parent()[0]!, parent()[2]!])
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box2().name, "4")
+		assertThrows(box1, /box for key 1 is no longer attached/)
+		assertThrows(() => box1({id: 5, name: "5"}), /box for key 1 is no longer attached/)
+		assertEquals(parent().length, 2)
+	})
+
+	makeTest("array wraps with subscribers", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}]) as WBoxInternal<{id: number, name: string}[]>
+		const wrapper = parent.wrapElements(x => x.id)
+		const box1 = wrapper()[0]!
+		const box2 = wrapper()[1]!
+
+		let lastValue = box2()
+		let callsCount = 0
+		const unsub = box2.subscribe(v => {
+			lastValue = v
+			callsCount++
+		})
+		assertEquals(parent.haveSubscribers(), true)
+
+		assertEquals(box1().name, "1")
+		assertEquals(box2().name, "2")
+
+		parent([parent()[0]!, {id: 2, name: "22"}])
+		assertEquals(box1().name, "1")
+		assertEquals(box2().name, "22")
+		assertEquals(box2(), lastValue)
+		assertEquals(callsCount, 1)
+
+		parent([{id: 3, name: "3"}, parent()[0]!, {id: 2, name: "222"}])
+		assertEquals(box1().name, "1")
+		assertEquals(box2().name, "222")
+		assertEquals(box2(), lastValue)
+		assertEquals(callsCount, 2)
+
+		// changing the id within the box
+		box2({id: 4, name: "4"})
+		assertEquals(box1().name, "1")
+		assertEquals(box2().name, "4")
+		assertEquals(box2().id, 4)
+		assertEquals(parent()[2]!, box2())
+		assertEquals(box2(), lastValue)
+		assertEquals(callsCount, 3)
+
+		parent([parent()[0]!, parent()[2]!])
+		assertEquals(box2().name, "4")
+		assertEquals(box2(), lastValue)
+		assertEquals(callsCount, 3)
+		assertThrows(box1, /box for key 1 is no longer attached/)
+		assertThrows(() => box1({id: 5, name: "5"}), /box for key 1 is no longer attached/)
+		assertEquals(parent().length, 2)
+
+		unsub()
+		assertEquals(parent.haveSubscribers(), false)
+	})
+
+	makeTest("chain array wraps without subscribers", () => {
+		const parent = box([[{id: 1, name: "1"}, {id: 2, name: "2"}], [{id: 3, name: "3"}]]) as WBoxInternal<{id: number, name: string}[][]>
+		const wrapA = parent.wrapElements(arr => arr.length)
+		const wrapB = wrapA()[0]!.wrapElements(el => el.id)
+		const box1 = wrapB()[0]!
+
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "1")
+
+		parent([[{id: 1, name: "11"}, parent()[0]![1]!], parent()[1]!])
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "11")
+
+		box1({id: 1, name: "owo"})
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "owo")
+		assertEquals(parent()[0]![0]!.name, "owo")
+
+		box1({id: 5, name: "uwu"})
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(parent()[0]![0]!.name, "uwu")
+
+		parent([parent()[1]!, parent()[0]!])
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "uwu")
+		assertEquals(box1(), parent()[1]![0]!)
+
+		parent([parent()[0]!, [parent()[1]![1]!, parent()[1]![0]!]])
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "uwu")
+		assertEquals(box1(), parent()[1]![1]!)
+
+		box1({id: 6, name: "ayaya"})
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(parent()[1]![1]!.name, "ayaya")
+	})
+
+	makeTest("chain array wraps with subscribers", () => {
+		const parent = box([[{id: 1, name: "1"}, {id: 2, name: "2"}], [{id: 3, name: "3"}]]) as WBoxInternal<{id: number, name: string}[][]>
+		const wrapA = parent.wrapElements(arr => arr.length)
+		const wrapB = wrapA()[0]!.wrapElements(el => el.id)
+		const box1 = wrapB()[0]!
+
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "1")
+
+		let lastValue = box1()
+		let callCount = 0
+		const unsub = box1.subscribe(v => {
+			lastValue = v
+			callCount++
+		})
+
+		assertEquals(parent.haveSubscribers(), true)
+		parent([[{id: 1, name: "11"}, parent()[0]![1]!], parent()[1]!])
+		assertEquals(box1().name, "11")
+		assertEquals(callCount, 1)
+		assertEquals(lastValue, box1())
+		assertEquals(lastValue, parent()[0]![0]!)
+
+		box1({id: 1, name: "owo"})
+		assertEquals(box1().name, "owo")
+		assertEquals(parent()[0]![0]!.name, "owo")
+		assertEquals(callCount, 2)
+		assertEquals(lastValue, box1())
+
+		box1({id: 5, name: "uwu"})
+		assertEquals(parent()[0]![0]!.name, "uwu")
+		assertEquals(callCount, 3)
+		assertEquals(lastValue, box1())
+
+		parent([parent()[1]!, parent()[0]!])
+		assertEquals(box1().name, "uwu")
+		assertEquals(box1(), parent()[1]![0]!)
+		assertEquals(callCount, 3)
+		assertEquals(lastValue, box1())
+
+		parent([parent()[0]!, [parent()[1]![1]!, parent()[1]![0]!]])
+		assertEquals(box1().name, "uwu")
+		assertEquals(box1(), parent()[1]![1]!)
+		assertEquals(callCount, 3)
+		assertEquals(lastValue, box1())
+
+		box1({id: 6, name: "ayaya"})
+		assertEquals(parent()[1]![1]!.name, "ayaya")
+		assertEquals(callCount, 4)
+		assertEquals(lastValue, box1())
+		assertEquals(lastValue, parent()[1]![1]!)
+
+		unsub()
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "ayaya")
+		assertEquals(lastValue, box1())
+		assertEquals(lastValue, parent()[1]![1]!)
 	})
 
 })

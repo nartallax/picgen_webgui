@@ -43,3 +43,22 @@ export function assertEquals(a: unknown, b: unknown): void {
 		throw new Error(`${a} is not equal to ${b}`)
 	}
 }
+
+export function assertThrows(fn: () => void, msg: string | RegExp): void {
+	try {
+		fn()
+	} catch(e){
+		if(e instanceof Error){
+			if(msg instanceof RegExp){
+				if(msg.test(e.message)){
+					return
+				}
+			} else if(e.message === msg){
+				return
+			}
+			throw new Error(`Bad error was thrown: expected "${msg}", got "${e.message}"`)
+		}
+		throw e
+	}
+	throw new Error(`Expected function ${fn} to throw "${msg}", but it did not.`)
+}

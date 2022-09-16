@@ -598,7 +598,6 @@ function makeViewBoxByClassInstance<T, B extends ViewBox<T>>(instance: B): B {
 class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
 	private readonly childMap = new Map<K, ArrayElementValueBox<T, K>>()
-	private lastKnownUpstreamRevision = -1
 
 	constructor(readonly upstream: ViewBox<T[]> | ValueBox<T[]>, private readonly getKey: (value: T) => K) {
 		super([upstream])
@@ -608,7 +607,6 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 	// and then maybe updates to upstream will fuckup something, or updates to element
 	// and vice-versa
 	protected override calculateValue(): ValueBox<T>[] {
-		this.lastKnownUpstreamRevision = this.upstream.revision
 		const outdatedKeys = new Set(this.childMap.keys())
 
 		const upstreamArray = notificationStack.withAccessNotifications(this.upstream, null)
@@ -634,9 +632,8 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 		})
 
 		for(const key of outdatedKeys){
-			// const box = this.childMap.get(key)!
-			// FIXME: dispose
-			// box.dispose()
+			const box = this.childMap.get(key)!
+			box.dispose()
 			this.childMap.delete(key)
 		}
 
@@ -644,9 +641,6 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 	}
 
 	tryUpdateChildrenValues(): void {
-		if(this.lastKnownUpstreamRevision === this.upstream.revision){
-			return
-		}
 		this.calculateValue()
 	}
 
@@ -710,6 +704,9 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 
 	dispose(): void {
 		this.disposed = true
+		// update of sub may or may not set empty value (if there is no sub)
+		// let's set it explicitly
+		this.value = noValue
 		this.tryUpdateUpstreamSub()
 	}
 
