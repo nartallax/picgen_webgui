@@ -11,11 +11,9 @@ export default makeTestPack("box", makeTest => {
 
 	makeTest("wbox simple test", () => {
 		const b = box(0)
-		const revZero = b.revision
 		b(5)
 
 		assertEquals(b(), 5)
-		assertEquals(b.revision, revZero + 1)
 
 		let subscriberCalledTimes = 0
 		const unsub = b.subscribe(() => subscriberCalledTimes++)

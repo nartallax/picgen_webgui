@@ -15,15 +15,6 @@ interface RBoxFields<T>{
 	 * (`viewBox(mapper)` will depend on all the boxes that mapper calls, which may be more than just this) */
 	map<R>(mapper: (value: T) => R): RBox<R>
 
-	/** Each time stored value changes, revision is incremented
-	 * Can be used to track if value is changed or not without actually storing value */
-	// FIXME: test that it is really incremented each time value is changed
-	// I mean, it can be revision on viewBox that noone is subscribed to
-	// and it can just not recalc its own value
-	// if it is the case - we should hide the revision from public interface
-	// and even maybe make it private to BoxBase
-	readonly revision: number
-
 	/* Those methods are similar to wbox's ones, just those produce readonly boxes */
 	prop<K extends keyof T & (string | symbol)>(propKey: K): RBox<T[K]>
 	prop<K extends keyof T & number>(propKey: K): RBox<T[K] | undefined>
@@ -118,8 +109,17 @@ const notificationStack = new BoxNotificationStack<RBox<unknown>>()
 /** Base for every Box */
 abstract class BoxBase<T> {
 
-	/** Revision is incremented each time value changes */
-	revision = 1
+	/** Revision is incremented each time value changes
+	 *
+	 * This value must never be visible outside of this box.
+	 * It can only be used to prevent repeated calls of subscribers.
+	 *
+	 * It is very tempting to use revision number to check if value is changed or not
+	 * However, it can go wrong when value does not change until you explicitly check
+	 * For example, consider viewBox that depends on viewBox
+	 * When there is no subscribers, first viewBox will never change, regardless of its sources
+	 * And if you're only relying on revision number to check if it is changed, you'll be wrong */
+	private revision = 1
 
 	/** Internal subscribers are subscribers that make up a graph of boxes */
 	private internalSubscribers = new Set<InternalSubscriber<T>>()

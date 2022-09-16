@@ -16,10 +16,13 @@ export interface Binder {
 	readonly isInDom: boolean
 }
 
+const noValue = Symbol()
+type NoValue = typeof noValue
+
 interface WatchedBox<T = unknown>{
 	readonly box: RBox<T>
 	handler(value: T): void
-	lastKnownRevision: number
+	lastKnownValue: T | NoValue
 	unsub: (() => void) | null
 }
 
@@ -76,9 +79,9 @@ export class BinderImpl implements Binder {
 		if(boxes){
 			for(let i = 0; i < boxes.length; i++){
 				const box = boxes[i]!
-				if(box.lastKnownRevision < box.box.revision){
-					box.handler(box.box())
-					box.lastKnownRevision = box.box.revision
+				const value = box.box()
+				if(box.lastKnownValue !== value){
+					this.invokeBoxHandler(value, box)
 				}
 				this.subToBox(box)
 			}
@@ -101,8 +104,8 @@ export class BinderImpl implements Binder {
 	}
 
 	private invokeBoxHandler<T>(value: T, box: WatchedBox<T>): void {
-		box.lastKnownRevision = box.box.revision
 		box.handler(value)
+		box.lastKnownValue = value
 	}
 
 	private subToBox(box: WatchedBox): void {
@@ -113,7 +116,7 @@ export class BinderImpl implements Binder {
 		const watchedBox: WatchedBox = {
 			box,
 			handler,
-			lastKnownRevision: box.revision - 1,
+			lastKnownValue: noValue,
 			unsub: null
 		}
 		if(this.isInDom){
