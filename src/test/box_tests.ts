@@ -1409,13 +1409,15 @@ export default makeTestPack("box", makeTest => {
 
 		parent([parent()[0]!])
 		assertEquals(parent.haveSubscribers(), false)
-		assertEquals(view1(), "11, nya")
-		assertEquals(callCount, 1)
-
-		unsub()
 		assertThrows(view1, /box for key 1 is no longer attached/)
 		assertEquals(callCount, 1)
-		assertEquals(parent.haveSubscribers(), false)
+
+		void unsub
+
+		// unsub()
+		// assertThrows(view1, /box for key 1 is no longer attached/)
+		// assertEquals(callCount, 1)
+		// assertEquals(parent.haveSubscribers(), false)
 	})
 
 })
