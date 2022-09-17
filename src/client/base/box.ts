@@ -621,16 +621,17 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 		if(!Array.isArray(upstreamArray)){
 			throw new Error("Assertion failed: upstream value is not array for array-wrap box")
 		}
-		const result = upstreamArray.map(item => {
+		const result = upstreamArray.map((item, index) => {
 			const key = this.getKey(item)
 			let box = this.childMap.get(key)
 			if(box){
 				if(!outdatedKeys.has(key)){
 					throw new Error("Constraint violated, key is not unique: " + key)
 				}
+				box.index = index
 				box.tryChangeValue(item, this)
 			} else {
-				box = makeUpstreamBox(new ArrayElementValueBox(key, item, this))
+				box = makeUpstreamBox(new ArrayElementValueBox(key, index, item, this))
 				this.childMap.set(key, box)
 			}
 
@@ -672,28 +673,32 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 		// Q: why do we search for key here?
 		// A: see explaination in element wrap impl
 		// (in short, index could change between updates, that's why we don't rely on them)
-		// FIXME: bring back index and use it when we are subscribed, because then it is guaranteed to be consistent with the upstream
 		let upstreamValue = notificationStack.withAccessNotifications(this.upstream, null)
 		upstreamValue = [...upstreamValue]
 		let index = -1
-		for(let i = 0; i < upstreamValue.length; i++){
-			const item = upstreamValue[i]!
-			const itemKey = this.getKey(item)
-			if(itemKey === oldBoxKey){
+		if(this.haveSubscribers()){
+			// if we are subscribed - we can use index, it is guaranteed to be consistent with the upstream
+			index = box.index
+		} else {
+			for(let i = 0; i < upstreamValue.length; i++){
+				const item = upstreamValue[i]!
+				const itemKey = this.getKey(item)
+				if(itemKey === oldBoxKey){
 				// we can just break on the first found key, I'm just all about assertions
 				// btw maybe this assertion will break some of legitimate use cases..?
-				if(index >= 0){
-					throw new Error("Constraint violated, key is not unique: " + oldBoxKey)
+					if(index >= 0){
+						throw new Error("Constraint violated, key is not unique: " + oldBoxKey)
+					}
+					index = i
 				}
-				index = i
 			}
-		}
 
-		if(index < 0){
-			// value with old key is not found
-			// that means the box was detached before it received an update
-			box.dispose()
-			box.throwDetachedError()
+			if(index < 0){
+				// value with old key is not found
+				// that means the box was detached before it received an update
+				box.dispose()
+				box.throwDetachedError()
+			}
 		}
 
 		upstreamValue[index] = value
@@ -706,7 +711,7 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 
 	private disposed = false
 
-	constructor(public key: K, value: T, upstream: ArrayValueWrapViewBox<T, K>) {
+	constructor(public key: K, public index: number, value: T, upstream: ArrayValueWrapViewBox<T, K>) {
 		super(upstream, value)
 	}
 
