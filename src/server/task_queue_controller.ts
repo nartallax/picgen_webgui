@@ -48,6 +48,11 @@ export class TaskQueueController {
 		const result = await context.generationTask.create(genTask)
 		log("Enqueued task #" + result.id)
 
+		context.websockets.sendNotificationToUser(user.id, {
+			type: "task_created",
+			task: result
+		})
+
 		// just to make queue more uniform
 		context.onClosed(() => this.tryStartNextGeneration())
 

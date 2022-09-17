@@ -1,5 +1,5 @@
 import {Binder, getBinder} from "client/base/binder/binder"
-import {isRBox, MaybeRBoxed, RBox, unbox} from "client/base/box"
+import {isRBox, MaybeRBoxed, RBox, unbox, WBox} from "client/base/box"
 import {ClassNameParts, makeClassname} from "client/base/classname"
 import {Control, isControl} from "client/base/control"
 
@@ -67,7 +67,6 @@ export function tag<K extends keyof HTMLElementTagNameMap = "div">(a?: HTMLTagDe
 			// so just be Any and that's it
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			res.addEventListener(evtName, handler as any, {passive: true, capture: false})
-
 		}
 	}
 
@@ -80,9 +79,6 @@ export function tag<K extends keyof HTMLElementTagNameMap = "div">(a?: HTMLTagDe
 				})
 			}
 			res.style[k] = unbox(description.style[k]!)
-			break
-
-
 		}
 	}
 
@@ -94,7 +90,6 @@ export function tag<K extends keyof HTMLElementTagNameMap = "div">(a?: HTMLTagDe
 			})
 		}
 		res.setAttribute(k, unbox(v) + "")
-		break
 	}
 
 	if(children){
@@ -142,18 +137,28 @@ function updateChildren(parent: HTMLElement, newChildren: readonly HTMLElement[]
 
 /** Cached renderer for list of elements
  * Won't re-render an element if already has one for the value */
-// export function renderArray<T, K>(src: WBox<T[]>, getKey: (value: T) => K, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]>
-// export function renderArray<T, K>(src: RBox<T[]>, getKey: (value: T) => K, render: (value: RBox<T>) => HTMLElement): RBox<HTMLElement[]>
-// export function renderArray<T, K>(src: RBox<T[]>, getKey: (value: T) => K, keyProp: K, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]> {
-// 	const map = new Map<K, {box: WBox<T>, el: HTMLElement}>()
+export function renderArray<T, K>(src: WBox<T[]>, getKey: (value: T) => K, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]>
+export function renderArray<T, K>(src: RBox<T[]>, getKey: (value: T) => K, render: (value: RBox<T>) => HTMLElement): RBox<HTMLElement[]>
+export function renderArray<T, K>(src: WBox<T[]>, getKey: (value: T) => K, render: (value: WBox<T>) => HTMLElement): RBox<HTMLElement[]> {
+	const map = new Map<WBox<T>, HTMLElement>()
 
-// 	return src.map(arr => {
-// 		return arr.map(item => {
-// 			const key = getKey(item)
-// 			const wrap = map.get(key)
-// 			if(!wrap){
-// 				box =
-// 			}
-// 		})
-// 	})
-// }
+	return src.wrapElements(getKey).map(itemBoxes => {
+		const leftoverBoxes = new Set(map.keys())
+
+		const result = itemBoxes.map(itemBox => {
+			leftoverBoxes.delete(itemBox)
+			let el = map.get(itemBox)
+			if(!el){
+				el = render(itemBox)
+				map.set(itemBox, el)
+			}
+			return el
+		})
+
+		for(const oldBox of leftoverBoxes){
+			map.delete(oldBox)
+		}
+
+		return result
+	})
+}

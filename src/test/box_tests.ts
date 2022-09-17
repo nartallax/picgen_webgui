@@ -1714,4 +1714,15 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(parent.haveSubscribers(), false)
 	})
 
+	makeTest("arraywrap creates new box", () => {
+		const parent = box([{id: 1, name: "1"}]) as WBoxInternal<{id: number, name: string}[]>
+		const wrap = parent.wrapElements(el => el.id)
+		wrap.subscribe(() => {/* noop*/})
+		parent([...parent(), {id: 2, name: "2"}])
+		const box2 = wrap()[1]!
+		box2.subscribe(() => {/* noop*/})
+		parent([parent()[0]!, {id: 2, name: "3"}])
+		assertEquals(box2().name, "3")
+	})
+
 })

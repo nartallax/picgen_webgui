@@ -75,6 +75,7 @@ export class RequestContext extends UserlessContext {
 	constructor(
 		readonly requestUrl: URL,
 		readonly cookie: CookieController,
+		readonly responseHeaders: Http.OutgoingHttpHeaders,
 		discordApi: DiscordApiClient,
 		db: DbConnection,
 		websockets: WebsocketServer,
@@ -108,6 +109,7 @@ export class RequestContext extends UserlessContext {
 			return this.runWithContextCreator(baseProps.db(), conn => new RequestContext(
 				url,
 				new CookieController(req),
+				{},
 				baseProps.discordApi(),
 				conn,
 				baseProps.websocketServer(),

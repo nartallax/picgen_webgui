@@ -1,6 +1,6 @@
 import {ApiClient} from "client/app/api_client"
 import {GenParameterDefinition, SimpleListQueryParams} from "common/common_types"
-import {GenerationTask, GenerationTaskInputData, Picture, User} from "common/entity_types"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, User} from "common/entity_types"
 
 export namespace ClientApi {
 
@@ -27,10 +27,10 @@ export namespace ClientApi {
 	export const createGenerationTask = (inputData: GenerationTaskInputData) =>
 		client.call<GenerationTask>("createGenerationTask", {inputData})
 
-	export const listTasks = (inputData: SimpleListQueryParams<GenerationTask>) =>
-		client.call<{tasks: GenerationTask[], pictures: Picture[]}>("listTasks", {inputData})
+	export const listTasks = (query: SimpleListQueryParams<GenerationTask>) =>
+		client.call<GenerationTaskWithPictures[]>("listTasks", {query})
 
-	export const getPictureData = (pictureId: number) =>
-		client.callForBinary("getPictureData", {pictureId})
+	// export const getPictureData = (pictureId: number) =>
+	// 	client.callForBinary("getPictureData", {pictureId})
 
 }

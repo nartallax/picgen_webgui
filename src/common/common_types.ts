@@ -106,7 +106,7 @@ export interface TaskCreatedNotification {
 
 export interface SimpleListQueryParams<T>{
 	sortBy: keyof T & string
-	filters?: {[k in keyof T]: T[k]}
+	filters?: {[k in keyof T]?: T[k]}
 	desc: boolean
 	offset: number
 	limit: number

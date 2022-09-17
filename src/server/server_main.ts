@@ -63,6 +63,8 @@ async function mainInternal(): Promise<void> {
 
 	Runtyper.cleanup()
 
+	await db.inTransaction(db => db.run("delete from \"generationTasks\""))
+
 	await taskQueue.init()
 	const port = await server.start()
 	log("Server started at http://localhost:" + port + "/")

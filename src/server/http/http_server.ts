@@ -172,21 +172,32 @@ export class HttpServer {
 			}
 		}
 
-		let resp: ApiResponse<unknown>
+		let resp: string | Buffer
 		if(error){
-			resp = errorToErrorApiResp(error)
-			await endRequest(res, 500, "Server Error", JSON.stringify(resp))
+			resp = JSON.stringify(errorToErrorApiResp(error))
+			await endRequest(res, 500, "Server Error", resp)
 		} else {
-			resp = {result: result === undefined ? null : result}
+			if(result instanceof Buffer){
+				resp = result
+			} else {
+				const apiResp: ApiResponse<typeof result> = {result: result === undefined ? null : result}
+				resp = JSON.stringify(apiResp)
+			}
 			if(context){
 				for(const newCookie of context.cookie.harvestSetCookieLines()){
 					res.setHeader("Set-Cookie", newCookie)
 				}
+				for(const headerName in context.responseHeaders){
+					const rawValue = context.responseHeaders[headerName]!
+					for(const value of Array.isArray(rawValue) ? rawValue : [rawValue]){
+						res.setHeader(headerName, value)
+					}
+				}
 				if(context.redirectUrl){
 					res.setHeader("Location", context.redirectUrl)
-					await endRequest(res, 302, "Redirect", JSON.stringify(resp))
+					await endRequest(res, 302, "Redirect", resp)
 				} else {
-					await endRequest(res, 200, "OK", JSON.stringify(resp))
+					await endRequest(res, 200, "OK", resp)
 				}
 			}
 		}

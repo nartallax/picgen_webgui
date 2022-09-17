@@ -624,6 +624,9 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 	}
 
 	protected override calculateValue(): ValueBox<T>[] {
+		if(typeof(this) !== "function"){
+			throw new Error("Assertion failed")
+		}
 		const outdatedKeys = new Set(this.childMap.keys())
 
 		const upstreamArray = notificationStack.withAccessNotifications(this.upstream, null)

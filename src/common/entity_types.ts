@@ -44,3 +44,5 @@ export interface Picture {
 	readonly creationTime: number
 	readonly ext: string
 }
+
+export type GenerationTaskWithPictures = GenerationTask & {pictures: Picture[]}

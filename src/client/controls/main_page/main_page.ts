@@ -7,8 +7,9 @@ import {LoginBar} from "client/controls/login_bar/login_bar"
 import {ParamsBlock} from "client/controls/params_block/params_block"
 import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
+import {TaskList} from "client/controls/task_list/task_list"
 import {GenParameterDefinition} from "common/common_types"
-import {GenerationTask, GenerationTaskParameterValue} from "common/entity_types"
+import {GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
 
 function updateParamValues(paramValues: {[key: string]: WBox<GenParameterDefinition["default"]>}, defs: readonly GenParameterDefinition[]) {
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
@@ -38,32 +39,14 @@ export function MainPage(): HTMLElement {
 	const contentTagBox = box(null as null | {readonly [tagContent: string]: readonly string[]})
 	const selectedContentTags = box([] as string[])
 
-	const knownTasks = box([] as GenerationTask[])
-	const websocket = new WebsocketListener(knownTasks)
+	const knownTasks = box([] as GenerationTaskWithPictures[])
+	let websocket: WebsocketListener | null = null
 
 	const loadingContentShapeValue = "Loading..."
 	const shapeTagValue = box(loadingContentShapeValue)
 	const shapeTagsBox = box(null as null | readonly string[])
 
-	const promptValue = box("");
-
-	(async() => {
-		const [paramDefs, contentTags, shapeTags] = await Promise.all([
-			ClientApi.getGenerationParameterDefinitions(),
-			ClientApi.getContentTags(),
-			ClientApi.getShapeTags()
-		])
-
-		shapeTagsBox(shapeTags)
-		if(shapeTagValue() === loadingContentShapeValue){
-			shapeTagValue(shapeTags[0] || "Landscape")
-		}
-
-		updateParamValues(paramValues, paramDefs)
-		paramDefsBox(paramDefs)
-
-		contentTagBox(contentTags)
-	})()
+	const promptValue = box("")
 
 	const result = tag({class: "page-root"}, [
 		tag({class: "settings-column"}, [
@@ -92,13 +75,44 @@ export function MainPage(): HTMLElement {
 						params: paramValuesForApi
 					})
 				}
-			})
+			}),
+			TaskList({tasks: knownTasks})
 		])
 	])
 
 	const binder = getBinder(result)
-	binder.onNodeInserted(() => websocket.start())
-	binder.onNodeRemoved(() => websocket.stop())
+	binder.onNodeInserted(() => websocket?.start())
+	binder.onNodeRemoved(() => websocket?.stop());
+
+	(async() => {
+		const [paramDefs, contentTags, shapeTags, tasks] = await Promise.all([
+			ClientApi.getGenerationParameterDefinitions(),
+			ClientApi.getContentTags(),
+			ClientApi.getShapeTags(),
+			ClientApi.listTasks({
+				sortBy: "creationTime",
+				desc: true,
+				limit: 10,
+				offset: 0
+			})
+		])
+
+		knownTasks(tasks)
+		websocket = new WebsocketListener(knownTasks)
+		if(binder.isInDom){
+			websocket.start()
+		}
+
+		shapeTagsBox(shapeTags)
+		if(shapeTagValue() === loadingContentShapeValue){
+			shapeTagValue(shapeTags[0] || "Landscape")
+		}
+
+		updateParamValues(paramValues, paramDefs)
+		paramDefsBox(paramDefs)
+
+		contentTagBox(contentTags)
+	})()
 
 	return result
 }

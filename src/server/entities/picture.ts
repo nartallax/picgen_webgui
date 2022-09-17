@@ -6,7 +6,6 @@ import {promises as Fs} from "fs"
 import {fileExists} from "server/utils/file_exists"
 import {unixtime} from "server/utils/unixtime"
 import {RequestContext, UserlessContext} from "server/request_context"
-import {ApiError} from "common/api_error"
 import {httpGet} from "server/http/http_req"
 
 export interface ServerPicture extends Picture {
@@ -80,15 +79,7 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 
 export class CompletePictureDAO extends UserlessPictureDAO<RequestContext> {
 
-	async getPictureData(pictureId: number): Promise<Buffer> {
-		const [user, picture] = await Promise.all([
-			this.getContext().user.getCurrent(),
-			this.getById(pictureId)
-		])
-		if(picture.ownerUserId !== user.id){
-			throw new ApiError("access_denied", "This picture does not belong to you. You cannot view it.")
-		}
-
+	async getPictureData(picture: ServerPicture): Promise<Buffer> {
 		if(picture.directLink){
 			return await httpGet(picture.directLink)
 		} else if(picture.fileName){
