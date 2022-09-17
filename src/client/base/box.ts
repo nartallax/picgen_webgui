@@ -15,9 +15,8 @@ interface RBoxFields<T>{
 	map<R>(mapper: (value: T) => R): RBox<R>
 
 	/* Those methods are similar to wbox's ones, just those produce readonly boxes */
-	prop<K extends keyof T & (string | symbol)>(propKey: K): RBox<T[K]>
-	prop<K extends keyof T & number>(propKey: K): RBox<T[K] | undefined>
-	wrapElements<E, K>(this: WBox<E[]>, getKey: (element: E) => K): RBox<RBox<E>[]>
+	prop<K extends keyof T>(propKey: K): RBox<T[K]>
+	wrapElements<E, K>(this: RBox<E[]>, getKey: (element: E) => K): RBox<RBox<E>[]>
 }
 type RBoxCallSignature<T> = () => T
 
@@ -28,11 +27,8 @@ export type RBox<T> = RBoxCallSignature<T> & RBoxFields<T>
 
 interface WBoxFields<T> extends RBoxFields<T>{
 	/** Make property box, a box that contains a value of a property of an object of the value from the current box.
-	 * New box will be linked with the source box, so they will update accordingly.
-	 * Note that if the value of this box is array, value of new box can be undefined.
-	 * Another caveat of the array prop() method is that it is bound to the index, not to the value */
-	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
-	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
+	 * New box will be linked with the source box, so they will update accordingly. */
+	prop<K extends keyof T>(propKey: K): WBox<T[K]>
 
 	/** If this box contains array, make a rbox that contains each element of this array wrapped in box
 	 *
@@ -274,8 +270,6 @@ class ValueBox<T> extends (BoxBase as {
 	new<T>(value: T | NoValue): BoxBase<T> & WBoxCallSignature<T> & RBoxCallSignature<T>
 })<T> implements WBoxFields<T> {
 
-	prop<K extends keyof T & (string | symbol)>(propKey: K): WBox<T[K]>
-	prop<K extends keyof T & number>(propKey: K): WBox<T[K] | undefined>
 	prop<K extends keyof T>(propKey: K): WBox<T[K]> {
 		// by the way, I could store propbox in some sort of map in the parent valuebox
 		// and later, if someone asks for propbox for the same field, I'll give them the same propbox
@@ -283,18 +277,10 @@ class ValueBox<T> extends (BoxBase as {
 		// however, I don't want to do that because it's relatively rare case - to have two propboxes on same field at the same time
 		// and storing a reference to them in the parent will make them uneligible for GC, which is not very good
 		// (not very bad either, there's a finite amount of them. but it's still something to avoid)
-		let boxObj: FixedPropValueBox<T, K>
-		const weAreArray = Array.isArray(this.value)
-		const propertyIsNumber = typeof(propKey) === "number"
-		// few bad casts here. eww.
-		if(weAreArray && propertyIsNumber){
-			boxObj = new FixedArrayPropValueBox<unknown>(this as unknown as ValueBox<unknown[]>, propKey as K & number) as unknown as FixedPropValueBox<T, K>
-		} else if(!weAreArray && !propertyIsNumber){
-			boxObj = new FixedObjectPropValueBox(this, propKey as K & (string | symbol)) as unknown as FixedPropValueBox<T, K>
-		} else {
-			throw new Error(`Value of the box is ${weAreArray ? "" : "not "}array, but the property key is ${propertyIsNumber ? "" : "not "}number. This is inconsistent and not allowed.`)
+		if(Array.isArray(this.value)){
+			throw new Error("You should not use prop() to get values of elements of the array. Use wrapElements() instead.")
 		}
-		return makeUpstreamBox(boxObj)
+		return makeUpstreamBox(new FixedPropValueBox(this, propKey))
 	}
 
 }
@@ -410,7 +396,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = Valu
 
 }
 
-abstract class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U> {
+class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U> {
 
 	constructor(upstream: ValueBox<U>, protected readonly propKey: K) {
 		super(upstream, noValue)
@@ -420,33 +406,17 @@ abstract class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstr
 		return upstreamObject[this.propKey]
 	}
 
-}
-
-class FixedObjectPropValueBox<U, K extends keyof U & (string | symbol)> extends FixedPropValueBox<U, K> {
 	protected override buildUpstreamValue(value: U[K]): U {
 		const upstreamObject = this.getUpstreamValue()
 		if(Array.isArray(upstreamObject)){
-			throw new Error(`Upstream object became an array! Cannot properly clone it to set the property "${this.propKey.toString()}" value.`)
+			throw new Error(`Upstream object is an array! Cannot properly clone it to set the property "${this.propKey.toString()}" value.`)
 		}
 		return {
 			...upstreamObject,
 			[this.propKey]: value
 		}
 	}
-}
 
-// FIXME: delete this, it won't work well anyway
-class FixedArrayPropValueBox<E> extends FixedPropValueBox<E[], number> {
-
-	protected override buildUpstreamValue(value: E): E[] {
-		const upstreamObject = this.getUpstreamValue()
-		if(!Array.isArray(upstreamObject)){
-			throw new Error(`Upstream object is not array anymore! Cannot properly clone it to set the property "${this.propKey}" value.`)
-		}
-		const newArr = [...upstreamObject]
-		newArr[this.propKey] = value
-		return newArr
-	}
 }
 
 function makeUpstreamBox<T, U, B>(instance: ValueBoxWithUpstream<T, U> & B): ValueBoxWithUpstream<T, U> & B {

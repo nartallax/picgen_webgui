@@ -200,22 +200,6 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(calls, 2)
 	})
 
-	makeTest("property subbox array test", () => {
-		const parent = box([1, 2, 3])
-		const child = parent.prop(3)
-
-		assertEquals(child(), undefined)
-		child(4)
-		assertEquals(parent().join(","), "1,2,3,4")
-		assertEquals(child(), 4)
-
-		let lastValue = child()
-		child.subscribe(v => lastValue = v)
-		parent([1, 2, 3, 7])
-		assertEquals(child(), 7)
-		assertEquals(lastValue, 7)
-	})
-
 	makeTest("property subbox properly ignores circular updates", () => {
 		const parent = box({a: {c: 5}, b: {d: "uwu"}})
 		const childA = parent.prop("a")
