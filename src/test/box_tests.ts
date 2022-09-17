@@ -1202,32 +1202,22 @@ export default makeTestPack("box", makeTest => {
 		assertThrows(box1, /box for key 6 is no longer attached/)
 	})
 
-
-
-
-	makeTest("prop and arraywrap chain no subscribers", () => {
-		const parent = box({a: [{id: 5, name: "5"}, {id: 6, name: "6"}]}) as WBoxInternal<{a: {id: number, name: string}[]}>
-		const prop = parent.prop("a")
-		const arrWrap = prop.wrapElements(el => el.id)
-		const box6 = arrWrap()[1]!
+	makeTest("chain array wraps with subscribers throw 3", () => {
+		const parent = box([[{id: 1, name: "1"}, {id: 2, name: "2"}], [{id: 3, name: "3"}]]) as WBoxInternal<{id: number, name: string}[][]>
+		const wrapA = parent.wrapElements(arr => arr.length)
+		const wrapB = wrapA()[0]!.wrapElements(el => el.id)
+		const box1 = wrapB()[0]!
 
 		assertEquals(parent.haveSubscribers(), false)
-		assertEquals(box6().name, "6")
+		assertEquals(box1().name, "1")
 
-		box6({id: 6, name: "66"})
-		assertEquals(box6().name, "66")
-		assertEquals(parent().a[1], box6())
+		box1.subscribe(() => {
+			// nothing
+		})
 
-		box6({id: 7, name: "uwu"})
-		assertEquals(parent.haveSubscribers(), false)
-		assertEquals(box6().name, "uwu")
-		assertEquals(parent().a[1], box6())
-
-		parent({a: [{id: 7, name: "owo"}, {id: 5, name: "uwu"}]})
-		assertEquals(parent.haveSubscribers(), false)
-		assertEquals(box6().name, "owo")
-		assertEquals(box6().id, 7)
-		assertEquals(parent().a[0], box6())
+		assertEquals(parent.haveSubscribers(), true)
+		parent([])
+		assertThrows(box1, /box for key 1 is no longer attached/)
 	})
 
 	makeTest("prop and arraywrap chain with subscribers", () => {
@@ -1407,17 +1397,115 @@ export default makeTestPack("box", makeTest => {
 		assertEquals(lastValue, view1())
 		assertEquals(callCount, 1)
 
+		unsub()
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(view1(), "11, nya")
+		assertEquals(callCount, 1)
+	})
+
+	makeTest("arraywrap and viewbox chain with sub different throw", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}]) as WBoxInternal<{id: number, name: string}[]>
+		const wrap = parent.wrapElements(el => el.id)
+		const box1 = wrap()[0]!
+		const view1 = viewBox(() => box1().name + ", nya")
+
+		assertEquals(parent.haveSubscribers(), false)
+		let lastValue = view1()
+		let callCount = 0
+		view1.subscribe(v => {
+			lastValue = v
+			callCount++
+		})
+
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(view1(), "1, nya")
+		assertEquals(parent()[0]!.name, "1")
+		assertEquals(lastValue, view1())
+		assertEquals(callCount, 0)
+
+		parent([{id: 1, name: "11"}, parent()[1]!])
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(view1(), "11, nya")
+		assertEquals(parent()[0]!.name, "11")
+		assertEquals(lastValue, view1())
+		assertEquals(callCount, 1)
+
+		parent([parent()[1]!, {id: 1, name: "11"}])
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(view1(), "11, nya")
+		assertEquals(parent()[1]!.name, "11")
+		assertEquals(lastValue, view1())
+		assertEquals(callCount, 1)
+
 		parent([parent()[0]!])
 		assertEquals(parent.haveSubscribers(), false)
 		assertThrows(view1, /box for key 1 is no longer attached/)
 		assertEquals(callCount, 1)
+	})
 
-		void unsub
+	makeTest("viewbox and arraywrap chain no sub", () => {
+		const parent = box({a: [{id: 1, name: "1"}]}) as WBoxInternal<{a: {id: number, name: string}[]}>
+		const view = viewBox(() => parent().a)
+		const wrap = view.wrapElements(el => el.id)
+		const box1 = wrap()[0]!
 
-		// unsub()
-		// assertThrows(view1, /box for key 1 is no longer attached/)
-		// assertEquals(callCount, 1)
-		// assertEquals(parent.haveSubscribers(), false)
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "1")
+		assertEquals(box1(), parent().a[0])
+
+		parent({a: [{id: 1, name: "11"}]})
+		assertEquals(box1().name, "11")
+		assertEquals(box1(), parent().a[0])
+		assertEquals(parent.haveSubscribers(), false)
+
+		const prop = parent.prop("a")
+		prop([{id: 1, name: "111"}])
+		assertEquals(box1().name, "111")
+		assertEquals(box1(), parent().a[0])
+		assertEquals(parent.haveSubscribers(), false)
+
+		prop([{id: 2, name: "2"}])
+		assertThrows(box1, /box for key 1 is no longer attached/)
+	})
+
+	makeTest("viewbox and arraywrap chain with sub", () => {
+		const parent = box({a: [{id: 1, name: "1"}]}) as WBoxInternal<{a: {id: number, name: string}[]}>
+		const view = viewBox(() => parent().a)
+		const wrap = view.wrapElements(el => el.id)
+		const box1 = wrap()[0]!
+
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "1")
+		assertEquals(box1(), parent().a[0])
+
+		let lastValue = box1()
+		let callCount = 0
+		const unsub = box1.subscribe(v => {
+			lastValue = v
+			callCount++
+		})
+
+		assertEquals(parent.haveSubscribers(), true)
+		parent({a: [{id: 1, name: "11"}]})
+		assertEquals(box1().name, "11")
+		assertEquals(box1(), parent().a[0])
+		assertEquals(lastValue, box1())
+		assertEquals(callCount, 1)
+
+		assertEquals(parent.haveSubscribers(), true)
+		const prop = parent.prop("a")
+		prop([{id: 1, name: "111"}])
+		assertEquals(box1().name, "111")
+		assertEquals(box1(), parent().a[0])
+		assertEquals(lastValue, box1())
+		assertEquals(callCount, 2)
+
+		unsub()
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(box1().name, "111")
+		assertEquals(box1(), parent().a[0])
+		assertEquals(lastValue, box1())
+		assertEquals(callCount, 2)
 	})
 
 })

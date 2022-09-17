@@ -158,6 +158,15 @@ abstract class BoxBase<T> {
 		return this.internalSubscribers.size > 0 || this.externalSubscribers.size > 0
 	}
 
+	/** After box is disposed, it should not be used anymore
+	 * This is reserved for very special cases and cannot really be used on any kind of box */
+	dispose(): void {
+		this.value = noValue
+		for(const sub of this.internalSubscribers){
+			sub.box.dispose()
+		}
+	}
+
 	doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): UnsubscribeFn {
 		const value = this.value
 		if(value === noValue){
@@ -745,13 +754,13 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 		super(upstream, value)
 	}
 
-	dispose(): void {
+	override dispose(): void {
 		this.disposed = true
 		// update of sub may or may not set empty value (if there is no sub)
 		// let's set it explicitly
 		this.value = noValue
 		this.tryUpdateUpstreamSub()
-		// this.removeAllSubscriptions()
+		super.dispose()
 	}
 
 	protected override shouldBeSubscribed(): boolean {
