@@ -97,6 +97,7 @@ interface ExternalSubscriber<T>{
 	lastKnownRevision: number
 	lastKnownValue: T
 	handler: SubscriberHandlerFn<T>
+	unsubscribe: UnsubscribeFn
 }
 
 interface InternalSubscriber<T> extends ExternalSubscriber<T>{
@@ -132,7 +133,20 @@ abstract class BoxBase<T> {
 		return this.internalSubscribers.size > 0 || this.externalSubscribers.size > 0
 	}
 
-	doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): UnsubscribeFn {
+	protected removeAllSubscriptions(): void {
+		for(const sub of this.internalSubscribers){
+			sub.unsubscribe()
+		}
+		for(const sub of this.externalSubscribers){
+			sub.unsubscribe()
+		}
+	}
+
+	protected onUnsubscribed(): void {
+		// nothing, to be overriden
+	}
+
+	doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): ExternalSubscriber<T> {
 		const value = this.value
 		if(value === noValue){
 			throw new Error("Cannot subscribe to box: no value!")
@@ -142,10 +156,13 @@ abstract class BoxBase<T> {
 			const sub: ExternalSubscriber<T> = {
 				handler,
 				lastKnownRevision: this.revision,
-				lastKnownValue: value as T
+				lastKnownValue: value as T,
+				unsubscribe: () => {
+					this.externalSubscribers.delete(sub)
+				}
 			}
 			this.externalSubscribers.add(sub)
-			return () => this.externalSubscribers.delete(sub)
+			return sub
 		} else {
 			if(!box){
 				throw new Error("Assertion failed")
@@ -153,15 +170,16 @@ abstract class BoxBase<T> {
 			const sub: InternalSubscriber<T> = {
 				handler, box: box as RBoxBase<unknown>,
 				lastKnownRevision: this.revision,
-				lastKnownValue: value as T
+				lastKnownValue: value as T,
+				unsubscribe: () => this.internalSubscribers.delete(sub)
 			}
 			this.internalSubscribers.add(sub)
-			return () => this.internalSubscribers.delete(sub)
+			return sub
 		}
 	}
 
 	subscribe(handler: SubscriberHandlerFn<T>): UnsubscribeFn {
-		return this.doSubscribe(true, handler)
+		return this.doSubscribe(true, handler).unsubscribe
 	}
 
 	tryChangeValue<B>(value: T, box?: RBoxBase<B>): void {
@@ -312,13 +330,13 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = Valu
 	tryUpdateUpstreamSub(): void {
 		const shouldBeSub = this.shouldBeSubscribed()
 		if(shouldBeSub && !this.upstreamUnsub){
-			this.subToParent()
+			this.subToUpstream()
 		} else if(!shouldBeSub && this.upstreamUnsub){
-			this.unsubFromParent()
+			this.unsubFromUpstream()
 		}
 	}
 
-	private unsubFromParent() {
+	private unsubFromUpstream() {
 		if(!this.upstreamUnsub){
 			throw new Error("Assertion failed")
 		}
@@ -327,26 +345,28 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = Valu
 		this.value = this.getEmptyValue()
 	}
 
-	private subToParent(): void {
+	private subToUpstream(): void {
 		if(this.upstreamUnsub){
 			throw new Error("Assertion failed")
 		}
 		if(this.value === noValue){
 			this.value = this.getBoxValue()
 		}
-		this.upstreamUnsub = this.upstream.doSubscribe(false, this.doOnUpstreamChange.bind(this), this)
+		this.upstreamUnsub = this.upstream.doSubscribe(false, this.doOnUpstreamChange.bind(this), this).unsubscribe
 	}
 
-	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): UnsubscribeFn {
+	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): ExternalSubscriber<T> {
 		if(this.value === noValue){
 			this.value = this.getBoxValue()
 		}
-		const unsub = super.doSubscribe(external, handler, box)
-		this.tryUpdateUpstreamSub()
-		return () => {
+		const result = super.doSubscribe(external, handler, box)
+		const unsub = result.unsubscribe
+		result.unsubscribe = () => {
 			unsub()
 			this.tryUpdateUpstreamSub()
 		}
+		this.tryUpdateUpstreamSub()
+		return result
 	}
 
 	override notify<B>(value: T, box: RBoxBase<B> | undefined): void {
@@ -502,7 +522,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 		return false // we have value, no need to do anything
 	}
 
-	private recalcValueAndResubscribe(): void {
+	private recalcValueAndResubscribe(forceSubscribe: boolean): void {
 		// we preserve list of our old subscriptions to drop them only at the end of the method
 		// we do that because some box implementations can change its internal state dramatically when they have 0 subs
 		// and to prevent them going back and forth, we first create new subscribers, and only then let go old ones
@@ -525,11 +545,18 @@ abstract class ViewBox<T> extends (BoxBase as {
 		// and we should never be subscribed to itself, because it's not really possible
 		this.tryChangeValue(newValue)
 
-		if(depList.length > 0){
-			const doOnDependencyUpdated = this.onDependencyListUpdated ||= () => this.recalcValueAndResubscribe()
-			for(let i = 0; i < depList.length; i++){
-				this.subDisposers.push(depList[i]!.subscribe(doOnDependencyUpdated))
+		// this check is here because as a result of recalculation we may lose all of our subscribers
+		// and therefore we don't need to be subscribed to anything anymore
+		// (that's the case with array wrap)
+		if(forceSubscribe || this.haveSubscribers()){
+			if(depList.length > 0){
+				const doOnDependencyUpdated = this.onDependencyListUpdated ||= () => this.recalcValueAndResubscribe(false)
+				for(let i = 0; i < depList.length; i++){
+					this.subDisposers.push(depList[i]!.subscribe(doOnDependencyUpdated))
+				}
 			}
+		} else {
+			this.value = noValue
 		}
 		for(const subDisposer of oldSubDisposers){
 			subDisposer()
@@ -538,20 +565,22 @@ abstract class ViewBox<T> extends (BoxBase as {
 		this.subDisposers = this.subDisposers.slice(oldSubDisposers.length)
 	}
 
-	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B> | undefined): UnsubscribeFn {
+	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B> | undefined): ExternalSubscriber<T> {
 		if(this.value === noValue){
 			// because we must have a value before doSubscribe can be called
-			// FIXME: why exactly?
-			this.recalcValueAndResubscribe()
+			// and also we will have a sub right now, might as well prepare for that
+			this.recalcValueAndResubscribe(true)
 		}
-		const disposer = super.doSubscribe(external, handler, box)
-		return () => {
-			disposer()
+		const sub = super.doSubscribe(external, handler, box)
+		const unsub = sub.unsubscribe
+		sub.unsubscribe = () => {
+			unsub()
 			if(!this.haveSubscribers()){
 				this.subDispose()
 				this.value = noValue
 			}
 		}
+		return sub
 	}
 
 	getValue(): T {
@@ -716,6 +745,7 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 		// let's set it explicitly
 		this.value = noValue
 		this.tryUpdateUpstreamSub()
+		this.removeAllSubscriptions()
 	}
 
 	protected override shouldBeSubscribed(): boolean {

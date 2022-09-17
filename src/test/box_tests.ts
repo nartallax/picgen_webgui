@@ -1373,54 +1373,49 @@ export default makeTestPack("box", makeTest => {
 		assertThrows(view1, /box for key 1 is no longer attached/)
 	})
 
-	// FIXME: revive test
-	// makeTest("arraywrap and viewbox chain with sub", () => {
-	// 	const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}]) as WBoxInternal<{id: number, name: string}[]>
-	// 	const wrap = parent.wrapElements(el => el.id)
-	// 	const box1 = wrap()[0]!
-	// 	const view1 = viewBox(() => box1().name + ", nya")
+	makeTest("arraywrap and viewbox chain with sub", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}]) as WBoxInternal<{id: number, name: string}[]>
+		const wrap = parent.wrapElements(el => el.id)
+		const box1 = wrap()[0]!
+		const view1 = viewBox(() => box1().name + ", nya")
 
-	// 	assertEquals(parent.haveSubscribers(), false)
-	// 	let lastValue = view1()
-	// 	let callCount = 0
-	// 	const unsub = view1.subscribe(v => {
-	// 		lastValue = v
-	// 		callCount++
-	// 	})
+		assertEquals(parent.haveSubscribers(), false)
+		let lastValue = view1()
+		let callCount = 0
+		const unsub = view1.subscribe(v => {
+			lastValue = v
+			callCount++
+		})
 
-	// 	assertEquals(parent.haveSubscribers(), true)
-	// 	assertEquals(view1(), "1, nya")
-	// 	assertEquals(parent()[0]!.name, "1")
-	// 	assertEquals(lastValue, view1())
-	// 	assertEquals(callCount, 0)
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(view1(), "1, nya")
+		assertEquals(parent()[0]!.name, "1")
+		assertEquals(lastValue, view1())
+		assertEquals(callCount, 0)
 
-	// 	parent([{id: 1, name: "11"}, parent()[1]!])
-	// 	assertEquals(parent.haveSubscribers(), true)
-	// 	assertEquals(view1(), "11, nya")
-	// 	assertEquals(parent()[0]!.name, "11")
-	// 	assertEquals(lastValue, view1())
-	// 	assertEquals(callCount, 1)
+		parent([{id: 1, name: "11"}, parent()[1]!])
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(view1(), "11, nya")
+		assertEquals(parent()[0]!.name, "11")
+		assertEquals(lastValue, view1())
+		assertEquals(callCount, 1)
 
-	// 	parent([parent()[1]!, {id: 1, name: "11"}])
-	// 	assertEquals(parent.haveSubscribers(), true)
-	// 	assertEquals(view1(), "11, nya")
-	// 	assertEquals(parent()[1]!.name, "11")
-	// 	assertEquals(lastValue, view1())
-	// 	assertEquals(callCount, 1)
+		parent([parent()[1]!, {id: 1, name: "11"}])
+		assertEquals(parent.haveSubscribers(), true)
+		assertEquals(view1(), "11, nya")
+		assertEquals(parent()[1]!.name, "11")
+		assertEquals(lastValue, view1())
+		assertEquals(callCount, 1)
 
-	// 	console.log("======START======")
-	// 	parent([parent()[0]!])
-	// 	console.log("box1", (box1 as RBoxInternal<unknown>).haveSubscribers())
-	// 	console.log("wrap", (wrap as RBoxInternal<unknown>).haveSubscribers())
-	// 	console.log("parent", (parent as RBoxInternal<unknown>).haveSubscribers())
-	// 	assertEquals(parent.haveSubscribers(), false)
-	// 	assertThrows(view1, /box for key 1 is no longer attached/)
-	// 	assertEquals(callCount, 1)
+		parent([parent()[0]!])
+		assertEquals(parent.haveSubscribers(), false)
+		assertEquals(view1(), "11, nya")
+		assertEquals(callCount, 1)
 
-	// 	unsub()
-	// 	assertEquals(parent.haveSubscribers(), true)
-	// })
-
-	// Error.stackTraceLimit = 30
+		unsub()
+		assertThrows(view1, /box for key 1 is no longer attached/)
+		assertEquals(callCount, 1)
+		assertEquals(parent.haveSubscribers(), false)
+	})
 
 })
