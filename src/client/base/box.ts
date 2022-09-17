@@ -636,17 +636,6 @@ function makeViewBoxByClassInstance<T, B extends ViewBox<T>>(instance: B): B {
 	return result
 }
 
-// TODO: test:
-// upstream has value, take a wrap-array, take a box
-// update value in upstream array once, with the same keys, but different values
-// update value in upstream array second time, with different keys
-// between the updates check/not check value of the element wrap box
-// check what is in the box after both of updates
-
-// TODO: test
-// upstream has value, take a wrap-array, take a box
-// update upstream, adding value at the start
-// check the value in the box
 class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
 	private readonly childMap = new Map<K, ArrayElementValueBox<T, K>>()
@@ -655,9 +644,6 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 		super([upstream])
 	}
 
-	// TODO: test for two subscriptions: first array wrap subscribes to upstream, then view subscribes to upstream
-	// and then maybe updates to upstream will fuckup something, or updates to element
-	// and vice-versa
 	protected override calculateValue(): ValueBox<T>[] {
 		const outdatedKeys = new Set(this.childMap.keys())
 
@@ -764,7 +750,6 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 	}
 
 	protected override shouldBeSubscribed(): boolean {
-		// TODO: test unsub on dispose
 		return !this.disposed && super.shouldBeSubscribed()
 	}
 
