@@ -55,9 +55,7 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 				TagList({
 					values: visibleContentTags,
 					onclick: tagStr => {
-						const arr = opts.selectedContentTags()
-						arr.push(tagStr)
-						opts.selectedContentTags(arr)
+						opts.selectedContentTags([...opts.selectedContentTags(), tagStr])
 					}
 				})
 			])

@@ -5,16 +5,14 @@
 	align-items: stretch;
 
 	.settings-column {
-		flex-grow: 1;
-		flex-basis: 1px;
+		width: 20%;
 		max-width: 400px;
 		min-width: 250px;
 	}
 	
 	.generation-column {
-		flex-grow: 4;
-		flex-basis: 4px;
-		margin-left: 1vw;
+		width: 80%;
+		padding-left: 1vw;
 	}
 
 }

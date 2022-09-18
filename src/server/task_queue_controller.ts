@@ -29,6 +29,27 @@ export class TaskQueueController {
 		this.tryStartNextGeneration() // yep, without await. intended.
 	}
 
+	async kill(id: number): Promise<void> {
+		if(this.runningGeneration && this.runningGeneration.task.id === id){
+			log(`Killing running task #${id}.`)
+			this.runningGeneration.kill()
+			this.tryStartNextGeneration()
+			return
+		} else {
+			log(`Removing task #${id} from queue.`)
+			const context = cont()
+			const task = await context.generationTask.getById(id)
+			task.status = "completed"
+			task.finishTime = unixtime()
+			context.websockets.sendNotificationToAll({
+				type: "task_finished",
+				taskId: task.id,
+				finishTime: task.finishTime
+			})
+			await context.generationTask.update(task)
+		}
+	}
+
 	async addToQueue(inputData: GenerationTaskInputData): Promise<GenerationTask> {
 		const context = cont()
 		const user = await context.user.getCurrent()
@@ -48,7 +69,7 @@ export class TaskQueueController {
 		const result = await context.generationTask.create(genTask)
 		log("Enqueued task #" + result.id)
 
-		context.websockets.sendNotificationToUser(user.id, {
+		context.websockets.sendNotificationToAll({
 			type: "task_created",
 			task: result
 		})
@@ -106,27 +127,29 @@ export class TaskQueueController {
 
 		this.runningGeneration = new GenRunner(config, callbacks, task)
 
+		const startTime = unixtime()
 		update(() => {
 			task.status = "running"
-			task.startTime = unixtime()
+			task.startTime = startTime
 		})
 		sendTaskNotification({
 			type: "task_started",
 			taskId: task.id,
-			startTime: task.startTime!
+			startTime: startTime
 		})
 
 		await this.runningGeneration.waitCompletion()
 
 		log(`Task #${task.id} completed`)
+		const finishTime = unixtime()
 		update(() => {
 			task.status = "completed"
-			task.finishTime = unixtime()
+			task.finishTime = finishTime
 		})
 		sendTaskNotification({
 			type: "task_finished",
 			taskId: task.id,
-			finishTime: task.finishTime!
+			finishTime: finishTime
 		})
 
 		await update.waitInvocationsOver()
@@ -156,7 +179,7 @@ export class TaskQueueController {
 		})
 
 		function sendTaskNotification(body: ApiNotification): void {
-			update(context => context.websockets.sendNotificationToUser(task.userId, body))
+			update(context => context.websockets.sendNotificationToAll(body))
 		}
 
 		const callbacks: GenRunnerCallbacks = {
@@ -196,7 +219,8 @@ export class TaskQueueController {
 				sendTaskNotification({
 					type: "task_generated_picture",
 					taskId: task.id,
-					picture: context.picture.stripServerData(serverPic)
+					picture: context.picture.stripServerData(serverPic),
+					generatedPictures: task.generatedPictures
 				})
 			}),
 

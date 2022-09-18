@@ -1,5 +1,98 @@
 .task-panel {
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 	align-items: stretch;
+
+	.task-panel-header {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+
+		.task-panel-id {
+			color: #292828;
+			font-weight: bold;
+			padding: 0.25em 0.3em;
+		}
+
+		.task-panel-status,
+		.task-panel-done-counter,
+		.task-panel-timer {
+			color: #625e5e;
+			padding: 0.25em 0.3em;
+		}
+
+		.task-panel-repeat-button,
+		.task-panel-kill-button {
+			cursor: pointer;
+			font-size: 1.5rem;
+			padding: 0.25em 0.5em;
+
+			&.hidden {
+				display: none;
+			}
+		}
+		
+		.task-panel-repeat-button {
+			color: #87AF8D;
+		}
+
+		.task-panel-kill-button {
+			color: #E55F42;
+		}
+
+		.task-panel-timer {
+			flex-grow: 1;
+			text-align: right;
+		}
+	}
+
+	.task-panel-pictures-wrap {
+		overflow-y: auto;
+
+		.task-panel-pictures {
+			display: flex;
+			flex-direction: row;
+			align-items: stretch;
+		}
+
+	}	
+
+	.task-panel-footer {
+		margin-top: 1em;
+
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+
+		background: #cdbbb6;
+		border-radius: 1.5em;
+		overflow: hidden;
+
+		.task-panel-prompt {
+			font-weight: bold;
+			font-size: 0.9em;
+			color: #5A5453;
+			flex-grow: 1;
+			padding: 0.5em 1.5em;
+		}
+
+		.task-panel-copy-prompt-button {
+			font-size: 1.5em;
+			cursor: pointer;
+			border-radius: 0.5em;
+			padding: 0.5em;
+			color: #5A5453;
+
+			background: rgba(135, 185, 81, 0);
+			transition: 0.25s;
+
+			&.task-panel-button-recently-clicked {
+				pointer-events: none;
+				background: rgba(135, 185, 81, 0.5);
+			}
+
+		}
+
+	}
+
 }

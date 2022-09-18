@@ -16,11 +16,6 @@ const cli = new CLI({
 			keys: ["--config"],
 			definition: "Path to config.json",
 			default: "./config.json"
-		}),
-		port: CLI.int({
-			keys: ["-p", "--http-port"],
-			definition: "TCP port that the server will listen on",
-			default: 22650
 		})
 	}
 })

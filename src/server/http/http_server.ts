@@ -13,6 +13,7 @@ import {log} from "server/log"
 
 interface HttpServerOptions {
 	readonly port: number
+	readonly host?: string
 	readonly httpRoot: string
 	readonly cacheDuration: number
 	readonly apiRoot: string
@@ -43,7 +44,7 @@ export class HttpServer {
 
 	start(): Promise<number> {
 		return new Promise((ok, bad) => {
-			this.server.listen(this.opts.port, () => {
+			this.server.listen(this.opts.port, this.opts.host, () => {
 				const addr = this.server.address()
 				if(!addr || typeof(addr) !== "object"){
 					bad(new Error("Server address is not an object: " + addr))

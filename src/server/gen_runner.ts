@@ -63,7 +63,7 @@ export class GenRunner {
 	constructor(
 		private readonly config: Config,
 		private readonly callbacks: GenRunnerCallbacks,
-		task: GenerationTask
+		public task: GenerationTask
 	) {
 		const {bin, params, inputJson} = this.makeCommand(task)
 
@@ -155,6 +155,10 @@ export class GenRunner {
 		const bin = entries[0] as string
 		const params = entries.slice(1) as string[]
 		return {bin, params, inputJson: json}
+	}
+
+	kill(): void {
+		this.process.kill()
 	}
 
 }

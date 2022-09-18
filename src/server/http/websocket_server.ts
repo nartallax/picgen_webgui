@@ -57,6 +57,16 @@ export class WebsocketServer<K extends string | number = string | number> {
 		})
 	}
 
+	sendNotificationToAll(data: ApiNotification): void {
+		const wrapped: ApiNotificationWrap = {notification: data}
+		const dataStr = JSON.stringify(wrapped)
+		for(const socketArr of this.userSockets.values()){
+			for(const conn of socketArr){
+				conn.send(dataStr)
+			}
+		}
+	}
+
 	sendNotificationToUser(userKey: K, data: ApiNotification): void {
 		const arr = this.userSockets.get(userKey)
 		if(!arr){

@@ -11,7 +11,7 @@ export interface HTMLTagDescription<K extends keyof HTMLElementTagNameMap = keyo
 		readonly [attrName: string]: MaybeRBoxed<string | number>
 	}
 	readonly on?: {
-		readonly [k in keyof GlobalEventHandlersEventMap]?: (evt: GlobalEventHandlersEventMap[k]) => void
+		readonly [k in keyof GlobalEventHandlersEventMap]?: (this: HTMLElementTagNameMap[K], evt: GlobalEventHandlersEventMap[k]) => void
 	}
 	readonly style?: {
 		readonly [k in keyof CSSStyleDeclaration]?: MaybeRBoxed<CSSStyleDeclaration[k]>

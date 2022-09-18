@@ -59,7 +59,7 @@ export class WebsocketListener {
 			case "task_started":
 				this.updateTaskById(
 					notification.taskId,
-					task => ({...task, status: "running"})
+					task => ({...task, status: "running", startTime: notification.startTime})
 				)
 				break
 			case "task_expected_picture_count_known":
@@ -77,7 +77,11 @@ export class WebsocketListener {
 			case "task_generated_picture":
 				this.updateTaskById(
 					notification.taskId,
-					task => ({...task, pictures: [...task.pictures, notification.picture]})
+					task => ({
+						...task,
+						pictures: [...task.pictures, notification.picture],
+						generatedPictures: notification.generatedPictures
+					})
 				)
 				break
 			case "task_prompt_updated":

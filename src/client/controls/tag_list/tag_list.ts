@@ -32,9 +32,7 @@ export function TagList(opts: TagListOptions): HTMLElement {
 				const cross = tag({
 					class: ["tag-remove-button", "icon-cancel"],
 					on: {click: () => {
-						let tags = valueBox()
-						tags = tags.filter(x => x !== tagStr)
-						valueBox(tags)
+						valueBox(valueBox().filter(x => x !== tagStr))
 					}}
 				})
 				item.appendChild(cross)

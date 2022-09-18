@@ -18,8 +18,9 @@ export namespace ServerApi {
 		return config.tags.content
 	}
 
-	export function getDiscordLoginUrl(): string {
-		return config.discordLoginUrl
+	export function getDiscordLoginUrl(protocol: "http" | "https", domain: string): string {
+		const str = `https://discord.com/api/oauth2/authorize?client_id=${encodeURIComponent(config.discordClientId)}&redirect_uri=${encodeURIComponent(`${protocol}://${domain}/api/discordOauth2`)}&response_type=code&scope=identify`
+		return str
 	}
 
 	export async function discordOauth2(): Promise<void> {
@@ -115,6 +116,11 @@ export namespace ServerApi {
 		// TODO: stream directly into http stream?
 		const result = await context.picture.getPictureData(picture)
 		return result
+	}
+
+	export async function killTask(id: number): Promise<void> {
+		const context = cont()
+		await context.taskQueue.kill(id)
 	}
 
 }

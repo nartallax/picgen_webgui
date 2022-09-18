@@ -28,10 +28,18 @@ async function mainInternal(): Promise<void> {
 		config,
 		db: () => db,
 		discordApi: () => discordApi,
-		defaultToHttps: config.defaultToHttps,
+		defaultToHttps: config.haveHttps,
 		websocketServer: () => websocketServer,
 		taskQueue: () => taskQueue
 	}
+
+	process.on("uncaughtException", err => {
+		log("Uncaught exception! " + err.stack)
+	})
+
+	process.on("unhandledRejection", err => {
+		log("Uncaught exception! " + errToString(err))
+	})
 
 	const contextFactory = RequestContext.makeFactory(contextStaticProps)
 	const userlessContextFactory = RequestContext.makeUserlessFactory(contextStaticProps)
@@ -42,7 +50,8 @@ async function mainInternal(): Promise<void> {
 	const discordApi = new DiscordApiClient(config.discordClientId, config.discordClientSecret)
 
 	const server = new HttpServer({
-		port: config.port,
+		port: config.httpPort,
+		host: config.httpHost,
 		httpRoot: config.httpRootDir,
 		apiRoot: "/api/",
 		inputSizeLimit: 1024 * 1024 * 16,
@@ -63,11 +72,9 @@ async function mainInternal(): Promise<void> {
 
 	Runtyper.cleanup()
 
-	await db.inTransaction(db => db.run("delete from \"generationTasks\""))
-
 	await taskQueue.init()
 	const port = await server.start()
-	log("Server started at http://localhost:" + port + "/")
+	log(`Server started at ${config.haveHttps ? "https" : "http"}://${config.httpHost || "localhost"}:${port}/`)
 
 	process.on("SIGINT", async() => {
 		log("Stop is requested by interrupt signal.")

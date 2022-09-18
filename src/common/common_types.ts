@@ -85,6 +85,7 @@ export interface TaskGeneratedPictureNotification {
 	type: "task_generated_picture"
 	taskId: number
 	picture: Picture
+	generatedPictures: number
 }
 
 export interface TaskFinishedNotification {

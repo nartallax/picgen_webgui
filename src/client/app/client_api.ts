@@ -4,7 +4,9 @@ import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Use
 
 export namespace ClientApi {
 
-	const client = new ApiClient("/api/")
+	const apiPrefix = "/api/"
+
+	const client = new ApiClient(apiPrefix)
 
 	export const getGenerationParameterDefinitions = () =>
 		client.call<readonly GenParameterDefinition[]>("getGenerationParameterDefinitions", {})
@@ -15,8 +17,8 @@ export namespace ClientApi {
 	export const getContentTags = () =>
 		client.call<{readonly [tagContent: string]: readonly string[]}>("getContentTags", {})
 
-	export const getDiscordLoginUrl = () =>
-		client.call<string>("getDiscordLoginUrl", {})
+	export const getDiscordLoginUrl = (protocol: "http" | "https", domain: string) =>
+		client.call<string>("getDiscordLoginUrl", {protocol, domain})
 
 	export const getUserData = () =>
 		client.call<User>("getUserData", {})
@@ -29,6 +31,13 @@ export namespace ClientApi {
 
 	export const listTasks = (query: SimpleListQueryParams<GenerationTask>) =>
 		client.call<GenerationTaskWithPictures[]>("listTasks", {query})
+
+	export const killTask = (id: number) =>
+		client.call<void>("killTask", {id})
+
+	export function getPictureUrl(id: number): string {
+		return `${apiPrefix}getPictureData?id=${id}`
+	}
 
 	// export const getPictureData = (pictureId: number) =>
 	// 	client.callForBinary("getPictureData", {pictureId})

@@ -10,7 +10,8 @@ export function LoginPage(): HTMLElement {
 			SettingsSubblock({header: "Login"}, [
 				Button({
 					onclick: async() => {
-						const url = await ClientApi.getDiscordLoginUrl()
+						const proto = window.location.protocol.toLowerCase().startsWith("https") ? "https" as const : "http" as const
+						const url = await ClientApi.getDiscordLoginUrl(proto, window.location.host)
 						window.location.href = url
 					},
 					text: "Login with discord"

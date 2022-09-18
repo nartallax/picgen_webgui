@@ -5,21 +5,26 @@ import {Runtyper} from "@nartallax/runtyper"
 
 interface AuxConfigFilesData {
 	readonly discordClientSecret: string
+	readonly tags: {
+		readonly shape: readonly string[]
+		readonly content: {readonly [tagContent: string]: readonly string[]}
+	}
 }
 
 interface ConfigFile {
 	readonly pictureStorageDir: string
-	readonly defaultToHttps: boolean
+	readonly haveHttps: boolean
+	readonly httpHost?: string
+	readonly httpPort: number
 	readonly discordClientId: string
 	readonly discordClientSecretFile: string
 	readonly deleteFilesReceivedFromGenerator: boolean
 	readonly generationCommandTemplate: string
 	readonly dbFilePath: string
-	readonly discordLoginUrl: string
 	readonly generationParameters: readonly GenParameterDefinition[]
 	readonly tags: {
-		readonly shape: readonly string[]
-		readonly content: {readonly [tagContent: string]: readonly string[]}
+		readonly shapeTagsFile: string
+		readonly contentTagsFile: string
 	}
 }
 
@@ -40,11 +45,20 @@ export async function loadConfig(): Promise<void> {
 	const newConfig: ConfigFile = JSON.parse(await Fs.readFile(args.paramsConfig, "utf-8"))
 	configFileValidator(newConfig)
 
-	const discordClientSecret = (await Fs.readFile(newConfig.discordClientSecretFile, "utf-8")).trim()
+	const [discordClientSecret, shapeTagsJson, contentTagsJson] = await Promise.all([
+		Fs.readFile(newConfig.discordClientSecretFile, "utf-8"),
+		Fs.readFile(newConfig.tags.shapeTagsFile, "utf-8"),
+		Fs.readFile(newConfig.tags.contentTagsFile, "utf-8")
+	])
 
 	config = {
 		...args,
 		...newConfig,
-		discordClientSecret
+		discordClientSecret: discordClientSecret.trim(),
+		tags: {
+			...newConfig.tags,
+			content: JSON.parse(contentTagsJson),
+			shape: JSON.parse(shapeTagsJson)
+		}
 	}
 }
