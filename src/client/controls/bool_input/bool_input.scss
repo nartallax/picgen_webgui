@@ -1,7 +1,8 @@
 $transition-time: 0.25s;
-$handle-size: 24px;
+$handle-size: 1.25rem;
+$inner-padding: 0.4rem;
 
-.bool-input {
+.input.bool-input {
 	cursor: pointer;
 	background-color: #e2d9d9;
 	transition: $transition-time;
@@ -10,7 +11,8 @@ $handle-size: 24px;
 	flex-direction: row;
 	align-items: center;
 	justify-content: center;
-	padding: 5px calc(($handle-size / 2) + 5px);
+	padding: $inner-padding calc(($handle-size / 2) + $inner-padding);
+	height: auto;
 }
 
 .bool-input-handle {

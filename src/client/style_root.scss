@@ -2,6 +2,7 @@
 
 @import "controls/input_styles";
 
+@import "controls/settings_block/settings_block";
 @import "controls/settings_subblock/settings_subblock";
 @import "controls/tag_list/tag_list";
 @import "controls/param_line/param_line";
@@ -21,6 +22,10 @@
 @import "controls/main_page/main_page";
 @import "controls/loading_page/loading_page";
 @import "controls/login_page/login_page";
+
+html {
+	font-size: 12px;
+}
 
 body {
 	width: 100vw;
