@@ -105,9 +105,36 @@ export interface TaskCreatedNotification {
 	task: GenerationTask
 }
 
+export interface FilterField<T> {
+	field: keyof T
+}
+
+export interface FilterConstantValue {
+	value: string | number
+}
+
+export type FilterValue<T> = FilterConstantValue | FilterField<T>
+
+// this is declared this way mostly due to Runtyper being too stupid to understand simplier notations
+const _allowedOpsObj = {
+	">": true,
+	">=": true,
+	"<": true,
+	"<=": true,
+	"=": true
+}
+type FilterOps = keyof typeof _allowedOpsObj
+export const allowedFilterOps = new Set(Object.keys(_allowedOpsObj)) as ReadonlySet<FilterOps>
+
+export interface BinaryQueryCondition<T> {
+	a: FilterValue<T>
+	b: FilterValue<T>
+	op: FilterOps
+}
+
 export interface SimpleListQueryParams<T>{
 	sortBy: keyof T & string
-	filters?: {[k in keyof T]?: T[k]}
+	filters?: BinaryQueryCondition<T>[]
 	desc: boolean
 	offset: number
 	limit: number

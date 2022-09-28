@@ -3,13 +3,14 @@ import {WebsocketListener} from "client/app/websocket_listener"
 import {getBinder} from "client/base/binder/binder"
 import {box, unbox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
+import {Feed} from "client/controls/feed/feed"
 import {LoginBar} from "client/controls/login_bar/login_bar"
 import {ParamsBlock} from "client/controls/params_block/params_block"
 import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
-import {TaskList} from "client/controls/task_list/task_list"
-import {GenParameterDefinition} from "common/common_types"
-import {GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
+import {TaskPanel} from "client/controls/task_panel/task_panel"
+import {BinaryQueryCondition, GenParameterDefinition} from "common/common_types"
+import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
 
 function updateParamValues(paramValues: {[key: string]: WBox<GenParameterDefinition["default"]>}, defs: readonly GenParameterDefinition[]) {
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
@@ -29,6 +30,25 @@ function updateParamValues(paramValues: {[key: string]: WBox<GenParameterDefinit
 		}
 		paramValues[def.jsonName] = box(def.default)
 	}
+}
+
+async function loadNextTaskPack(existingTasks: GenerationTaskWithPictures[]): Promise<GenerationTaskWithPictures[]> {
+	const lastTask = existingTasks[existingTasks.length - 1]
+	const filters: BinaryQueryCondition<GenerationTask>[] = []
+	if(lastTask){
+		filters.push({
+			a: {field: "id"},
+			op: "<",
+			b: {value: lastTask.id}
+		})
+	}
+	return ClientApi.listTasks({
+		sortBy: "creationTime",
+		desc: true,
+		limit: 10,
+		offset: 0,
+		filters
+	})
 }
 
 export function MainPage(): HTMLElement {
@@ -76,7 +96,13 @@ export function MainPage(): HTMLElement {
 					})
 				}
 			}),
-			TaskList({tasks: knownTasks})
+			Feed({
+				getId: task => task.id,
+				loadNext: loadNextTaskPack,
+				values: knownTasks,
+				renderElement: taskBox => TaskPanel({task: taskBox}),
+				bottomLoadingPlaceholder: tag({text: "Loading..."})
+			})
 		])
 	])
 
@@ -85,7 +111,7 @@ export function MainPage(): HTMLElement {
 	binder.onNodeRemoved(() => websocket?.stop());
 
 	(async() => {
-		const [paramDefs, contentTags, shapeTags, tasks] = await Promise.all([
+		const [paramDefs, contentTags, shapeTags] = await Promise.all([
 			ClientApi.getGenerationParameterDefinitions(),
 			ClientApi.getContentTags(),
 			ClientApi.getShapeTags(),
@@ -97,7 +123,6 @@ export function MainPage(): HTMLElement {
 			})
 		])
 
-		knownTasks(tasks)
 		websocket = new WebsocketListener(knownTasks)
 		if(binder.isInDom){
 			websocket.start()

@@ -48,7 +48,6 @@ export function TaskPanel(opts: TaskPanelOptions): HTMLElement {
 			}),
 			tag({class: "task-panel-timer", text: viewBox(() => {
 				const task = opts.task()
-				console.log("TIMER UPDATE", task)
 				switch(task.status){
 					case "queued": return ""
 					case "completed": {

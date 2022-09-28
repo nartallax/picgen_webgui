@@ -1,4 +1,4 @@
-import {SimpleListQueryParams} from "common/common_types"
+import {allowedFilterOps, FilterField, FilterValue, SimpleListQueryParams} from "common/common_types"
 import {UserlessContext} from "server/request_context"
 
 export interface IdentifiedEntity {
@@ -89,10 +89,28 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const usedFields = [query.sortBy] as string[]
 		const args = [] as unknown[]
 
-		const where = Object.entries(query.filters || {}).map(([field, equalsTo]) => {
-			usedFields.push(field)
-			args.push(this.fieldToDb(field as keyof T & keyof S & string, equalsTo))
-			return `"${field}" = ?`
+		const where = (query.filters || []).map(({a, b, op}) => {
+			let aStr, bStr
+			if(isFilterField(a)){
+				this.validateField(a.field)
+				aStr = `"${a.field}"`
+			} else {
+				aStr = "?"
+				args.push(a.value)
+			}
+			if(isFilterField(b)){
+				this.validateField(b.field)
+				bStr = `"${b.field}"`
+			} else {
+				bStr = "?"
+				args.push(b.value)
+			}
+
+			if(!allowedFilterOps.has(op)){
+				throw new Error(`Filtering operator "${op}" is not allowed.`)
+			}
+
+			return `${aStr} ${op} ${bStr}`
 		}).join("\nor ")
 
 		this.validateFieldNames(usedFields)
@@ -154,8 +172,12 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 	}
 
 	private fieldSet: ReadonlySet<string> | null = null
+	private getFieldSet(): ReadonlySet<string> {
+		return this.fieldSet ||= this.getContext().dbController.shaper.getFieldSetOfTable(this.getTableName())
+	}
+
 	private validateFieldNames(fieldList: readonly string[]): void {
-		const fieldSet = this.fieldSet ||= this.getContext().dbController.shaper.getFieldSetOfTable(this.getTableName())
+		const fieldSet = this.getFieldSet()
 		for(const field of fieldList){
 			if(!fieldSet.has(field)){
 				throw new Error(`Table "${this.getTableName()}" is not supposed to have field "${field}"!`)
@@ -163,4 +185,17 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		}
 	}
 
+	private isField(x: unknown): x is keyof T & keyof S & string {
+		return this.getFieldSet().has(x as string)
+	}
+
+	private validateField(x: unknown): asserts x is keyof T & keyof S & string {
+		if(!this.isField(x)){
+			throw new Error(`Table "${this.getTableName()}" is not supposed to have field "${x}"!`)
+		}
+	}
+}
+
+function isFilterField<T>(x: FilterValue<T>): x is FilterField<T> {
+	return typeof((x as FilterField<T>).field) === "string"
 }

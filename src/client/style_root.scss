@@ -2,7 +2,6 @@
 
 @import "controls/input_styles";
 
-@import "controls/settings_block/settings_block";
 @import "controls/settings_subblock/settings_subblock";
 @import "controls/tag_list/tag_list";
 @import "controls/param_line/param_line";
@@ -14,9 +13,10 @@
 @import "controls/prompt_input/prompt_input";
 @import "controls/multi_panel/multi_panel";
 @import "controls/login_bar/login_bar";
-@import "controls/task_list/task_list";
+@import "controls/feed/feed";
 @import "controls/task_panel/task_panel";
 @import "controls/task_picture/task_picture";
+@import "controls/visibility_notifier/visibility_notifier";
 
 @import "controls/main_page/main_page";
 @import "controls/loading_page/loading_page";
