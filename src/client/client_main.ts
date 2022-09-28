@@ -14,11 +14,10 @@ export async function main() {
 
 	try {
 		const user = await ClientApi.getUserData()
-		console.log(user)
 		currentUser(user)
 		currentPage("main")
 	} catch(e){
-		if(e instanceof ApiError && e.errorType === "not_logged_in"){
+		if(ApiError.isApiError(e) && e.errorType === "not_logged_in"){
 			currentPage("login")
 		} else {
 			throw e
