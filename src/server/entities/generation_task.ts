@@ -1,5 +1,5 @@
 import {ApiError} from "common/api_error"
-import {DbGenerationTask, GenerationTask, GenerationTaskParameterValue, GenerationTaskStatus, generationTaskStatusList} from "common/entity_types"
+import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus, generationTaskStatusList} from "common/entity_types"
 import {DAO} from "server/dao"
 import {UserlessContext} from "server/request_context"
 
@@ -37,7 +37,8 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		return this.mbGetByFieldValue("status", "running")
 	}
 
-	validateInputDataParameters(params: Record<string, GenerationTaskParameterValue>): void {
+	validateInputData(inputData: GenerationTaskInputData): void {
+		const params = inputData.params
 		const paramDefs = this.getContext().config.generationParameters
 		for(const def of paramDefs){
 			const paramValue = params[def.jsonName]
@@ -69,6 +70,17 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 						if(def.step !== undefined && paramValue % def.step){
 							throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be divisible evenly by ${def.step}; it is ${paramValue} now.`)
 						}
+					}
+					break
+				case "string":
+					if(typeof(paramValue) !== "string"){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be string; it is ${paramValue} now.`)
+					}
+					if(def.minLength !== undefined && paramValue.length < def.minLength){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minLength} characters long; it is "${paramValue}" now.`)
+					}
+					if(def.maxLength !== undefined && paramValue.length > def.maxLength){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.minLength} characters long; it is "${paramValue}" now.`)
 					}
 					break
 			}

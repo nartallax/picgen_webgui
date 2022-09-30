@@ -1,7 +1,7 @@
 import {getBinder} from "client/base/binder/binder"
 import {box, RBox, unbox, viewBox, WBox} from "client/base/box"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
-import {SettingsSubblock} from "client/controls/settings_subblock/settings_subblock"
+import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
 import {TagList} from "client/controls/tag_list/tag_list"
 import {TextInput} from "client/controls/text_input/text_input"
 import {PrefixTree} from "client/data_structure/prefix_tree"
@@ -42,23 +42,22 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 	function renderItems(): HTMLElement[] {
 		const tags = unbox(opts.contentTags)
 		if(!tags){
-			return [SettingsSubblock({header: "Loading..."})]
+			return [SettingsSubblockHeader({header: "Loading..."})]
 		}
 
 		return [
-			SettingsSubblock({header: "Tags"}, [
-				TextInput({
-					value: prompt,
-					iconClass: "icon-search-1",
-					updateAsUserType: true
-				}),
-				TagList({
-					values: visibleContentTags,
-					onclick: tagStr => {
-						opts.selectedContentTags([...opts.selectedContentTags(), tagStr])
-					}
-				})
-			])
+			SettingsSubblockHeader({header: "Tags"}),
+			TextInput({
+				value: prompt,
+				iconClass: "icon-search-1",
+				updateAsUserType: true
+			}),
+			TagList({
+				values: visibleContentTags,
+				onclick: tagStr => {
+					opts.selectedContentTags([...opts.selectedContentTags(), tagStr])
+				}
+			})
 		]
 	}
 

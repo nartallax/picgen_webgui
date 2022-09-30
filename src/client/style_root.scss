@@ -3,8 +3,9 @@
 @import "controls/input_styles";
 
 @import "controls/settings_block/settings_block";
-@import "controls/settings_subblock/settings_subblock";
+@import "controls/settings_subblock_header/settings_subblock_header";
 @import "controls/tag_list/tag_list";
+@import "controls/params_block/params_block";
 @import "controls/param_line/param_line";
 @import "controls/number_input/number_input";
 @import "controls/bool_input/bool_input";
@@ -80,7 +81,6 @@ body {
 	font-family: "fontello";
 	font-style: normal;
 	font-weight: normal;
-	speak: never;
   
 	display: inline-block;
 	text-decoration: inherit;

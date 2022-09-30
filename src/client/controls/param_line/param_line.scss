@@ -1,12 +1,9 @@
 .param-line {
-	display: flex;
-	flex-direction: row;
-	justify-content: space-between;
 	padding: 0.33rem 0;
 
 	.param-line-label {
+		white-space: nowrap;
 		font-size: 1.35rem;
-		flex-grow: 1;
 		color: #625e5e;
 	}
 
@@ -15,9 +12,22 @@
 		cursor: pointer;
 		font-size: 1.35rem;
 		line-height: 1.5em;
+		transition: 0.25s;
+		opacity: 1;
 
 		&.hidden {
-			display: none;
+			opacity: 0;
+			pointer-events: none;
 		}
 	}
+
+	.param-line-input-wrap {
+		width: 100%;
+
+		.input {
+			width: 100%;
+			max-width: 100%;
+		}
+	}
+
 }

@@ -52,6 +52,9 @@ export class TaskQueueController {
 
 	async addToQueue(inputData: GenerationTaskInputData): Promise<GenerationTask> {
 		const context = cont()
+
+		context.generationTask.validateInputData(inputData)
+
 		const user = await context.user.getCurrent()
 		const genTask: Omit<GenerationTask, "id"> = {
 			...inputData,

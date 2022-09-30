@@ -12,7 +12,6 @@ $inner-padding: 0.4rem;
 	align-items: center;
 	justify-content: center;
 	padding: $inner-padding calc(($handle-size / 2) + $inner-padding);
-	height: auto;
 }
 
 .bool-input-handle {

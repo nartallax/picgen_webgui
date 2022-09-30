@@ -6,6 +6,8 @@ interface TextInputOptions {
 	value: WBox<string>
 	iconClass?: MaybeRBoxed<string>
 	updateAsUserType?: boolean
+	maxLength?: number
+	minLength?: number
 }
 
 export function TextInput(opts: TextInputOptions): HTMLElement {
@@ -17,9 +19,25 @@ export function TextInput(opts: TextInputOptions): HTMLElement {
 		}
 	})
 
+	function clamp(x: string): string {
+		if(opts.minLength !== undefined){
+			while(x.length < opts.minLength){
+				x += "?"
+			}
+		}
+		if(opts.maxLength !== undefined && x.length > opts.maxLength){
+			x = x.substring(0, opts.maxLength)
+		}
+		return x
+	}
+
 	if(opts.updateAsUserType){
 		input.addEventListener("input", () => {
-			opts.value(input.value)
+			const v = clamp(input.value)
+			opts.value(v)
+			if(v !== input.value){
+				input.value = v
+			}
 		})
 	}
 
@@ -37,7 +55,14 @@ export function TextInput(opts: TextInputOptions): HTMLElement {
 	])
 
 	const binder = getBinder(input)
-	binder.watchAndRun(opts.value, v => input.value = v)
+	binder.watchAndRun(opts.value, v => {
+		const clamped = clamp(v)
+		if(clamped !== v){
+			opts.value(clamped)
+		} else {
+			input.value = clamped
+		}
+	})
 
 	return wrap
 }

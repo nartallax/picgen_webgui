@@ -5,7 +5,7 @@ export interface User {
 	displayName: string
 }
 
-export type GenerationTaskParameterValue = number | boolean
+export type GenerationTaskParameterValue = number | boolean | string
 
 export interface GenerationTaskInputData {
 	prompt: string

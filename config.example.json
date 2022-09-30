@@ -73,5 +73,10 @@
 		"uiName": "Test Steps",
 		"default": false,
 		"isTest": true
+	}, {
+		"type": "string",
+		"jsonName": "exclude",
+		"uiName": "Exclude",
+		"default": ""
 	}]
 }

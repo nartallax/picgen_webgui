@@ -5,7 +5,7 @@ import {GenerationTask, Picture} from "common/entity_types"
  * Therefore, runtyper cannot use types from it, which is bad */
 export const justForRuntyper = "nya"
 
-export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition
+export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition
 
 interface BaseParamDefinition {
 	readonly jsonName: string
@@ -31,6 +31,13 @@ export interface IntGenParamDefinition extends BaseParamDefinition {
 export interface BoolGenParamDefinition extends BaseParamDefinition {
 	readonly type: "bool"
 	readonly default: boolean
+}
+
+export interface StringGenParamDefinition extends BaseParamDefinition {
+	readonly type: "string"
+	readonly default: string
+	readonly minLength?: number
+	readonly maxLength?: number
 }
 
 export interface SuccessApiResponse<T> {
