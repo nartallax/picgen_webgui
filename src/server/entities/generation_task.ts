@@ -45,10 +45,20 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	async prepareInputData(origInputData: GenerationTaskInputData): Promise<GenerationTaskInputData> {
 		const context = this.getContext()
 		const inputData: GenerationTaskInputData = JSON.parse(JSON.stringify(origInputData))
-		const {pictures} = await this.validateParams(inputData.params)
 
-		for(const [paramName, {pic, info}] of Object.entries(pictures)){
-			inputData.params[paramName] = await context.picture.getPicturePathForGenerationRun(pic, info)
+		const paramDefs = context.config.generationParameters
+		for(const def of paramDefs){
+			if(def.type !== "picture"){
+				continue
+			}
+
+			const pictureId = inputData.params[def.jsonName]
+			if(typeof(pictureId) !== "number"){
+				throw new Error(`Cannot prepare input data: expected ID for param ${def.jsonName}, got ${pictureId}`)
+			}
+
+			const pic = await context.picture.getById(pictureId)
+			inputData.params[def.jsonName] = await context.picture.getPicturePathForGenerationRun(pic)
 		}
 
 		return inputData
@@ -69,13 +79,11 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		}
 	}
 
-	private async validateParams(params: GenerationTaskInputData["params"]): Promise<{pictures: Record<string, {pic: ServerPicture, info: PictureInfo}>}> {
-		const pictures: Record<string, {pic: ServerPicture, info: PictureInfo}> = {}
-
+	async validateInputData(inputData: GenerationTaskInputData): Promise<void> {
 		const context = this.getContext()
 		const paramDefs = context.config.generationParameters
 		for(const def of paramDefs){
-			const paramValue = params[def.jsonName]
+			const paramValue = inputData.params[def.jsonName]
 			if(paramValue === undefined){
 				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} is absent`)
 			}
@@ -122,13 +130,10 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a pre-uploaded picture ID; it is ${paramValue} now.`)
 					}
 					const picture = await context.picture.getById(paramValue)
-					const info = await this.validateInputPicture(picture, def)
-					pictures[def.jsonName] = {pic: picture, info}
+					await this.validateInputPicture(picture, def)
 				} break
 			}
 		}
-
-		return {pictures}
 	}
 
 	async validateInputPicture(picture: ServerPicture | Buffer, def: PictureGenParamDefinition): Promise<PictureInfo> {

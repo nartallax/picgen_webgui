@@ -11,7 +11,7 @@ import {unixtime} from "server/utils/unixtime"
 
 export class TaskQueueController {
 
-	private runningGeneration: GenRunner | null = null
+	private runningGeneration: {gen: GenRunner, input: GenerationTaskInputData} | null = null
 	private queueIsMoving = false
 
 	constructor(private readonly contextFactory: UserlessContextFactory) {}
@@ -32,9 +32,9 @@ export class TaskQueueController {
 	}
 
 	async kill(id: number): Promise<void> {
-		if(this.runningGeneration && this.runningGeneration.task.id === id){
+		if(this.runningGeneration && this.runningGeneration.gen.task.id === id){
 			log(`Killing running task #${id}.`)
-			this.runningGeneration.kill()
+			this.runningGeneration.gen.kill()
 			this.tryStartNextGeneration()
 			return
 		} else {
@@ -52,10 +52,10 @@ export class TaskQueueController {
 		}
 	}
 
-	async addToQueue(origInputData: GenerationTaskInputData): Promise<GenerationTask> {
+	async addToQueue(inputData: GenerationTaskInputData): Promise<GenerationTask> {
 		const context = cont()
 
-		const inputData = await context.generationTask.prepareInputData(origInputData)
+		await context.generationTask.validateInputData(inputData)
 
 		const user = await context.user.getCurrent()
 		const genTask: Omit<GenerationTask, "id"> = {
@@ -115,7 +115,7 @@ export class TaskQueueController {
 	}
 
 	private waitGenerationEnd(): Promise<void> {
-		return !this.runningGeneration ? Promise.resolve() : this.runningGeneration.waitCompletion()
+		return !this.runningGeneration ? Promise.resolve() : this.runningGeneration.gen.waitCompletion()
 	}
 
 	private shouldTryRunGeneration(): boolean {
@@ -130,7 +130,11 @@ export class TaskQueueController {
 
 		const [update, sendTaskNotification, callbacks] = this.makeTaskCallbacks(task)
 
-		this.runningGeneration = new GenRunner(config, callbacks, task)
+		const preparedInputData = await this.contextFactory(async context => {
+			return await context.generationTask.prepareInputData(task)
+		})
+		const gen = new GenRunner(config, callbacks, preparedInputData, task)
+		this.runningGeneration = {gen, input: preparedInputData}
 
 		const startTime = unixtime()
 		update(() => {
@@ -143,7 +147,7 @@ export class TaskQueueController {
 			startTime: startTime
 		})
 
-		await this.runningGeneration.waitCompletion()
+		await gen.waitCompletion()
 
 		log(`Task #${task.id} completed`)
 		const finishTime = unixtime()
@@ -158,7 +162,7 @@ export class TaskQueueController {
 		})
 
 		this.contextFactory(context => {
-			context.generationTask.cleanupInputData(task)
+			context.generationTask.cleanupInputData(preparedInputData)
 		})
 		await update.waitInvocationsOver()
 		this.runningGeneration = null
@@ -167,7 +171,7 @@ export class TaskQueueController {
 	async stop(): Promise<void> {
 		this.queueIsMoving = false
 		if(this.runningGeneration){
-			this.runningGeneration.process.kill()
+			this.runningGeneration.gen.process.kill()
 		}
 		await this.waitGenerationEnd()
 	}
