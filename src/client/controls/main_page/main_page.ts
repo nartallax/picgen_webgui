@@ -6,18 +6,19 @@ import {tag} from "client/base/tag"
 import {Feed} from "client/controls/feed/feed"
 import {LoginBar} from "client/controls/login_bar/login_bar"
 import {ParamsBlock} from "client/controls/params_block/params_block"
+import {defaultValueOfParam} from "client/controls/param_line/param_line"
 import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {TaskPanel} from "client/controls/task_panel/task_panel"
 import {BinaryQueryCondition, GenParameterDefinition} from "common/common_types"
 import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
 
-function updateParamValues(paramValues: {[key: string]: WBox<GenParameterDefinition["default"]>}, defs: readonly GenParameterDefinition[]) {
+function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, defs: readonly GenParameterDefinition[]) {
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
 	for(const name in paramValues){
 		const value = paramValues[name]!
 		const def = defMap.get(name)
-		if(!def || typeof(value()) !== typeof(def.default)){
+		if(!def || typeof(value()) !== typeof(defaultValueOfParam(def))){
 			delete paramValues[name]
 			continue
 		}
@@ -28,7 +29,7 @@ function updateParamValues(paramValues: {[key: string]: WBox<GenParameterDefinit
 		if(oldValue){
 			continue
 		}
-		paramValues[def.jsonName] = box(def.default)
+		paramValues[def.jsonName] = box(defaultValueOfParam(def))
 	}
 }
 
@@ -46,14 +47,13 @@ async function loadNextTaskPack(existingTasks: GenerationTaskWithPictures[]): Pr
 		sortBy: "creationTime",
 		desc: true,
 		limit: 10,
-		offset: 0,
 		filters
 	})
 }
 
 export function MainPage(): HTMLElement {
 
-	const paramValues = {} as {[key: string]: WBox< GenParameterDefinition["default"]>}
+	const paramValues = {} as {[key: string]: WBox<GenerationTaskParameterValue>}
 	const paramDefsBox = box(null as null | readonly GenParameterDefinition[])
 
 	const contentTagBox = box(null as null | {readonly [tagContent: string]: readonly string[]})
@@ -114,13 +114,7 @@ export function MainPage(): HTMLElement {
 		const [paramDefs, contentTags, shapeTags] = await Promise.all([
 			ClientApi.getGenerationParameterDefinitions(),
 			ClientApi.getContentTags(),
-			ClientApi.getShapeTags(),
-			ClientApi.listTasks({
-				sortBy: "creationTime",
-				desc: true,
-				limit: 10,
-				offset: 0
-			})
+			ClientApi.getShapeTags()
 		])
 
 		websocket = new WebsocketListener(knownTasks)

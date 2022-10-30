@@ -2,7 +2,7 @@ import {GenParameterDefinition, SimpleListQueryParams} from "common/common_types
 import {ApiError} from "common/api_error"
 import {cont} from "server/async_context"
 import {config} from "server/config"
-import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, User} from "common/entity_types"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Picture, User} from "common/entity_types"
 
 export namespace ServerApi {
 
@@ -23,19 +23,15 @@ export namespace ServerApi {
 		return str
 	}
 
-	export async function discordOauth2(): Promise<void> {
+	export async function discordOauth2(code: string): Promise<void> {
 		const context = cont()
-		const accessCode = context.requestUrl.searchParams.get("code")
-		if(!accessCode){
-			throw new ApiError("generic", "No code!")
-		}
 		const redirectUrl = new URL(context.requestUrl)
 		redirectUrl.search = ""
 		// why TF this works, but just `/` does not?
 		// I don't understand this API
 		redirectUrl.pathname = "/api/" + discordOauth2.name
 
-		const token = await context.discordApi.getTokenByCode(accessCode, redirectUrl + "")
+		const token = await context.discordApi.getTokenByCode(code, redirectUrl + "")
 		const discordUser = await context.discordApi.getCurrentUser(token.access_token)
 		let user = await context.user.mbGetByDiscordId(discordUser.id)
 		if(user){
@@ -67,6 +63,7 @@ export namespace ServerApi {
 		context.user.setDiscordUserProps(user, discordUser)
 		await context.user.update(user)
 
+		context.user.setDiscordCookieToken(user)
 		return context.user.stripUserForClient(user)
 	}
 
@@ -99,15 +96,12 @@ export namespace ServerApi {
 		return result
 	}
 
-	export async function getPictureData(): Promise<Buffer> {
+	// actually number expected, string is for calling this stuff through HTTP GET
+	export async function getPictureData(id: number | string): Promise<Buffer> {
 		const context = cont()
-		const pictureIdStr = context.requestUrl.searchParams.get("id")
-		if(!pictureIdStr){
-			throw new ApiError("generic", "No picture Id!")
-		}
-		const pictureId = parseInt(pictureIdStr)
+		const pictureId = typeof(id) === "string" ? parseInt(id) : id
 		if(Number.isNaN(pictureId)){
-			throw new ApiError("generic", "Bad picture ID: " + pictureIdStr)
+			throw new ApiError("generic", "Bad picture ID: " + id)
 		}
 
 		const picture = await context.picture.getById(pictureId)
@@ -118,9 +112,35 @@ export namespace ServerApi {
 		return result
 	}
 
+	export async function getPictureInfoById(id: number): Promise<Picture> {
+		const context = cont()
+		const picture = await context.picture.getById(id)
+		return context.picture.stripServerData(picture)
+	}
+
 	export async function killTask(id: number): Promise<void> {
 		const context = cont()
 		await context.taskQueue.kill(id)
+	}
+
+	export async function uploadPictureAsParameterValue(paramName: string, fileName: string, data: unknown): Promise<Picture> {
+		if(!(data instanceof Buffer)){
+			throw new Error("Data is not buffer!")
+		}
+
+		const context = cont()
+		const paramDef = context.config.generationParameters.find(def => def.jsonName === paramName)
+		if(!paramDef){
+			throw new ApiError("validation_not_passed", "Unknown parameter name: " + paramName)
+		}
+		if(paramDef.type !== "picture"){
+			throw new ApiError("validation_not_passed", `Parameter ${paramName} is not picture parameter, it's ${paramDef.type} parameter. You cannot upload a picture as this parameter value.`)
+		}
+
+		const pictureInfo = await context.generationTask.validateInputPicture(data, paramDef)
+		const user = await context.user.getCurrent()
+		const serverPic = await context.picture.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
+		return context.picture.stripServerData(serverPic)
 	}
 
 }

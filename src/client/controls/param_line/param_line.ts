@@ -2,10 +2,20 @@ import {viewBox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {NumberInput} from "client/controls/number_input/number_input"
+import {PictureInput} from "client/controls/picture_input/picture_input"
 import {TextInput} from "client/controls/text_input/text_input"
 import {GenParameterDefinition} from "common/common_types"
+import {GenerationTaskParameterValue} from "common/entity_types"
 
-export function ParamLine(def: GenParameterDefinition, value: WBox<GenParameterDefinition["default"]>): HTMLElement {
+export function defaultValueOfParam(def: GenParameterDefinition): GenerationTaskParameterValue {
+	if(def.type === "picture"){
+		return 0
+	} else {
+		return def.default
+	}
+}
+
+export function ParamLine(def: GenParameterDefinition, value: WBox<GenerationTaskParameterValue>): HTMLElement {
 	let input: HTMLElement
 	switch(def.type){
 		case "int":
@@ -30,6 +40,12 @@ export function ParamLine(def: GenParameterDefinition, value: WBox<GenParameterD
 				minLength: def.minLength
 			})
 			break
+		case "picture":
+			input = PictureInput({
+				value: value as WBox<number>,
+				param: def
+			})
+			break
 	}
 
 	return tag({tagName: "tr", class: "param-line"}, [
@@ -41,10 +57,10 @@ export function ParamLine(def: GenParameterDefinition, value: WBox<GenParameterD
 		tag({
 			tagName: "td",
 			class: ["param-line-revert-button", "icon-ccw", {
-				hidden: viewBox(() => value() === def.default)
+				hidden: viewBox(() => value() === defaultValueOfParam(def))
 			}],
 			on: {
-				click: () => value(def.default)
+				click: () => value(defaultValueOfParam(def))
 			}
 		}),
 		tag({

@@ -76,7 +76,20 @@ async function mainInternal(): Promise<void> {
 	const port = await server.start()
 	log(`Server started at ${config.haveHttps ? "https" : "http"}://${config.httpHost || "localhost"}:${port}/`)
 
+	let shutdownRequested = 0
 	process.on("SIGINT", async() => {
+		switch(shutdownRequested){
+			case 0:
+				shutdownRequested++
+				break
+			case 1:
+				log("Stop was already requested. If you want to force-terminate the app - request it one more time")
+				shutdownRequested++
+				return
+			case 2:
+				log("Force termination was requested.")
+				process.exit(1)
+		}
 		log("Stop is requested by interrupt signal.")
 
 		try {

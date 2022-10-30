@@ -5,10 +5,11 @@ import {ParamLine} from "client/controls/param_line/param_line"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
 import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
 import {GenParameterDefinition} from "common/common_types"
+import {GenerationTaskParameterValue} from "common/entity_types"
 
 interface ParamsBlockOptions {
 	readonly paramDefs: RBox<null | readonly GenParameterDefinition[]>
-	readonly paramValues: {readonly [key: string]: WBox<GenParameterDefinition["default"]>}
+	readonly paramValues: {readonly [key: string]: WBox<GenerationTaskParameterValue>}
 }
 
 export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {

@@ -5,7 +5,7 @@ import {GenerationTask, Picture} from "common/entity_types"
  * Therefore, runtyper cannot use types from it, which is bad */
 export const justForRuntyper = "nya"
 
-export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition
+export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition | PictureGenParamDefinition
 
 interface BaseParamDefinition {
 	readonly jsonName: string
@@ -38,6 +38,35 @@ export interface StringGenParamDefinition extends BaseParamDefinition {
 	readonly default: string
 	readonly minLength?: number
 	readonly maxLength?: number
+}
+
+const _allowedPicExts = {
+	gif: true,
+	png: true,
+	jpg: true,
+	webp: true,
+	bmp: true,
+	tiff: true,
+	svg: true,
+	psd: true,
+	ico: true,
+	avif: true,
+	heic: true,
+	heif: true
+}
+
+export type PictureType = keyof typeof _allowedPicExts
+export const pictureTypeSet: ReadonlySet<PictureType> = new Set(Object.keys(_allowedPicExts) as PictureType[])
+
+export interface PictureGenParamDefinition extends BaseParamDefinition {
+	readonly type: "picture"
+	readonly allowedTypes?: readonly PictureType[]
+	readonly maxWidth?: number
+	readonly maxHeight?: number
+	readonly minWidth?: number
+	readonly minHeight?: number
+	readonly sizeStep?: number
+	readonly square?: boolean
 }
 
 export interface SuccessApiResponse<T> {
@@ -140,9 +169,9 @@ export interface BinaryQueryCondition<T> {
 }
 
 export interface SimpleListQueryParams<T>{
-	sortBy: keyof T & string
+	sortBy?: keyof T & string
 	filters?: BinaryQueryCondition<T>[]
-	desc: boolean
-	offset: number
-	limit: number
+	desc?: boolean
+	offset?: number
+	limit?: number
 }

@@ -40,7 +40,7 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 		}
 	}
 
-	mbGetByDiscordId(discordId: string): Promise<ServerUser | undefined> {
+	mbGetByDiscordId(discordId: string): Promise<ServerUser | null> {
 		return this.mbGetByFieldValue("discordId", discordId)
 	}
 
@@ -68,6 +68,7 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 export class CompleteUserDAO extends UserlessUserDAO<RequestContext> {
 
 	readonly discordTokenCookieName = "picgen-bot-discord-token"
+	private currentUser: ServerUser | null | undefined = undefined
 
 	setDiscordCookieToken(user: ServerUser): void {
 		if(!user.discordAccessToken){
@@ -91,13 +92,17 @@ export class CompleteUserDAO extends UserlessUserDAO<RequestContext> {
 		this.setDiscordTokenProps(user, token)
 	}
 
-	async mbGetCurrent(): Promise<ServerUser | undefined> {
+	async mbGetCurrent(): Promise<ServerUser | null> {
+		if(this.currentUser || this.currentUser === null){
+			return this.currentUser
+		}
 		const cookie = this.getContext().cookie.get(this.discordTokenCookieName)
 		if(!cookie){
-			return undefined
+			this.currentUser = null
 		} else {
-			return await this.mbGetByFieldValue("discordAccessToken", cookie)
+			this.currentUser = await this.mbGetByFieldValue("discordAccessToken", cookie)
 		}
+		return this.currentUser
 	}
 
 	async getCurrent(): Promise<ServerUser> {

@@ -173,7 +173,15 @@ export const migrations: Migration[] = [
 			foreign key("generationTaskId") references "generationTasks"("id"),
 			foreign key("ownerUserId") references "users"("id")
 		)`)
+	}},
+
+	{name: "00007", handler: async db => {
+		await db.run(`
+			alter table "pictures"
+			add "name" text;
+		`)
 	}}
+
 
 
 ]

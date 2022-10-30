@@ -10,12 +10,14 @@
 @import "controls/number_input/number_input";
 @import "controls/bool_input/bool_input";
 @import "controls/text_input/text_input";
+@import "controls/picture_input/picture_input";
 @import "controls/button/button";
 @import "controls/select_search/select_search";
 @import "controls/prompt_input/prompt_input";
 @import "controls/multi_panel/multi_panel";
 @import "controls/login_bar/login_bar";
 @import "controls/feed/feed";
+@import "controls/toast/toast";
 @import "controls/task_panel/task_panel";
 @import "controls/task_picture/task_picture";
 @import "controls/visibility_notifier/visibility_notifier";
@@ -47,7 +49,7 @@ body {
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
-	line-height: 1.3rem;
+	line-height: 1.3em;
 	font-size: 1rem;
 	font-family: 'OpenSans', Arial, Helvetica, sans-serif;
 }

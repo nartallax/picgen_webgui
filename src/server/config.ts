@@ -13,6 +13,7 @@ interface AuxConfigFilesData {
 
 interface ConfigFile {
 	readonly pictureStorageDir: string
+	readonly runningGenerationPictureStorageDir: string
 	readonly haveHttps: boolean
 	readonly httpHost?: string
 	readonly httpPort: number

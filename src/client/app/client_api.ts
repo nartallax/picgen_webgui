@@ -1,12 +1,13 @@
 import {ApiClient} from "client/app/api_client"
+import {showToast} from "client/controls/toast/toast"
 import {GenParameterDefinition, SimpleListQueryParams} from "common/common_types"
-import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, User} from "common/entity_types"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Picture, User} from "common/entity_types"
 
 export namespace ClientApi {
 
 	const apiPrefix = "/api/"
 
-	const client = new ApiClient(apiPrefix)
+	const client = new ApiClient(apiPrefix, err => showToast({text: err.message, type: "error"}))
 
 	export const getGenerationParameterDefinitions = () =>
 		client.call<readonly GenParameterDefinition[]>("getGenerationParameterDefinitions", {})
@@ -38,6 +39,12 @@ export namespace ClientApi {
 	export function getPictureUrl(id: number): string {
 		return `${apiPrefix}getPictureData?id=${id}`
 	}
+
+	export const getPictureInfoById = (id: number) =>
+		client.call<Picture>("getPictureInfoById", {id})
+
+	export const uploadPictureAsParameterValue = (paramName: string, fileName: string, data: ArrayBuffer) =>
+		client.callPut<Picture>("uploadPictureAsParameterValue", data, {paramName, fileName})
 
 	// export const getPictureData = (pictureId: number) =>
 	// 	client.callForBinary("getPictureData", {pictureId})

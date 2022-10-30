@@ -1,7 +1,9 @@
 import {ApiError} from "common/api_error"
+import {PictureGenParamDefinition} from "common/common_types"
 import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus, generationTaskStatusList} from "common/entity_types"
 import {DAO} from "server/dao"
 import {UserlessContext} from "server/request_context"
+import {PictureInfo, ServerPicture} from "server/entities/picture"
 
 const reverseStatusMapping = new Map<number, GenerationTaskStatus>()
 Object.entries(generationTaskStatusList).forEach(([name, value]) => reverseStatusMapping.set(value, name as GenerationTaskStatus))
@@ -33,13 +35,45 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		return result[0]
 	}
 
-	getRunning(): Promise<GenerationTask | undefined> {
+	getRunning(): Promise<GenerationTask | null> {
 		return this.mbGetByFieldValue("status", "running")
 	}
 
-	validateInputData(inputData: GenerationTaskInputData): void {
-		const params = inputData.params
-		const paramDefs = this.getContext().config.generationParameters
+	// you can't just pass to generator raw params you got from user
+	// even if they are all valid, sometimes they contain IDs that refers to entities in our DB
+	// which must be resolved in one way or another before passed to generator
+	async prepareInputData(origInputData: GenerationTaskInputData): Promise<GenerationTaskInputData> {
+		const context = this.getContext()
+		const inputData: GenerationTaskInputData = JSON.parse(JSON.stringify(origInputData))
+		const {pictures} = await this.validateParams(inputData.params)
+
+		for(const [paramName, {pic, info}] of Object.entries(pictures)){
+			inputData.params[paramName] = await context.picture.getPicturePathForGenerationRun(pic, info)
+		}
+
+		return inputData
+	}
+
+	async cleanupInputData(inputData: GenerationTaskInputData): Promise<void> {
+		const context = this.getContext()
+		const paramDefs = context.config.generationParameters
+		for(const def of paramDefs){
+			if(def.type !== "picture"){
+				continue
+			}
+			const paramValue = inputData.params[def.jsonName]
+			if(typeof(paramValue) !== "string"){
+				throw new Error(`Cannot cleanup after task finish: expected picture path as ${def.jsonName}, got ${paramValue}`)
+			}
+			await context.picture.cleanupPictureAfterGenerationRun(paramValue)
+		}
+	}
+
+	private async validateParams(params: GenerationTaskInputData["params"]): Promise<{pictures: Record<string, {pic: ServerPicture, info: PictureInfo}>}> {
+		const pictures: Record<string, {pic: ServerPicture, info: PictureInfo}> = {}
+
+		const context = this.getContext()
+		const paramDefs = context.config.generationParameters
 		for(const def of paramDefs){
 			const paramValue = params[def.jsonName]
 			if(paramValue === undefined){
@@ -83,8 +117,60 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.minLength} characters long; it is "${paramValue}" now.`)
 					}
 					break
+				case "picture":{
+					if(typeof(paramValue) !== "number"){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a pre-uploaded picture ID; it is ${paramValue} now.`)
+					}
+					const picture = await context.picture.getById(paramValue)
+					const info = await this.validateInputPicture(picture, def)
+					pictures[def.jsonName] = {pic: picture, info}
+				} break
 			}
 		}
+
+		return {pictures}
+	}
+
+	async validateInputPicture(picture: ServerPicture | Buffer, def: PictureGenParamDefinition): Promise<PictureInfo> {
+		const context = this.getContext()
+		const picInf = await context.picture.getPictureInfo(picture)
+
+		if(def.minHeight !== undefined && picInf.height < def.minHeight){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minHeight}px in height; it is ${picInf.height}px now.`)
+		}
+
+		if(def.maxHeight !== undefined && picInf.height > def.maxHeight){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.maxHeight}px in height; it is ${picInf.height}px now.`)
+		}
+
+		if(def.minWidth !== undefined && picInf.width < def.minWidth){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minWidth}px wide; it is ${picInf.width}px now.`)
+		}
+
+		if(def.maxWidth !== undefined && picInf.width > def.maxWidth){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.maxWidth}px wide; it is ${picInf.width}px now.`)
+		}
+
+		if(def.allowedTypes){
+			if(!(def.allowedTypes as readonly string[]).includes(picInf.ext)){
+				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should contain picture of one of the following formats: ${def.allowedTypes.join(", ")}; it is ${picInf.ext} now.`)
+			}
+		}
+
+		if(def.sizeStep !== undefined){
+			if((picInf.height % def.sizeStep) !== 0){
+				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should have height evenly divisible by ${def.sizeStep}px; it is ${picInf.height}px now.`)
+			}
+			if((picInf.width % def.sizeStep) !== 0){
+				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should have width evenly divisible by ${def.sizeStep}px; it is ${picInf.width}px now.`)
+			}
+		}
+
+		if(def.square && picInf.height !== picInf.width){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be square (i.e. have height equal width); it is ${picInf.width}px x ${picInf.height}px now.`)
+		}
+
+		return picInf
 	}
 
 }

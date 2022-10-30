@@ -1,3 +1,5 @@
+import {PictureType} from "common/common_types"
+
 export interface User {
 	readonly id: number
 	readonly creationTime: number
@@ -42,7 +44,9 @@ export interface Picture {
 	readonly generationTaskId: number | null
 	readonly ownerUserId: number
 	readonly creationTime: number
-	readonly ext: string
+	readonly ext: PictureType
+	readonly name: string | null
 }
+
 
 export type GenerationTaskWithPictures = GenerationTask & {pictures: Picture[]}

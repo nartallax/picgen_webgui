@@ -8,8 +8,8 @@ export interface IdentifiedEntity {
 export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext = UserlessContext, S extends IdentifiedEntity = T> {
 
 	protected abstract getTableName(): string
-	protected getLimitLimit(): number {
-		return 100
+	protected getMaxQueryRows(): number {
+		return 1000
 	}
 
 	constructor(protected readonly getContext: () => C) {}
@@ -86,10 +86,10 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 	}
 
 	async list(query: SimpleListQueryParams<T>): Promise<T[]> {
-		const usedFields = [query.sortBy] as string[]
+		const usedFields: string[] = query.sortBy ? [query.sortBy] : []
 		const args = [] as unknown[]
 
-		const where = (query.filters || []).map(({a, b, op}) => {
+		let where = (query.filters || []).map(({a, b, op}) => {
 			let aStr, bStr
 			if(isFilterField(a)){
 				this.validateField(a.field)
@@ -114,12 +114,15 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		}).join("\nor ")
 
 		this.validateFieldNames(usedFields)
+		const limit = "limit " + Math.min(this.getMaxQueryRows(), query.limit ?? Number.MAX_SAFE_INTEGER)
+		where = !where ? "" : "where " + where
+		const sortBy = !query.sortBy ? "" : `order by "${query.sortBy}" ${(query.desc ? " desc" : " asc")}`
 		const result: S[] = await this.getContext().db.query(`
 			select *
 			from "${this.getTableName()}"
-			${where ? "where " + where : ""}
-			order by "${query.sortBy}" ${query.desc ? "desc" : "asc"}
-			limit ${Math.min(this.getLimitLimit(), query.limit)}
+			${where}
+			${sortBy}
+			${limit}
 		`, args)
 
 		return result.map(x => this.fromDb(x))
@@ -139,24 +142,25 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		return result.map(x => this.fromDb(x))
 	}
 
-	protected async mbGetByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T | undefined> {
+	protected async mbGetByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T | null> {
 		this.validateFieldNames([fieldName])
 		const result: S[] = await this.getContext().db.query(`select * from "${this.getTableName()}" where "${fieldName}" = ?`, [
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			this.fieldToDb(fieldName as keyof S & keyof T & string, value as any)
 		])
-		return !result[0] ? undefined : this.fromDb(result[0])
+		return !result[0] ? null : this.fromDb(result[0])
 	}
 
 	protected async getByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T> {
 		this.validateFieldNames([fieldName])
 		const result = await this.mbGetByFieldValue(fieldName, value)
-		if(!result){
+		if(result === null){
 			throw new Error(`Cannot find entity in table ${this.getTableName()} by ${fieldName} = ${value}`)
 		}
 		return result
 	}
 
+	// TODO: replace with list()
 	protected async querySortedFiltered<K extends keyof T & string>(fieldName: K, value: T[K], sortBy: string & keyof T, desc: boolean, limit = -1): Promise<T[]> {
 		this.validateFieldNames([fieldName, sortBy])
 		const result: S[] = await this.getContext().db.query(`
@@ -194,6 +198,10 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 			throw new Error(`Table "${this.getTableName()}" is not supposed to have field "${x}"!`)
 		}
 	}
+
+	// getPictureAsTempFile(id: number): string {
+	// }
+
 }
 
 function isFilterField<T>(x: FilterValue<T>): x is FilterField<T> {

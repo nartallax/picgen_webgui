@@ -6,4 +6,5 @@ test.js
 db.sqlite
 discord_client_secret.txt
 pictures
+running_generation_pictures
 _static

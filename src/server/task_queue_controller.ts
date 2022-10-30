@@ -2,6 +2,7 @@ import {ApiNotification} from "common/common_types"
 import {GenerationTask, GenerationTaskInputData} from "common/entity_types"
 import {cont} from "server/async_context"
 import {Config} from "server/config"
+import {assertIsPictureType} from "server/entities/picture"
 import {GenRunner, GenRunnerCallbacks} from "server/gen_runner"
 import {log, wrapInCatchLog} from "server/log"
 import {UserlessContext, UserlessContextFactory} from "server/request_context"
@@ -18,6 +19,7 @@ export class TaskQueueController {
 	async init(): Promise<void> {
 		this.queueIsMoving = true
 		await this.contextFactory(async context => {
+			await context.picture.init()
 			const runningTask = await context.generationTask.getRunning()
 			if(runningTask){
 				log(`Discovered that task #${runningTask} is running in DB, but we are just started and could not possibly start a task. Marking it as completed, because not much we can do at this point.`)
@@ -50,10 +52,10 @@ export class TaskQueueController {
 		}
 	}
 
-	async addToQueue(inputData: GenerationTaskInputData): Promise<GenerationTask> {
+	async addToQueue(origInputData: GenerationTaskInputData): Promise<GenerationTask> {
 		const context = cont()
 
-		context.generationTask.validateInputData(inputData)
+		const inputData = await context.generationTask.prepareInputData(origInputData)
 
 		const user = await context.user.getCurrent()
 		const genTask: Omit<GenerationTask, "id"> = {
@@ -155,6 +157,9 @@ export class TaskQueueController {
 			finishTime: finishTime
 		})
 
+		this.contextFactory(context => {
+			context.generationTask.cleanupInputData(task)
+		})
 		await update.waitInvocationsOver()
 		this.runningGeneration = null
 	}
@@ -217,8 +222,9 @@ export class TaskQueueController {
 			},
 
 			onFileProduced: (data, ext) => update(async context => {
+				assertIsPictureType(ext)
+				const serverPic = await context.picture.storeGeneratedPicture(data, task, task.generatedPictures, ext)
 				task.generatedPictures++
-				const serverPic = await context.picture.storeGeneratedPicture(data, task, ext)
 				sendTaskNotification({
 					type: "task_generated_picture",
 					taskId: task.id,

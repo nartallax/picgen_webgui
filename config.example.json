@@ -2,6 +2,7 @@
 	"generationCommandTemplate": "node picture_generator_example.js $INPUT_JSON",
 	"deleteFilesReceivedFromGenerator": true,
 	"pictureStorageDir": "./pictures",
+	"runningGenerationPictureStorageDir": "./running_generation_pictures",
 	"discordClientId": "469771750285115392",
 	"discordClientSecretFile": "./discord_client_secret.txt",
 	"httpPort": 22650,
@@ -78,5 +79,12 @@
 		"jsonName": "exclude",
 		"uiName": "Exclude",
 		"default": ""
+	}, {
+		"type": "picture",
+		"sizeStep": 16,
+		"square": true,
+		"allowedTypes": ["jpg", "png"],
+		"jsonName": "inpaint",
+		"uiName": "InPaint"
 	}]
 }

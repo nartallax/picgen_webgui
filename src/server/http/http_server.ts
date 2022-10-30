@@ -36,7 +36,9 @@ export class HttpServer {
 		const validators = {} as Record<string, ReturnType<typeof Runtyper.getObjectParameterChecker>>
 		for(const apiMethodName in opts.apiMethods){
 			const apiFn = opts.apiMethods[apiMethodName]!
-			const validator = Runtyper.getObjectParameterChecker(apiFn)
+			const validator = Runtyper.getObjectParameterChecker(apiFn, {
+				onUnknown: "allow_anything" // just to pass Buffer without extreme type bloat
+			})
 			validators[apiMethodName] = validator
 		}
 		this.validators = validators
@@ -78,7 +80,7 @@ export class HttpServer {
 			const path = url.pathname
 
 			if(path.startsWith(this.opts.apiRoot)){
-				if(method !== "GET" && method !== "POST"){
+				if(method !== "GET" && method !== "POST" && method !== "PUT"){
 					await endRequest(res, 405, "Your HTTP Method Name Sucks")
 				}
 				await this.processApiRequest(url, req, res)
@@ -136,10 +138,16 @@ export class HttpServer {
 		}
 	}
 
-	private async getApiBody(methodName: string, req: Http.IncomingMessage): Promise<unknown[]> {
+	private async getApiBody(methodName: string, req: Http.IncomingMessage, url: URL): Promise<unknown[]> {
 		let argsObj: Record<string, unknown>
-		if((req.method || "").toUpperCase() !== "POST"){
+		if(req.method === "GET" || req.method === "PUT"){
 			argsObj = {}
+			for(const [k, v] of url.searchParams.entries()){
+				argsObj[k] = v
+			}
+			if(req.method === "PUT"){
+				argsObj["data"] = await readStreamToBuffer(req, this.opts.inputSizeLimit, this.opts.readTimeoutSeconds * 1000)
+			}
 		} else {
 			const body = await readStreamToBuffer(req, this.opts.inputSizeLimit, this.opts.readTimeoutSeconds * 1000)
 			argsObj = JSON.parse(body.toString("utf-8"))
@@ -155,18 +163,33 @@ export class HttpServer {
 			return await endRequest(res, 404, "Your Api Call Sucks")
 		}
 
-		const methodArgs = await this.getApiBody(methodName, req)
+		const methodArgs = await this.getApiBody(methodName, req, url)
 		let result: unknown = null
 		let error: Error | null = null
 		let context: RequestContext | null = null
 		try {
 			[result, context] = await this.opts.contextFactory(req, async context => {
+
+				if((req.method ?? "GET").toUpperCase() !== "GET"){
+					// if it goes through GET - it's not very important probably, no need to log
+					const user = await context.user.mbGetCurrent()
+					const userStr = !user ? "<anon>" : user.displayName
+					log(`${userStr}: ${methodName}(${methodArgs.map(paramValue => {
+						if(paramValue instanceof Buffer){
+							return "<binary>"
+						} else {
+							return JSON.stringify(paramValue)
+						}
+					}).join(", ")})`)
+				}
+
 				return [await apiMethod(...methodArgs as never[]), context]
 			})
 		} catch(e){
 			if(e instanceof Error){
-				const errStr = e instanceof ApiError ? e.message : e.stack || e.message
-				log(`Error calling ${methodName}(${JSON.stringify(methodArgs)}): ${errStr}`)
+				const errStr = ApiError.isApiError(e) ? e.message : e.stack || e.message
+				const fixedMethodArgs = methodArgs.map(x => x instanceof Buffer ? "<binary>" : JSON.stringify(x))
+				log(`Error calling ${methodName}(${fixedMethodArgs.join(", ")}): ${errStr}`)
 				error = e
 			} else {
 				throw e
