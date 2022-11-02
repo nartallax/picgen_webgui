@@ -1,5 +1,5 @@
 import {ApiErrorType} from "common/api_error"
-import {GenerationTask, Picture} from "common/entity_types"
+import {GenerationTask, GenerationTaskParameterValue, Picture} from "common/entity_types"
 
 /** Without this value, this file is not included in bundle
  * Therefore, runtyper cannot use types from it, which is bad */
@@ -174,4 +174,8 @@ export interface SimpleListQueryParams<T>{
 	desc?: boolean
 	offset?: number
 	limit?: number
+}
+
+export function getGenParamDefault(def: GenParameterDefinition): GenerationTaskParameterValue | undefined {
+	return "default" in def ? def.default : undefined
 }

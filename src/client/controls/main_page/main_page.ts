@@ -87,8 +87,18 @@ export function MainPage(): HTMLElement {
 				startGeneration: async() => {
 					const fullPrompt = shapeTagValue() + " " + promptValue() + selectedContentTags().join(", ")
 					const paramValuesForApi = {} as Record<string, GenerationTaskParameterValue>
+					const paramDefs = unbox(paramDefsBox)
+					if(!paramDefs){
+						return
+					}
+					const paramDefsByName = new Map(paramDefs.map(def => [def.jsonName, def]))
 					for(const paramName in paramValues){
-						paramValuesForApi[paramName] = unbox(paramValues[paramName])!
+						const paramValue = unbox(paramValues[paramName])!
+						const def = paramDefsByName.get(paramName)
+						if(def!.type === "picture" && paramValue === 0){
+							continue // not passed
+						}
+						paramValuesForApi[paramName] = paramValue
 					}
 					await ClientApi.createGenerationTask({
 						prompt: fullPrompt,

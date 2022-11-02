@@ -1,5 +1,5 @@
 import {ApiError} from "common/api_error"
-import {PictureGenParamDefinition} from "common/common_types"
+import {getGenParamDefault, PictureGenParamDefinition} from "common/common_types"
 import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus, generationTaskStatusList} from "common/entity_types"
 import {DAO} from "server/dao"
 import {UserlessContext} from "server/request_context"
@@ -48,17 +48,26 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 
 		const paramDefs = context.config.generationParameters
 		for(const def of paramDefs){
-			if(def.type !== "picture"){
+			const paramValue = inputData.params[def.jsonName]
+			if(paramValue === undefined){
+				if(def.type !== "picture"){
+					const dflt = getGenParamDefault(def)
+					if(dflt === undefined){
+						// should never happen; probably will be caught at validation
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} is absent`)
+					}
+					inputData.params[def.jsonName] = dflt
+				}
 				continue
 			}
 
-			const pictureId = inputData.params[def.jsonName]
-			if(typeof(pictureId) !== "number"){
-				throw new Error(`Cannot prepare input data: expected ID for param ${def.jsonName}, got ${pictureId}`)
+			if(def.type === "picture"){
+				if(typeof(paramValue) !== "number"){
+					throw new Error(`Cannot prepare input data: expected ID for param ${def.jsonName}, got ${paramValue}`)
+				}
+				const pic = await context.picture.getById(paramValue)
+				inputData.params[def.jsonName] = await context.picture.getPicturePathForGenerationRun(pic)
 			}
-
-			const pic = await context.picture.getById(pictureId)
-			inputData.params[def.jsonName] = await context.picture.getPicturePathForGenerationRun(pic)
 		}
 
 		return inputData
@@ -72,6 +81,9 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 				continue
 			}
 			const paramValue = inputData.params[def.jsonName]
+			if(paramValue === undefined){
+				continue
+			}
 			if(typeof(paramValue) !== "string"){
 				throw new Error(`Cannot cleanup after task finish: expected picture path as ${def.jsonName}, got ${paramValue}`)
 			}
@@ -85,6 +97,9 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		for(const def of paramDefs){
 			const paramValue = inputData.params[def.jsonName]
 			if(paramValue === undefined){
+				if(def.type === "picture" || getGenParamDefault(def) !== undefined){
+					continue // parameter not passed, whatever, we can live with it
+				}
 				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} is absent`)
 			}
 

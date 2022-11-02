@@ -40,7 +40,7 @@ export function showToast(params: ToastParams): void {
 
 	const now = getNowBox()
 	const startTime = now()
-	const timeoutSeconds = params.timeoutSeconds ?? 15000000000
+	const timeoutSeconds = params.timeoutSeconds ?? 15
 
 	function removeToast(): void {
 		el.remove()
