@@ -4,7 +4,7 @@ import {cont} from "server/async_context"
 import {Config} from "server/config"
 import {assertIsPictureType} from "server/entities/picture"
 import {GenRunner, GenRunnerCallbacks} from "server/gen_runner"
-import {log, wrapInCatchLog} from "server/log"
+import {log, runInCatchLog, wrapInCatchLog} from "server/log"
 import {UserlessContext, UserlessContextFactory} from "server/request_context"
 import {DebouncedCollector, makeDebounceCollector} from "server/utils/debounce_collect"
 import {unixtime} from "server/utils/unixtime"
@@ -181,17 +181,31 @@ export class TaskQueueController {
 		(notification: ApiNotification) => void,
 		GenRunnerCallbacks
 	] {
-		const update = makeDebounceCollector<(context: UserlessContext) => void>(500, updaters => {
-			wrapInCatchLog(() => this.contextFactory(async context => {
+		const update = makeDebounceCollector<(context: UserlessContext, afterUpdateActions: ((context: UserlessContext) => void)[]) => void>(500, updaters => {
+			runInCatchLog(() => this.contextFactory(async context => {
+				const afterUpdateActions: ((context: UserlessContext) => void)[] = []
+				const taskBeforeUpdate = JSON.stringify(task)
 				for(const updater of updaters){
-					wrapInCatchLog(updater)(context)
+					await runInCatchLog(() => updater(context, afterUpdateActions))
 				}
-				await context.generationTask.update(task)
-			}))()
+				if(JSON.stringify(task) !== taskBeforeUpdate){
+					await context.generationTask.update(task)
+					await context.db.flushTransaction()
+				}
+				// afterUpdateActions is mainly intended for notifications sending
+				// and we flush transaction before notifications are sent
+				// because otherwise there's a chance that transaction won't be commited before frontend knows about the change
+				// and that's bad, because frontend is then able to query data that is not in db yet
+				for(const action of afterUpdateActions){
+					runInCatchLog(() => action(context))
+				}
+			}))
 		})
 
 		function sendTaskNotification(body: ApiNotification): void {
-			update(context => context.websockets.sendNotificationToAll(body))
+			update((_, actions) => actions.push(context => {
+				context.websockets.sendNotificationToAll(body)
+			}))
 		}
 
 		const callbacks: GenRunnerCallbacks = {
@@ -227,8 +241,8 @@ export class TaskQueueController {
 
 			onFileProduced: (data, ext) => update(async context => {
 				assertIsPictureType(ext)
-				const serverPic = await context.picture.storeGeneratedPicture(data, task, task.generatedPictures, ext)
 				task.generatedPictures++
+				const serverPic = await context.picture.storeGeneratedPicture(data, task, task.generatedPictures, ext)
 				sendTaskNotification({
 					type: "task_generated_picture",
 					taskId: task.id,

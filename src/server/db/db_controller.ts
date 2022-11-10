@@ -1,11 +1,13 @@
 import {SqliteDbShapeController} from "server/db/sqlite_db_shape_controller"
 import {log} from "server/log"
+import {errToString} from "server/utils/err_to_string"
 import {unixtime} from "server/utils/unixtime"
 import * as Sqlite from "sqlite3"
 
 export interface DbConnection {
 	run(queryStr: string, params?: readonly unknown[]): Promise<void>
 	query<T = unknown>(queryStr: string, params?: readonly unknown[]): Promise<T[]>
+	flushTransaction(): Promise<void>
 }
 
 export interface Migration {
@@ -36,10 +38,14 @@ export class DbController {
 		try {
 			return await Promise.resolve(action(conn))
 		} catch(e){
-			await conn.close(true)
+			try {
+				await conn.close(true, true)
+			} catch(ee){
+				log("Error while closing connection: " + errToString(ee))
+			}
 			throw e
 		} finally {
-			await conn.close(false)
+			await conn.close(false, true)
 			this.notifyConnectionClosed()
 		}
 	}
@@ -112,39 +118,56 @@ export class DbController {
 	}
 }
 
+type DbConnectionState = "not_open" | "opening" | "open" | "closing" | "finalized"
+
 class DbConnectionImpl implements DbConnection {
 	private db: Sqlite.Database | null = null
+	private state: DbConnectionState = "not_open"
 
 	constructor(private readonly dbOpener: () => Promise<Sqlite.Database>) {}
 
+	private ensureState(state: DbConnectionState): void {
+		if(this.state !== state){
+			throw new Error(`DB connection is in bad state: expected ${state}, got ${this.state}`)
+		}
+	}
+
 	private async getConn(): Promise<Sqlite.Database> {
 		if(!this.db){
+			this.ensureState("not_open")
+			this.state = "opening"
 			this.db = await this.dbOpener()
 			this.db.serialize() // https://github.com/TryGhost/node-sqlite3/wiki/Control-Flow
-			await this.postOpenConn()
+			await this.postOpenConn(this.db)
+			this.state = "open"
 		}
+		this.ensureState("open")
 		return this.db
 	}
 
-	private async postOpenConn(): Promise<void> {
-		const db = await this.getConn()
+	private async postOpenConn(db: Sqlite.Database): Promise<void> {
 		// to wait before throwing error on busy connection
 		// https://github.com/TryGhost/node-sqlite3/wiki/API#databaseconfigureoption-value
-		db.configure("busyTimeout", 2000)
+		db.configure("busyTimeout", 5000)
 
 		// write-ahead logging for better concurrent access
 		// https://github.com/TryGhost/node-sqlite3/issues/747
-		await this.run("PRAGMA journal_mode=wal")
-		await this.run("BEGIN TRANSACTION")
+		await this.run("PRAGMA journal_mode=wal", [], db)
+		await this.run("BEGIN TRANSACTION", [], db)
 	}
 
-	async close(withError: boolean): Promise<void> {
+	async close(withError: boolean, final?: boolean): Promise<void> {
 		if(!this.db){
 			return
 		}
-		await this.run(withError ? "ROLLBACK" : "COMMIT")
-		await this.closeDb(this.db)
+		this.ensureState("open")
+		this.state = "closing"
+		const db = this.db
+		const runPromise = this.run(withError ? "ROLLBACK" : "COMMIT", [], db)
 		this.db = null
+		await runPromise
+		await this.closeDb(db)
+		this.state = final ? "finalized" : "not_open"
 	}
 
 	private closeDb(db: Sqlite.Database): Promise<void> {
@@ -153,8 +176,8 @@ class DbConnectionImpl implements DbConnection {
 		})
 	}
 
-	async run(queryStr: string, params?: readonly unknown[]): Promise<void> {
-		const conn = await this.getConn()
+	async run(queryStr: string, params?: readonly unknown[], preOpenedConn?: Sqlite.Database): Promise<void> {
+		const conn = preOpenedConn ?? await this.getConn()
 		await new Promise<void>((ok, bad) => {
 			conn.run(queryStr, params, err => {
 				err ? bad(new Error(`Failed to run query "${queryStr} because of ${err}`)) : ok()
@@ -169,5 +192,9 @@ class DbConnectionImpl implements DbConnection {
 				err ? bad(new Error(`Failed to run query "${queryStr} because of ${err}`)) : ok(rows)
 			})
 		})
+	}
+
+	flushTransaction(): Promise<void> {
+		return this.close(false)
 	}
 }

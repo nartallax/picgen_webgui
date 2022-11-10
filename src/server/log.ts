@@ -26,3 +26,7 @@ export function wrapInCatchLog<T extends unknown[]>(fn: (...args: T) => void): (
 		}
 	}
 }
+
+export function runInCatchLog(fn: () => void | Promise<void>): Promise<void> {
+	return wrapInCatchLog(fn)()
+}
