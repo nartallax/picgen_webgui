@@ -1,4 +1,7 @@
 export function formatTimeSpan(timeSeconds: number): string {
+	if(timeSeconds < 0){
+		return "-" + formatTimeSpan(-timeSeconds)
+	}
 	let time = timeSeconds
 	const seconds = time % 60
 	time = (time - seconds) / 60

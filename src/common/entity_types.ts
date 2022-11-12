@@ -48,5 +48,11 @@ export interface Picture {
 	readonly name: string | null
 }
 
+export interface PictureInfo {
+	width: number
+	height: number
+	ext: PictureType
+}
+
 
 export type GenerationTaskWithPictures = GenerationTask & {pictures: Picture[]}

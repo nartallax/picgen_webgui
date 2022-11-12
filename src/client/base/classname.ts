@@ -1,7 +1,7 @@
 import {Binder, getBinder} from "client/base/binder/binder"
 import {isRBox, MaybeRBoxed, unbox} from "client/base/box"
 
-type ClassNamePart = MaybeRBoxed<string | null | undefined> | Record<string, MaybeRBoxed<boolean>>
+type ClassNamePart = MaybeRBoxed<string | null | undefined> | Record<string, MaybeRBoxed<boolean | undefined>>
 export type ClassNameParts = ClassNamePart | ClassNamePart[]
 
 /** Utility function that assembles classname from parts */

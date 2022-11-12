@@ -2,7 +2,7 @@ import {GenParameterDefinition, SimpleListQueryParams} from "common/common_types
 import {ApiError} from "common/api_error"
 import {cont} from "server/async_context"
 import {config} from "server/config"
-import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Picture, User} from "common/entity_types"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Picture, PictureInfo, User} from "common/entity_types"
 
 export namespace ServerApi {
 
@@ -112,10 +112,15 @@ export namespace ServerApi {
 		return result
 	}
 
-	export async function getPictureInfoById(id: number): Promise<Picture> {
+	export async function getPictureInfoById(id: number): Promise<Picture & PictureInfo> {
 		const context = cont()
 		const picture = await context.picture.getById(id)
-		return context.picture.stripServerData(picture)
+		const info = await context.picture.getPictureInfo(picture)
+		const strippedPicture = context.picture.stripServerData(picture)
+		return {
+			...strippedPicture,
+			...info
+		}
 	}
 
 	export async function killTask(id: number): Promise<void> {

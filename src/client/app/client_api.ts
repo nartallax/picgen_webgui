@@ -1,7 +1,7 @@
 import {ApiClient} from "client/app/api_client"
 import {showToast} from "client/controls/toast/toast"
 import {GenParameterDefinition, SimpleListQueryParams} from "common/common_types"
-import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Picture, User} from "common/entity_types"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Picture, PictureInfo, User} from "common/entity_types"
 
 export namespace ClientApi {
 
@@ -41,7 +41,7 @@ export namespace ClientApi {
 	}
 
 	export const getPictureInfoById = (id: number) =>
-		client.call<Picture>("getPictureInfoById", {id})
+		client.call<Picture & PictureInfo>("getPictureInfoById", {id})
 
 	export const uploadPictureAsParameterValue = (paramName: string, fileName: string, data: ArrayBuffer) =>
 		client.callPut<Picture>("uploadPictureAsParameterValue", data, {paramName, fileName})

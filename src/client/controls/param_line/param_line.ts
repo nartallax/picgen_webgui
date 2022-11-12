@@ -8,10 +8,12 @@ import {GenParameterDefinition} from "common/common_types"
 import {GenerationTaskParameterValue} from "common/entity_types"
 
 export function defaultValueOfParam(def: GenParameterDefinition): GenerationTaskParameterValue {
-	if(def.type === "picture"){
-		return 0
-	} else {
-		return def.default
+	switch(def.type){
+		case "picture":
+			return 0
+		case "picture_mask":
+			return ""
+		default: return def.default
 	}
 }
 
@@ -45,6 +47,9 @@ export function ParamLine(def: GenParameterDefinition, value: WBox<GenerationTas
 				value: value as WBox<number>,
 				param: def
 			})
+			break
+		case "picture_mask":
+			input = tag({text: "not implemented!"})
 			break
 	}
 

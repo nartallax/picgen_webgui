@@ -5,7 +5,7 @@ import {GenerationTask, GenerationTaskParameterValue, Picture} from "common/enti
  * Therefore, runtyper cannot use types from it, which is bad */
 export const justForRuntyper = "nya"
 
-export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition | PictureGenParamDefinition
+export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition | PictureGenParamDefinition | PictureMaskGenParamDefinition
 
 interface BaseParamDefinition {
 	readonly jsonName: string
@@ -58,6 +58,10 @@ const _allowedPicExts = {
 export type PictureType = keyof typeof _allowedPicExts
 export const pictureTypeSet: ReadonlySet<PictureType> = new Set(Object.keys(_allowedPicExts) as PictureType[])
 
+export type PictureMask = Polygon[]
+export type Polygon = Point2D[]
+export type Point2D = {x: number, y: number}
+
 export interface PictureGenParamDefinition extends BaseParamDefinition {
 	readonly type: "picture"
 	readonly allowedTypes?: readonly PictureType[]
@@ -67,6 +71,11 @@ export interface PictureGenParamDefinition extends BaseParamDefinition {
 	readonly minHeight?: number
 	readonly sizeStep?: number
 	readonly square?: boolean
+}
+
+export interface PictureMaskGenParamDefinition extends BaseParamDefinition {
+	readonly type: "picture_mask"
+	readonly basePictureParameter: string
 }
 
 export interface SuccessApiResponse<T> {
