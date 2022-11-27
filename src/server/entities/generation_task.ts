@@ -1,5 +1,5 @@
 import {ApiError} from "common/api_error"
-import {getGenParamDefault, PictureGenParamDefinition} from "common/common_types"
+import {GenParameterDefinition, PictureGenParamDefinition} from "common/common_types"
 import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus, generationTaskStatusList} from "common/entity_types"
 import {DAO} from "server/dao"
 import {UserlessContext} from "server/request_context"
@@ -7,6 +7,22 @@ import {PictureInfo, ServerPicture} from "server/entities/picture"
 
 const reverseStatusMapping = new Map<number, GenerationTaskStatus>()
 Object.entries(generationTaskStatusList).forEach(([name, value]) => reverseStatusMapping.set(value, name as GenerationTaskStatus))
+
+interface ServerPictureParameterValue {
+	picture: string
+	mask?: string
+}
+
+type ServerGenerationTaskParameterValue = number | boolean | string | ServerPictureParameterValue
+
+export interface ServerGenerationTaskInputData {
+	prompt: string
+	params: {[key: string]: ServerGenerationTaskParameterValue}
+}
+
+export function getServerGenParamDefault(def: GenParameterDefinition): ServerGenerationTaskParameterValue | undefined {
+	return "default" in def ? def.default : undefined
+}
 
 export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGenerationTask> {
 
@@ -42,16 +58,16 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	// you can't just pass to generator raw params you got from user
 	// even if they are all valid, sometimes they contain IDs that refers to entities in our DB
 	// which must be resolved in one way or another before passed to generator
-	async prepareInputData(origInputData: GenerationTaskInputData): Promise<GenerationTaskInputData> {
+	async prepareInputData(origInputData: GenerationTaskInputData): Promise<ServerGenerationTaskInputData> {
 		const context = this.getContext()
-		const inputData: GenerationTaskInputData = JSON.parse(JSON.stringify(origInputData))
+		const inputData: ServerGenerationTaskInputData = JSON.parse(JSON.stringify(origInputData))
 
 		const paramDefs = context.config.generationParameters
 		for(const def of paramDefs){
-			const paramValue = inputData.params[def.jsonName]
+			const paramValue = origInputData.params[def.jsonName]
 			if(paramValue === undefined){
 				if(def.type !== "picture"){
-					const dflt = getGenParamDefault(def)
+					const dflt = getServerGenParamDefault(def)
 					if(dflt === undefined){
 						// should never happen; probably will be caught at validation
 						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} is absent`)
@@ -62,18 +78,25 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 			}
 
 			if(def.type === "picture"){
-				if(typeof(paramValue) !== "number"){
-					throw new Error(`Cannot prepare input data: expected ID for param ${def.jsonName}, got ${paramValue}`)
+				if(typeof(paramValue) !== "object" || paramValue === null || typeof(paramValue.id) !== "number"){
+					throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a description of picture; it is ${paramValue} now.`)
 				}
-				const pic = await context.picture.getById(paramValue)
-				inputData.params[def.jsonName] = await context.picture.getPicturePathForGenerationRun(pic)
+				const pic = await context.picture.getById(paramValue.id)
+				const {path: picturePath, info: pictureInfo} = await context.picture.getPicturePathForGenerationRun(pic)
+				const newParamValue: ServerPictureParameterValue = {
+					picture: picturePath
+				}
+				inputData.params[def.jsonName] = newParamValue
+				if(paramValue.mask){
+					newParamValue.mask = await context.picture.getMaskPathForGenerationRun(paramValue.mask, pictureInfo)
+				}
 			}
 		}
 
 		return inputData
 	}
 
-	async cleanupInputData(inputData: GenerationTaskInputData): Promise<void> {
+	async cleanupInputData(inputData: ServerGenerationTaskInputData): Promise<void> {
 		const context = this.getContext()
 		const paramDefs = context.config.generationParameters
 		for(const def of paramDefs){
@@ -84,10 +107,13 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 			if(paramValue === undefined){
 				continue
 			}
-			if(typeof(paramValue) !== "string"){
-				throw new Error(`Cannot cleanup after task finish: expected picture path as ${def.jsonName}, got ${paramValue}`)
+			if(typeof(paramValue) !== "object" || paramValue === null || typeof(paramValue.picture) !== "string"){
+				throw new Error(`Cannot cleanup after task finish: expected picture path as ${def.jsonName}, got ${paramValue} (${JSON.stringify(paramValue)})`)
 			}
-			await context.picture.cleanupPictureAfterGenerationRun(paramValue)
+			await context.picture.cleanupPictureOrMaskAfterGenerationRun(paramValue.picture)
+			if(paramValue.mask){
+				await context.picture.cleanupPictureOrMaskAfterGenerationRun(paramValue.mask)
+			}
 		}
 	}
 
@@ -97,7 +123,9 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		for(const def of paramDefs){
 			const paramValue = inputData.params[def.jsonName]
 			if(paramValue === undefined){
-				if(def.type === "picture" || getGenParamDefault(def) !== undefined){
+				// TODO: why we make exception for picture here?
+				// this is wrong, and should be gone after we introduce config param sets
+				if(def.type === "picture" || getServerGenParamDefault(def) !== undefined){
 					continue // parameter not passed, whatever, we can live with it
 				}
 				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} is absent`)
@@ -141,10 +169,10 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 					}
 					break
 				case "picture":{
-					if(typeof(paramValue) !== "number"){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a pre-uploaded picture ID; it is ${paramValue} now.`)
+					if(typeof(paramValue) !== "object" || paramValue === null || typeof(paramValue.id) !== "number"){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a description of picture; it is ${paramValue} now.`)
 					}
-					const picture = await context.picture.getById(paramValue)
+					const picture = await context.picture.getById(paramValue.id)
 					await this.validateInputPicture(picture, def)
 				} break
 			}

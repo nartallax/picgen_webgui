@@ -113,6 +113,12 @@
       "css": "logout",
       "code": 59406,
       "src": "websymbols"
+    },
+    {
+      "uid": "xoidjr6q3rzi7tpw6hci1k6srz15g11l",
+      "css": "puzzle",
+      "code": 59407,
+      "src": "typicons"
     }
   ]
 }

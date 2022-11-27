@@ -5,7 +5,12 @@ interface ModalBaseOptions {
 	closeByBackgroundClick?: boolean
 }
 
-export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTMLElement[]>): () => void {
+export interface Modal {
+	close(): void
+	waitClose(): Promise<void>
+}
+
+export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTMLElement[]>): Modal {
 	const result = tag({
 		class: ["modal-base", {
 			"closeable-by-click": opts.closeByBackgroundClick
@@ -14,8 +19,26 @@ export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTML
 
 	document.body.appendChild(result)
 
+	let closed = false
+	const closeWaiters = [] as (() => void)[]
 	function close(): void {
+		closed = true
 		result.remove()
+		const waiters = [...closeWaiters]
+		closeWaiters.length = 0
+		for(const waiter of waiters){
+			waiter()
+		}
+	}
+
+	function waitClose(): Promise<void> {
+		return new Promise(ok => {
+			if(closed){
+				ok()
+			} else {
+				closeWaiters.push(ok)
+			}
+		})
 	}
 
 	if(opts.closeByBackgroundClick){
@@ -26,5 +49,6 @@ export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTML
 		}, {passive: true})
 	}
 
-	return close
+
+	return {close, waitClose}
 }

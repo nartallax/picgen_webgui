@@ -1,11 +1,11 @@
 import {ClientApi} from "client/app/client_api"
 import {getBinder} from "client/base/binder/binder"
-import {box, RBox, viewBox, WBox} from "client/base/box"
+import {box, viewBox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {fetchToBox} from "client/client_common/fetch_to_box"
 import {windowSizeBox} from "client/client_common/window_size_box"
 import {PolygonsInput} from "client/controls/image_mask_input/polygons_input"
-import {showModalBase} from "client/controls/modal_base/modal_base"
+import {Modal, showModalBase} from "client/controls/modal_base/modal_base"
 import {decodePictureMask, encodePictureMask} from "common/picture_mask_encoding"
 
 interface ImageMaskInputOptions {
@@ -78,39 +78,8 @@ export function ImageMaskInput(opts: ImageMaskInputOptions) {
 
 }
 
-export function showImageMaskInput(opts: ImageMaskInputOptions): () => void {
+export function showImageMaskInput(opts: ImageMaskInputOptions): Modal {
 	return showModalBase({closeByBackgroundClick: true}, [
 		ImageMaskInput(opts)
 	])
-}
-
-type ImageMaskInputButtonOptions = Omit<ImageMaskInputOptions, "imageId"> & {
-	imageId: RBox<number>
-}
-
-export function ImageMaskInputButton(opts: ImageMaskInputButtonOptions): HTMLElement {
-
-	const haveBase = opts.imageId.map(imageId => imageId > 0)
-
-	const result = tag({
-		tagName: "button",
-		text: haveBase.map(haveBase => haveBase ? "Draw the mask" : "Select base image"),
-		on: {
-			click: () => {
-				if(!haveBase()){
-					return
-				}
-				const imageId = opts.imageId()
-				showImageMaskInput({
-					...opts,
-					imageId
-				})
-			}
-		},
-		class: ["image-mask-input-button", {
-			available: haveBase
-		}]
-	})
-
-	return result
 }

@@ -7,11 +7,16 @@ export interface User {
 	displayName: string
 }
 
-export type GenerationTaskParameterValue = number | boolean | string
+export type GenerationTaskParameterValue = number | boolean | string | PictureParameterValue
 
 export interface GenerationTaskInputData {
 	prompt: string
 	params: {[key: string]: GenerationTaskParameterValue}
+}
+
+export interface PictureParameterValue {
+	id: number
+	mask?: string
 }
 
 export const generationTaskStatusList = {

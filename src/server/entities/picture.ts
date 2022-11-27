@@ -10,7 +10,9 @@ import {RequestContext, UserlessContext} from "server/request_context"
 import {httpGet} from "server/http/http_req"
 import {PictureType, pictureTypeSet} from "common/common_types"
 import {generateRandomIdentifier} from "common/generate_random_identifier"
-import {makeTempFile} from "server/utils/with_temp_file"
+import {makeTempFile, makeTempFileName} from "server/utils/with_temp_file"
+import {decodePictureMask} from "common/picture_mask_encoding"
+import {rasterizePictureMask} from "server/utils/picture_mask_rasterizer"
 
 export interface ServerPicture extends Picture {
 	directLink: string | null
@@ -142,17 +144,29 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 		}
 	}
 
-	async getPicturePathForGenerationRun(picture: ServerPicture, info?: PictureInfo): Promise<string> {
+	async getPicturePathForGenerationRun(picture: ServerPicture, info?: PictureInfo): Promise<{path: string, info: PictureInfo}> {
 		info ??= await this.getPictureInfo(picture)
 		const pictureBytes = await this.getPictureData(picture)
 		const context = this.getContext()
 		const runningGenDir = context.config.runningGenerationPictureStorageDir
-		return makeTempFile(pictureBytes, info.ext, runningGenDir)
+		return {
+			path: await makeTempFile(pictureBytes, info.ext, runningGenDir),
+			info: info
+		}
+	}
+
+	async getMaskPathForGenerationRun(mask: string, info: PictureInfo): Promise<string> {
+		const context = this.getContext()
+		const runningGenDir = context.config.runningGenerationPictureStorageDir
+		const maskData = decodePictureMask(mask)
+		const path = await makeTempFileName("png", runningGenDir)
+		await rasterizePictureMask(maskData, path, info)
+		return path
 	}
 
 	// yeah, it's just rm
 	// but I want to keep all FS stuff within this DAO
-	async cleanupPictureAfterGenerationRun(path: string): Promise<void> {
+	async cleanupPictureOrMaskAfterGenerationRun(path: string): Promise<void> {
 		await Fs.rm(path)
 	}
 

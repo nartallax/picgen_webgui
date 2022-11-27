@@ -6,8 +6,9 @@ import * as ShellQuote from "shell-quote"
 import {promises as Fs} from "fs"
 import {Config} from "server/config"
 import {log} from "server/log"
-import {GenerationTask, GenerationTaskInputData} from "common/entity_types"
+import {GenerationTask} from "common/entity_types"
 import {ApiError} from "common/api_error"
+import {ServerGenerationTaskInputData} from "server/entities/generation_task"
 
 type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | UpdatedPromptLine
 
@@ -63,7 +64,7 @@ export class GenRunner {
 	constructor(
 		private readonly config: Config,
 		private readonly callbacks: GenRunnerCallbacks,
-		public inputData: GenerationTaskInputData,
+		public inputData: ServerGenerationTaskInputData,
 		public task: GenerationTask
 	) {
 		const {bin, params, inputJson} = this.makeCommand(inputData)
@@ -134,7 +135,7 @@ export class GenRunner {
 		})
 	}
 
-	private makeCommand(task: GenerationTaskInputData): {bin: string, params: readonly string[], inputJson: string} {
+	private makeCommand(task: ServerGenerationTaskInputData): {bin: string, params: readonly string[], inputJson: string} {
 		const json = JSON.stringify({
 			prompt: task.prompt,
 			...task.params

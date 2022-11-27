@@ -16,3 +16,7 @@ if(???){
 }
 
 (is it a problem though? even if the box have one value or another NOW - it does not mean it cannot get another value later. so yes, this problem is not solvable by design)
+
+3. cannot map wbox
+want to transform value for the editor, but value should stay in original shape in data model
+(case: polygons as data structure in polygoninput and as base64 in datamodel)

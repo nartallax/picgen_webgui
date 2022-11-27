@@ -23,4 +23,24 @@
 		position: absolute;
 		z-index: -1;
 	}
+
+	.mask-button {
+		position: absolute;
+		right: 3px;
+		bottom: 3px;
+		top: 3px;
+		cursor: pointer;
+
+		font-size: 1.5rem;
+		background: #fff;
+		border-radius: 100%;
+
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+
+		&.hidden {
+			display: none;
+		}
+	}
 }

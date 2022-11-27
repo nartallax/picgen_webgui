@@ -16,9 +16,13 @@ function idToFilePath(id: string, ext: string, tmpdir?: string): string {
 	return Path.resolve(tmpdir, id + "." + ext)
 }
 
-export async function makeTempFile(data: Buffer, ext: string, tmpdir?: string): Promise<string> {
+export async function makeTempFileName(ext: string, tmpdir?: string): Promise<string> {
 	const id = await generateRandomIdentifier(id => fileExists(idToFilePath(id, ext, tmpdir)))
-	const filePath = idToFilePath(id, ext, tmpdir)
+	return idToFilePath(id, ext, tmpdir)
+}
+
+export async function makeTempFile(data: Buffer, ext: string, tmpdir?: string): Promise<string> {
+	const filePath = await makeTempFileName(ext, tmpdir)
 	await Fs.writeFile(filePath, data)
 	return filePath
 }

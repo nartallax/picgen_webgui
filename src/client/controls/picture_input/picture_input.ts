@@ -4,11 +4,12 @@ import {box, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {generateUniqDomID} from "client/client_common/generate_uniq_dom_id"
 import {readFileToArrayBuffer} from "client/client_common/read_file_to_array_buffer"
+import {showImageMaskInput} from "client/controls/image_mask_input/image_mask_input"
 import {PictureGenParamDefinition, pictureTypeSet} from "common/common_types"
-import {Picture} from "common/entity_types"
+import {Picture, PictureParameterValue} from "common/entity_types"
 
 interface PictureInputOptions {
-	readonly value: WBox<number>
+	readonly value: WBox<PictureParameterValue>
 	readonly param: PictureGenParamDefinition
 }
 
@@ -58,7 +59,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 			change: async() => {
 				const file = input.files?.[0]
 				if(!file){
-					opts.value(0)
+					opts.value({id: 0})
 					state({type: "empty"})
 					return
 				}
@@ -80,7 +81,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 					}
 
 					state({type: "value", picture: picture})
-					opts.value(picture.id)
+					opts.value({id: picture.id})
 				} catch(e){
 					console.error(e)
 					if(!isUploadingThisFile(file)){
@@ -93,7 +94,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 					}
 
 					state({type: "error", error: e})
-					opts.value(0)
+					opts.value({id: 0})
 				}
 
 			}
@@ -101,7 +102,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 	})
 
 	const binder = getBinder(input)
-	binder.watchAndRun(opts.value, async id => {
+	binder.watchAndRun(opts.value, async({id}) => {
 		// handing external ID changes
 		// need to download data about picture and put it into state
 		if(id === 0){
@@ -117,7 +118,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 
 		state({type: "loading", id})
 		try {
-			const picture = await ClientApi.getPictureInfoById(opts.value())
+			const picture = await ClientApi.getPictureInfoById(id)
 			if(!isLoadingThisPicture(id)){
 				return
 			}
@@ -133,7 +134,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 			}
 
 			state({type: "error", error: e})
-			opts.value(0)
+			opts.value({id: 0})
 		}
 	})
 
@@ -162,7 +163,26 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 				}
 			})
 		}),
-		input
+		input,
+		tag({
+			class: ["icon-puzzle mask-button", {
+				hidden: opts.value.map(x => !x.id)
+			}],
+			attrs: {title: "Draw mask for this picture"},
+			on: {
+				click: async() => {
+					const maskBox = box(opts.value().mask || "")
+					await showImageMaskInput({
+						imageId: opts.value().id,
+						value: maskBox
+					}).waitClose()
+					opts.value({
+						...opts.value(),
+						mask: maskBox()
+					})
+				}
+			}
+		})
 	])
 
 	return result

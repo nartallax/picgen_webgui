@@ -31,7 +31,7 @@ export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
 				console.error("No value is defined for parameter " + def.jsonName)
 				continue
 			}
-			const line = ParamLine(def, value, opts.paramValues);
+			const line = ParamLine(def, value);
 			(def.isTest ? testLines : nonTestLines).push(line)
 		}
 

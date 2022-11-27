@@ -2,6 +2,7 @@ import {ApiNotification} from "common/common_types"
 import {GenerationTask, GenerationTaskInputData} from "common/entity_types"
 import {cont} from "server/async_context"
 import {Config} from "server/config"
+import {ServerGenerationTaskInputData} from "server/entities/generation_task"
 import {assertIsPictureType} from "server/entities/picture"
 import {GenRunner, GenRunnerCallbacks} from "server/gen_runner"
 import {log, runInCatchLog, wrapInCatchLog} from "server/log"
@@ -11,7 +12,7 @@ import {unixtime} from "server/utils/unixtime"
 
 export class TaskQueueController {
 
-	private runningGeneration: {gen: GenRunner, input: GenerationTaskInputData} | null = null
+	private runningGeneration: {gen: GenRunner, input: ServerGenerationTaskInputData} | null = null
 	private queueIsMoving = false
 
 	constructor(private readonly contextFactory: UserlessContextFactory) {}
