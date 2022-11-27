@@ -1,5 +1,5 @@
 import {ApiError} from "common/api_error"
-import {GenerationParameterSet, GenParameterDefinition, PictureGenParamDefinition} from "common/common_types"
+import {GenerationParameterSet, GenParameterDefinition, getParamDefList, PictureGenParamDefinition} from "common/common_types"
 import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus, generationTaskStatusList} from "common/entity_types"
 import {DAO} from "server/dao"
 import {UserlessContext} from "server/request_context"
@@ -60,8 +60,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	async prepareInputData(origInputData: GenerationTaskInputData): Promise<ServerGenerationTaskInputData> {
 		const context = this.getContext()
 		const resultInputData: ServerGenerationTaskInputData = JSON.parse(JSON.stringify(origInputData))
-		const paramSet = this.getParamSet(origInputData.paramSetName)
-		const paramDefs = paramSet.parameters
+		const paramDefs = this.getParams(origInputData.paramSetName)
 
 		for(const def of paramDefs){
 			const paramValue = origInputData.params[def.jsonName]
@@ -98,8 +97,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 
 	async cleanupInputData(inputData: ServerGenerationTaskInputData): Promise<void> {
 		const context = this.getContext()
-		const paramSet = this.getParamSet(inputData.paramSetName)
-		const paramDefs = paramSet.parameters
+		const paramDefs = this.getParams(inputData.paramSetName)
 		for(const def of paramDefs){
 			if(def.type !== "picture"){
 				continue
@@ -129,10 +127,13 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		return paramSet
 	}
 
+	private getParams(name: string): GenParameterDefinition[] {
+		return getParamDefList(this.getParamSet(name))
+	}
+
 	async validateInputData(inputData: GenerationTaskInputData): Promise<void> {
 		const context = this.getContext()
-		const paramSet = this.getParamSet(inputData.paramSetName)
-		const paramDefs = paramSet.parameters
+		const paramDefs = this.getParams(inputData.paramSetName)
 		for(const def of paramDefs){
 			const paramValue = inputData.params[def.jsonName]
 			if(paramValue === undefined){

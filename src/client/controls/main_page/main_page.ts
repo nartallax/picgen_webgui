@@ -13,6 +13,7 @@ import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {TaskPanel} from "client/controls/task_panel/task_panel"
 import {BinaryQueryCondition, GenerationParameterSet, GenParameterDefinition} from "common/common_types"
 import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
+import {flatten} from "common/flatten"
 
 function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, defs: readonly GenParameterDefinition[]) {
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
@@ -64,7 +65,7 @@ export function MainPage(): HTMLElement {
 	})
 
 	const paramValues = {} as {[key: string]: WBox<GenerationTaskParameterValue>}
-	const paramDefsBox = selectedParamSet.map(set => set?.parameters ?? [])
+	const paramGroups = selectedParamSet.map(set => set?.parameterGroups ?? [])
 
 	const contentTagBox = box(null as null | {readonly [tagContent: string]: readonly string[]})
 	const selectedContentTags = box([] as string[])
@@ -85,7 +86,7 @@ export function MainPage(): HTMLElement {
 				options: knownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
 				value: selectedParamSetName
 			}),
-			ParamsBlock({paramSetName: selectedParamSetName, paramDefs: paramDefsBox, paramValues}),
+			ParamsBlock({paramSetName: selectedParamSetName, paramGroups, paramValues}),
 			TagSearchBlock({
 				selectedContentTags,
 				contentTags: contentTagBox,
@@ -101,7 +102,7 @@ export function MainPage(): HTMLElement {
 				startGeneration: async() => {
 					const fullPrompt = shapeTagValue() + " " + promptValue() + selectedContentTags().join(", ")
 					const paramValuesForApi = {} as Record<string, GenerationTaskParameterValue>
-					const paramDefs = unbox(paramDefsBox)
+					const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
 					if(!paramDefs){
 						return
 					}
@@ -135,8 +136,8 @@ export function MainPage(): HTMLElement {
 	binder.onNodeInserted(() => websocket?.start())
 	binder.onNodeRemoved(() => websocket?.stop())
 
-	binder.watch(paramDefsBox, paramDefs => {
-		updateParamValues(paramValues, paramDefs)
+	binder.watch(paramGroups, groups => {
+		updateParamValues(paramValues, flatten(groups.map(group => group.parameters)))
 	});
 
 	(async() => {

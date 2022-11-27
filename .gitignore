@@ -4,6 +4,8 @@ node_modules
 .DS_Store
 test.js
 db.sqlite
+db.sqlite-wal
+db.sqlite-shm
 discord_client_secret.txt
 pictures
 running_generation_pictures

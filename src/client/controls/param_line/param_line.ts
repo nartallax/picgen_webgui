@@ -61,7 +61,12 @@ export function ParamLine(paramSetName: MaybeRBoxed<string>, def: GenParameterDe
 		tag({
 			tagName: "td",
 			class: ["param-line-revert-button", "icon-ccw", {
-				hidden: viewBox(() => value() === defaultValueOfParam(def))
+				hidden: viewBox(() => {
+					if(def.type === "picture"){
+						return (value() as PictureParameterValue).id === 0
+					}
+					return value() === defaultValueOfParam(def)
+				})
 			}],
 			on: {
 				click: () => value(defaultValueOfParam(def))

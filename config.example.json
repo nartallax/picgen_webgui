@@ -16,88 +16,95 @@
 		"uiName": "Picture generation",
 		"internalName": "default",
 		"commandTemplate": "node picture_generator_example.js $INPUT_JSON --param-set-name $PARAM_SET",
-		"parameters": [{
-			"type": "float",
-			"jsonName": "scale",
-			"uiName": "Scale",
-			"default": 10,
-			"min": 1,
-			"max": 100
+		"parameterGroups": [{
+			"uiName": "Parameters",
+			"parameters": [{
+				"type": "float",
+				"jsonName": "scale",
+				"uiName": "Scale",
+				"default": 10,
+				"min": 1,
+				"max": 100
+			}, {
+				"type": "int",
+				"jsonName": "steps",
+				"uiName": "Steps",
+				"default": 50,
+				"min": 1,
+				"max": 1000
+			}, {
+				"type": "float",
+				"jsonName": "eta",
+				"uiName": "ETA",
+				"default": 0.7,
+				"min": 0,
+				"max": 1
+			}, {
+				"type": "int",
+				"jsonName": "batch",
+				"uiName": "Batch",
+				"default": 2,
+				"min": 1,
+				"max": 10
+			}, {
+				"type": "int",
+				"jsonName": "width",
+				"uiName": "Width",
+				"default": 512,
+				"min": 64,
+				"max": 1024,
+				"step": 16
+			}, {
+				"type": "int",
+				"jsonName": "height",
+				"uiName": "Height",
+				"default": 512,
+				"min": 64,
+				"max": 1024,
+				"step": 16
+			}, {
+				"type": "bool",
+				"jsonName": "upscale",
+				"uiName": "Upscale",
+				"default": false
+			}, {
+				"type": "string",
+				"jsonName": "exclude",
+				"uiName": "Exclude",
+				"default": "",
+				"tooltip": "Content of this string will be used as negative terms, excluding its values from the generated content."
+			}]
 		}, {
-			"type": "int",
-			"jsonName": "steps",
-			"uiName": "Steps",
-			"default": 50,
-			"min": 1,
-			"max": 1000
-		}, {
-			"type": "float",
-			"jsonName": "eta",
-			"uiName": "ETA",
-			"default": 0.7,
-			"min": 0,
-			"max": 1
-		}, {
-			"type": "int",
-			"jsonName": "batch",
-			"uiName": "Batch",
-			"default": 2,
-			"min": 1,
-			"max": 10
-		}, {
-			"type": "int",
-			"jsonName": "width",
-			"uiName": "Width",
-			"default": 512,
-			"min": 64,
-			"max": 1024,
-			"step": 16
-		}, {
-			"type": "int",
-			"jsonName": "height",
-			"uiName": "Height",
-			"default": 512,
-			"min": 64,
-			"max": 1024,
-			"step": 16
-		}, {
-			"type": "bool",
-			"jsonName": "upscale",
-			"uiName": "Upscale",
-			"default": false
-		}, {
-			"type": "bool",
-			"jsonName": "test_scale",
-			"uiName": "Test Scale",
-			"default": true,
-			"isTest": true
-		}, {
-			"type": "bool",
-			"jsonName": "test_steps",
-			"uiName": "Test Steps",
-			"default": false,
-			"isTest": true
-		}, {
-			"type": "string",
-			"jsonName": "exclude",
-			"uiName": "Exclude",
-			"default": "",
-			"tooltip": "Content of this string will be used as negative terms, excluding its values from the generated content."
+			"uiName": "Test",
+			"parameters": [{
+				"type": "bool",
+				"jsonName": "test_scale",
+				"uiName": "Test Scale",
+				"default": true
+			}, {
+				"type": "bool",
+				"jsonName": "test_steps",
+				"uiName": "Test Steps",
+				"default": false
+			}]
 		}]
 	}, {
 		"uiName": "Inpaint",
 		"internalName": "inpaint",
 		"commandTemplate": "node picture_generator_example.js $INPUT_JSON",
-		"parameters": [{
-			"type": "picture",
-			"sizeStep": 16,
-			"square": true,
-			"allowedTypes": ["jpg", "png"],
-			"jsonName": "inpaint",
-			"uiName": "InPaint",
-			"mask": {
-				"jsonName": "inpaint_mask"
-			}
+		"parameterGroups": [{
+			"uiName": "Parameters",
+			"parameters": [{
+				"type": "picture",
+				"sizeStep": 16,
+				"square": true,
+				"allowedTypes": ["jpg", "png"],
+				"jsonName": "inpaint",
+				"uiName": "InPaint",
+				"mask": {
+					"jsonName": "inpaint_mask"
+				}
+			}]
 		}]
 	}]
 }

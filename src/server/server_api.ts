@@ -1,4 +1,4 @@
-import {GenerationParameterSet, SimpleListQueryParams} from "common/common_types"
+import {GenerationParameterSet, getParamDefList, SimpleListQueryParams} from "common/common_types"
 import {ApiError} from "common/api_error"
 import {cont} from "server/async_context"
 import {config} from "server/config"
@@ -140,7 +140,7 @@ export namespace ServerApi {
 			throw new ApiError("validation_not_passed", "Unknown parameter set name: " + paramSetName)
 		}
 
-		const paramDef = paramSet.parameters.find(def => def.jsonName === paramName)
+		const paramDef = getParamDefList(paramSet).find(def => def.jsonName === paramName)
 		if(!paramDef){
 			throw new ApiError("validation_not_passed", "Unknown parameter name: " + paramName)
 		}

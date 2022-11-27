@@ -1,5 +1,7 @@
 import {ApiErrorType} from "common/api_error"
 import {GenerationTask, GenerationTaskParameterValue, Picture} from "common/entity_types"
+import {flatten} from "common/flatten"
+
 
 /** Without this value, this file is not included in bundle
  * Therefore, runtyper cannot use types from it, which is bad */
@@ -8,8 +10,13 @@ export const justForRuntyper = "nya"
 export interface GenerationParameterSet {
 	readonly uiName: string
 	readonly internalName: string
-	readonly parameters: readonly GenParameterDefinition[]
+	readonly parameterGroups: readonly GenParameterGroup[]
 	readonly commandTemplate: string
+}
+
+export interface GenParameterGroup {
+	readonly uiName: string
+	readonly parameters: readonly GenParameterDefinition[]
 }
 
 export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition | PictureGenParamDefinition
@@ -17,7 +24,6 @@ export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefini
 interface BaseParamDefinition {
 	readonly jsonName: string
 	readonly uiName: string
-	readonly isTest?: boolean
 	readonly tooltip?: string
 }
 
@@ -193,4 +199,8 @@ export interface SimpleListQueryParams<T>{
 
 export function getGenParamDefault(def: GenParameterDefinition): GenerationTaskParameterValue | undefined {
 	return "default" in def ? def.default : undefined
+}
+
+export function getParamDefList(paramSet: GenerationParameterSet): GenParameterDefinition[] {
+	return flatten(paramSet.parameterGroups.map(group => group.parameters))
 }
