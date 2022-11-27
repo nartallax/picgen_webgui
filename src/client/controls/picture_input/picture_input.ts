@@ -165,7 +165,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 			})
 		}),
 		input,
-		tag({
+		!opts.param.mask ? null : tag({
 			class: ["icon-puzzle mask-button", {
 				hidden: opts.value.map(x => !x.id)
 			}],

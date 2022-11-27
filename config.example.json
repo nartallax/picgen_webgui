@@ -101,9 +101,7 @@
 				"allowedTypes": ["jpg", "png"],
 				"jsonName": "inpaint",
 				"uiName": "InPaint",
-				"mask": {
-					"jsonName": "inpaint_mask"
-				}
+				"mask": true
 			}]
 		}]
 	}]

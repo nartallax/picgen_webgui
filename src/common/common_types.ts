@@ -85,9 +85,7 @@ export interface PictureGenParamDefinition extends BaseParamDefinition {
 	readonly minHeight?: number
 	readonly sizeStep?: number
 	readonly square?: boolean
-	readonly mask?: {
-		readonly jsonName: string
-	}
+	readonly mask?: boolean
 }
 
 export interface SuccessApiResponse<T> {
