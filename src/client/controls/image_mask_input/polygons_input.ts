@@ -40,6 +40,12 @@ export function PolygonsInput(opts: PolygonsInputOptions): Element {
 		currentPolygonElement = null
 	}
 
+	function removeAllPolygonElements(): void {
+		while(svg.lastChild){
+			svg.lastChild.remove()
+		}
+	}
+
 	function addPointToCurrentPolygonElement(point: Point2D): void {
 		if(!currentPolygonElement){
 			throw new Error("Cannot add point to polygon: no polygon")
@@ -95,10 +101,6 @@ export function PolygonsInput(opts: PolygonsInputOptions): Element {
 			const polygons = [...opts.value()]
 			polygons.pop()
 			opts.value(polygons)
-			const lastPath = svg.lastChild
-			if(lastPath){
-				lastPath.remove()
-			}
 		}
 	}
 
@@ -118,20 +120,26 @@ export function PolygonsInput(opts: PolygonsInputOptions): Element {
 		}
 	})
 
-	for(const polygon of opts.value()){
-		makeNewPolygonElement()
-		for(const point of polygon){
-			addPointToCurrentPolygonElement(point)
-		}
-		finalizeCurrentPolygonElement()
-	}
-
 	const binder = getBinder(svg)
 	binder.onNodeInserted(() => {
 		window.addEventListener("keydown", onKey)
 	})
 	binder.onNodeRemoved(() => {
 		window.removeEventListener("keydown", onKey)
+	})
+
+	binder.watchAndRun(opts.value, polygons => {
+		requestAnimationFrame(() => {
+			console.log(polygons)
+			removeAllPolygonElements() // eww.
+			for(const polygon of polygons){
+				makeNewPolygonElement()
+				for(const point of polygon){
+					addPointToCurrentPolygonElement(point)
+				}
+				finalizeCurrentPolygonElement()
+			}
+		})
 	})
 
 	return svg

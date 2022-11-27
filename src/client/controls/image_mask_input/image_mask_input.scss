@@ -19,14 +19,25 @@
 			height: 100%;
 		}
 	}
-}
 
-.image-mask-input-button {
-	pointer-events: none;
+	.image-mask-input-buttons {
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
+		align-items: stretch;
 
-	&.available {
-		pointer-events: all;
+		.image-mask-input-button {
+			margin: 0.25rem;
+			font-size: 1.25rem;
+			border-radius: 1rem;
+			padding: 0.25rem 1rem;
+			background: #a0c2a5;
+			cursor: pointer;
+			color: #fff;
+			border: 2px solid #fff;
+		}
 	}
+
 }
 
 .polygons-input {

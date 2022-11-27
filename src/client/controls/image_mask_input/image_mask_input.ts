@@ -13,9 +13,14 @@ interface ImageMaskInputOptions {
 	value: WBox<string>
 }
 
+interface ImageMaskInputModalControlOptions {
+	onApply(): void
+	onCancel(): void
+}
+
 const offsetRatio = 0.9
 
-export function ImageMaskInput(opts: ImageMaskInputOptions) {
+export function ImageMaskInput(opts: ImageMaskInputOptions & ImageMaskInputModalControlOptions) {
 	const imageInfo = fetchToBox(() => ClientApi.getPictureInfoById(opts.imageId))
 
 	const winSize = windowSizeBox()
@@ -59,15 +64,41 @@ export function ImageMaskInput(opts: ImageMaskInputOptions) {
 		value: polygons
 	})
 
+	function clear(): void {
+		polygons([])
+	}
+
 	const wrap = tag({
 		class: "image-mask-input-wrap"
-	}, [tag({
-		class: "image-mask-input",
-		style: {
-			width: imageDims.map(wh => wh.width + "px"),
-			height: imageDims.map(wh => wh.height + "px")
-		}
-	}, [background, polygonsInput])])
+	}, [
+		tag({
+			class: "image-mask-input",
+			style: {
+				width: imageDims.map(wh => wh.width + "px"),
+				height: imageDims.map(wh => wh.height + "px")
+			}
+		}, [background, polygonsInput]),
+		tag({class: "image-mask-input-buttons"}, [
+			tag({
+				tagName: "button",
+				class: "image-mask-input-button icon-ok",
+				on: {click: opts.onApply},
+				text: "Apply"
+			}),
+			tag({
+				tagName: "button",
+				class: "image-mask-input-button icon-trash-empty",
+				on: {click: clear},
+				text: "Clear"
+			}),
+			tag({
+				tagName: "button",
+				class: "image-mask-input-button icon-cancel",
+				on: {click: opts.onCancel},
+				text: "Cancel"
+			})
+		])
+	])
 
 	const binder = getBinder(wrap)
 	binder.watch(polygons, polygons => {
@@ -79,7 +110,26 @@ export function ImageMaskInput(opts: ImageMaskInputOptions) {
 }
 
 export function showImageMaskInput(opts: ImageMaskInputOptions): Modal {
-	return showModalBase({closeByBackgroundClick: true}, [
-		ImageMaskInput(opts)
+	const preEditValue = opts.value()
+	const innerModal: Modal = showModalBase({closeByBackgroundClick: true}, [
+		ImageMaskInput({
+			...opts,
+			onApply: () => innerModal.close(),
+			onCancel: () => {
+				opts.value(preEditValue)
+				innerModal.close()
+			}
+		})
 	])
+
+	return {
+		...innerModal,
+		waitClose: async() => {
+			const closeEvt = await innerModal.waitClose()
+			if(closeEvt.reason === "background_click"){
+				opts.value(preEditValue)
+			}
+			return closeEvt
+		}
+	}
 }

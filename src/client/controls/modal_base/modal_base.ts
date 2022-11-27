@@ -5,9 +5,13 @@ interface ModalBaseOptions {
 	closeByBackgroundClick?: boolean
 }
 
+export interface ModalCloseEvent {
+	reason: "background_click" | "close_method"
+}
+
 export interface Modal {
 	close(): void
-	waitClose(): Promise<void>
+	waitClose(): Promise<ModalCloseEvent>
 }
 
 export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTMLElement[]>): Modal {
@@ -19,22 +23,22 @@ export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTML
 
 	document.body.appendChild(result)
 
-	let closed = false
-	const closeWaiters = [] as (() => void)[]
-	function close(): void {
-		closed = true
+	let closeReason: ModalCloseEvent["reason"] | null = null
+	const closeWaiters = [] as ((evt: ModalCloseEvent) => void)[]
+	function close(reason: ModalCloseEvent["reason"]): void {
+		closeReason = reason
 		result.remove()
 		const waiters = [...closeWaiters]
 		closeWaiters.length = 0
 		for(const waiter of waiters){
-			waiter()
+			waiter({reason})
 		}
 	}
 
-	function waitClose(): Promise<void> {
+	function waitClose(): Promise<ModalCloseEvent> {
 		return new Promise(ok => {
-			if(closed){
-				ok()
+			if(closeReason){
+				ok({reason: closeReason})
 			} else {
 				closeWaiters.push(ok)
 			}
@@ -44,11 +48,11 @@ export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTML
 	if(opts.closeByBackgroundClick){
 		result.addEventListener("click", e => {
 			if(e.target === result){
-				close()
+				close("background_click")
 			}
 		}, {passive: true})
 	}
 
 
-	return {close, waitClose}
+	return {close: () => close("close_method"), waitClose}
 }

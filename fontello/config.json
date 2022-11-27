@@ -119,6 +119,12 @@
       "css": "puzzle",
       "code": 59407,
       "src": "typicons"
+    },
+    {
+      "uid": "b90d80c250a9bbdd6cd3fe00e6351710",
+      "css": "ok",
+      "code": 59408,
+      "src": "iconic"
     }
   ]
 }
