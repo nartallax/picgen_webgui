@@ -4,6 +4,7 @@ import {BoolInput} from "client/controls/bool_input/bool_input"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {PictureInput} from "client/controls/picture_input/picture_input"
 import {TextInput} from "client/controls/text_input/text_input"
+import {TooltipIcon} from "client/controls/tooltip/tooltip"
 import {GenParameterDefinition} from "common/common_types"
 import {GenerationTaskParameterValue, PictureParameterValue} from "common/entity_types"
 
@@ -53,7 +54,9 @@ export function ParamLine(def: GenParameterDefinition, value: WBox<GenerationTas
 			tagName: "td",
 			class: "param-line-label",
 			text: def.uiName
-		}),
+		}, [
+			!def.tooltip ? null : TooltipIcon({tooltip: def.tooltip})
+		]),
 		tag({
 			tagName: "td",
 			class: ["param-line-revert-button", "icon-ccw", {

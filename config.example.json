@@ -78,7 +78,8 @@
 		"type": "string",
 		"jsonName": "exclude",
 		"uiName": "Exclude",
-		"default": ""
+		"default": "",
+		"tooltip": "Content of this string will be used as negative terms, excluding its terms from the generated content."
 	}, {
 		"type": "picture",
 		"sizeStep": 16,

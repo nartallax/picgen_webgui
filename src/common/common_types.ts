@@ -11,6 +11,7 @@ interface BaseParamDefinition {
 	readonly jsonName: string
 	readonly uiName: string
 	readonly isTest?: boolean
+	readonly tooltip?: string
 }
 
 export interface FloatGenParamDefinition extends BaseParamDefinition {

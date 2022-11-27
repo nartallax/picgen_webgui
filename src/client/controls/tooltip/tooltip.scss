@@ -1,0 +1,40 @@
+.tooltip-icon {
+	font-size: 0.9rem;
+    border-radius: 100%;
+    border: 2px solid #625e5e;
+    color: #625e5e;
+    font-weight: bold;
+    position: relative;
+    height: 1.5rem;
+    width: 1.5rem;
+    text-align: center;
+    margin-left: 0.25rem;
+    cursor: default;
+
+	.tooltip-content-wrap {
+		display: none;
+		position: absolute;
+		top: 100%;
+		left: 100%;
+		overflow: visible;
+		width: 100vw;
+		height: 100vh;
+		z-index: 100;
+		
+		.tooltip-content {
+			pointer-events: none;
+
+			background: #cdbbb6;
+			border: 2px solid #625e5e;
+			border-radius: 1rem;
+			padding: 0.75rem;
+			font-size: 1rem;
+			max-width: 35rem;
+			white-space: break-spaces;
+		}
+	}
+
+	&:hover .tooltip-content-wrap {
+		display: block;
+	}
+}

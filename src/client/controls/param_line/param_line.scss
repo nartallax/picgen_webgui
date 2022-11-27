@@ -5,6 +5,9 @@
 		white-space: nowrap;
 		font-size: 1.35rem;
 		color: #625e5e;
+		display: flex;
+		flex-direction: row;
+    	align-items: center;
 	}
 
 	.param-line-revert-button {
