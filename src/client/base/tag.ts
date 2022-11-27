@@ -55,7 +55,7 @@ function populateTag<K extends string, T>(tagBase: Element, description: TagDesc
 		for(const evtName in description.on){
 			const handler = description.on[evtName as keyof GlobalEventHandlersEventMap]
 			// I don't want to construct elaborat solid type here
-			// I know you will be in correct type, because it enforced by function parameter type
+			// I know the type will be correct, because it is enforced by function parameter type
 			// so just be Any and that's it
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			tagBase.addEventListener(evtName, handler as any, {passive: true, capture: false})
@@ -87,7 +87,13 @@ function populateTag<K extends string, T>(tagBase: Element, description: TagDesc
 	}
 
 	if(description.class){
-		binder = makeClassname(binder, tagBase, description.class, classname => tagBase.className = classname) || binder
+		binder = makeClassname(
+			binder,
+			tagBase,
+			description.class,
+			// using classList here because on svg elements .className is readonly (in runtime)
+			classname => tagBase.classList.value = classname
+		) || binder
 	}
 
 	return binder

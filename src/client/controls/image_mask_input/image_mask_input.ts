@@ -1,20 +1,23 @@
 import {ClientApi} from "client/app/client_api"
-import {viewBox, WBox} from "client/base/box"
-import {svgTag, tag} from "client/base/tag"
+import {getBinder} from "client/base/binder/binder"
+import {box, RBox, viewBox, WBox} from "client/base/box"
+import {tag} from "client/base/tag"
 import {fetchToBox} from "client/client_common/fetch_to_box"
 import {windowSizeBox} from "client/client_common/window_size_box"
+import {PolygonsInput} from "client/controls/image_mask_input/polygons_input"
 import {showModalBase} from "client/controls/modal_base/modal_base"
-import {PictureMask, Point2D} from "common/common_types"
+import {decodePictureMask, encodePictureMask} from "common/picture_mask_encoding"
 
 interface ImageMaskInputOptions {
 	imageId: number
-	value: WBox<PictureMask>
+	value: WBox<string>
 }
 
 const offsetRatio = 0.9
 
 export function ImageMaskInput(opts: ImageMaskInputOptions) {
 	const imageInfo = fetchToBox(() => ClientApi.getPictureInfoById(opts.imageId))
+
 	const winSize = windowSizeBox()
 	const imageDims = viewBox(() => {
 		const pic = imageInfo()
@@ -46,52 +49,30 @@ export function ImageMaskInput(opts: ImageMaskInputOptions) {
 
 	const background = tag({
 		style: {
-			backgroundImage: ClientApi.getPictureUrl(opts.imageId)
+			backgroundImage: `url(${JSON.stringify(ClientApi.getPictureUrl(opts.imageId))})`
 		},
 		class: "image-mask-input-background"
 	})
 
-	let line: SVGElement | null = null
-	const linePoints: Point2D[] = []
-
-	function addPointToLine(evt: MouseEvent): void {
-		line ||= svgTag({
-			tagName: "path",
-			class: "line"
-		})
-		let d = line.getAttribute("d") || ""
-
-		const rect = svg.getBoundingClientRect()
-		const x = (rect.x - evt.clientX) / rect.width
-		const y = (rect.y - evt.clientY) / rect.height
-
-		d += `M ${x} ${y}`
-		linePoints.push({x, y})
-
-		line.setAttribute("d", d)
-	}
-
-	const svg = svgTag({
-		tagName: "svg",
-		attrs: {
-			x: "0",
-			y: "0",
-			width: "1",
-			height: "1",
-			viewBox: "0 0 1 1"
-		},
-		on: {
-			click: addPointToLine
-		}
+	const polygons = box(decodePictureMask(opts.value()))
+	const polygonsInput = PolygonsInput({
+		value: polygons
 	})
 
 	const wrap = tag({
+		class: "image-mask-input-wrap"
+	}, [tag({
 		class: "image-mask-input",
 		style: {
 			width: imageDims.map(wh => wh.width + "px"),
 			height: imageDims.map(wh => wh.height + "px")
 		}
-	}, [background, svg])
+	}, [background, polygonsInput])])
+
+	const binder = getBinder(wrap)
+	binder.watch(polygons, polygons => {
+		opts.value(encodePictureMask(polygons))
+	})
 
 	return wrap
 
@@ -101,4 +82,35 @@ export function showImageMaskInput(opts: ImageMaskInputOptions): () => void {
 	return showModalBase({closeByBackgroundClick: true}, [
 		ImageMaskInput(opts)
 	])
+}
+
+type ImageMaskInputButtonOptions = Omit<ImageMaskInputOptions, "imageId"> & {
+	imageId: RBox<number>
+}
+
+export function ImageMaskInputButton(opts: ImageMaskInputButtonOptions): HTMLElement {
+
+	const haveBase = opts.imageId.map(imageId => imageId > 0)
+
+	const result = tag({
+		tagName: "button",
+		text: haveBase.map(haveBase => haveBase ? "Draw the mask" : "Select base image"),
+		on: {
+			click: () => {
+				if(!haveBase()){
+					return
+				}
+				const imageId = opts.imageId()
+				showImageMaskInput({
+					...opts,
+					imageId
+				})
+			}
+		},
+		class: ["image-mask-input-button", {
+			available: haveBase
+		}]
+	})
+
+	return result
 }

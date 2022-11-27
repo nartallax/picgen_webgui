@@ -35,8 +35,6 @@ export class WebsocketListener {
 					}
 				}, 15000)
 			}
-
-			void this.tasks
 		})
 	}
 

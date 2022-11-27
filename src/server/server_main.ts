@@ -11,7 +11,6 @@ import {TaskQueueController} from "server/task_queue_controller"
 import {ContextStaticProps, RequestContext} from "server/request_context"
 import {ServerApi} from "server/server_api"
 import {errToString} from "server/utils/err_to_string"
-import {rasterizePictureMask} from "server/utils/picture_mask_rasterizer"
 
 export async function main() {
 	try {

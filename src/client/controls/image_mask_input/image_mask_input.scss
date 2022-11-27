@@ -1,6 +1,36 @@
-.image-mask-input {
-	path {
-		stroke: rgba(128, 128, 128, 0.5);
-		stroke-width: 0.05;
+.image-mask-input-wrap {
+
+	padding: 0.5rem;
+	border-radius: 0.25rem;
+	background: #cdbbb6;
+
+	.image-mask-input {
+		position: relative;
+
+		> * {
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: 0;
+			bottom: 0;
+
+			// those two are just for SVG
+			width: 100%;
+			height: 100%;
+		}
+	}
+}
+
+.image-mask-input-button {
+	pointer-events: none;
+
+	&.available {
+		pointer-events: all;
+	}
+}
+
+.polygons-input {
+	.polygon {
+		fill: gray;
 	}
 }

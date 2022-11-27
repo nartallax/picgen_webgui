@@ -1,6 +1,4 @@
-import {getBinder} from "client/base/binder/binder"
 import {MaybeRBoxed} from "client/base/box"
-import {getNowBox} from "client/base/now_box"
 import {tag} from "client/base/tag"
 
 interface ToastParams {
@@ -21,29 +19,34 @@ function getToastContainer(): HTMLElement {
 
 function incrementToastCount(): void {
 	activeToasts++
+	console.log(`Active toasts count: ${activeToasts}`)
 	if(activeToasts === 1){
 		toastContainer = tag({class: "toast-container"})
 		document.body.appendChild(toastContainer)
+		console.log("Toast container added.")
 	}
 }
 
 function decrementToastCount(): void {
 	activeToasts--
+	console.log(`Active toasts count: ${activeToasts}`)
 	if(activeToasts === 0){
 		getToastContainer().remove()
 		toastContainer = null
+		console.log("Toast container removed.")
 	}
 }
 
 export function showToast(params: ToastParams): void {
 	incrementToastCount()
 
-	const now = getNowBox()
-	const startTime = now()
 	const timeoutSeconds = params.timeoutSeconds ?? 15
+
+	const timeoutHandle = setTimeout(removeToast, timeoutSeconds * 1000)
 
 	function removeToast(): void {
 		el.remove()
+		clearTimeout(timeoutHandle)
 		decrementToastCount()
 	}
 
@@ -53,13 +56,6 @@ export function showToast(params: ToastParams): void {
 	}, [tag({
 		text: params.text
 	})])
-
-	const binder = getBinder(el)
-	binder.watch(now, now => {
-		if(Math.floor((now - startTime) / 1000) >= timeoutSeconds){
-			removeToast()
-		}
-	})
 
 	getToastContainer().appendChild(el)
 }

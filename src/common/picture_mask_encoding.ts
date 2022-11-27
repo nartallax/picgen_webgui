@@ -1,7 +1,7 @@
 import {base64ToByteArray, bytesToBase64} from "common/base64"
 import {PictureMask, Point2D, Polygon} from "common/common_types"
 
-const floatResolution = 0xffffffff
+const floatResolution = 0xffff
 
 class Encoder {
 	private buffer: Uint8Array
@@ -53,16 +53,16 @@ class Encoder {
 			firstByte |= 0x40
 		}
 		firstByte |= int & 0x3f
-		int >>= 6
+		int = Math.floor(int / 64) // >> 6 without shenanigans about sign
 		this.buffer[this.index++] = firstByte
 
-		while(int > 0){
+		while(int !== 0){
 			let byte = 0
 			if(int > 0x7f){
 				byte = 0x80
 			}
 			byte |= int & 0x7f
-			int >>= 7
+			int = Math.floor(int / 128) // >> 7 without shenanigans about sign
 			this.buffer[this.index++] = byte
 		}
 	}
@@ -87,19 +87,26 @@ class Decoder {
 
 	decode(): PictureMask {
 		if(!this.result){
-			if(this.index !== 0 || this.readInt() !== 0x01){
+			if(this.buffer.length === 0){
+				// empty line is empty mask, simple as that
+				this.result = []
+			} else if(this.index !== 0){
 				throw new Error("Magic number does not match; data is borken uwu")
+			} else if(this.readInt() !== 0x01){
+				// cannot merge it with check above because need to always readint (to check/skip magic number) on first decode()
+				throw new Error("Magic number does not match; data is borken uwu")
+			} else {
+				this.result = this.readMask()
 			}
-			this.result = this.readMask()
 		}
-		return this.readMask()
+		return this.result
 	}
 
 	private readMask(): PictureMask {
 		const len = this.readInt()
 		const result: PictureMask = new Array(len)
 		for(let i = 0; i < len; i++){
-			result.push(this.readPolygon())
+			result[i] = this.readPolygon()
 		}
 		return result
 	}
@@ -110,7 +117,7 @@ class Decoder {
 		let point: Point2D | undefined = undefined
 		for(let i = 0; i < len; i++){
 			point = this.readPoint(point)
-			result.push(point)
+			result[i] = point
 		}
 
 		return result
@@ -134,13 +141,13 @@ class Decoder {
 		const neg = !!(firstByte & 0x80)
 		let haveNext = !!(firstByte & 0x40)
 		let int = firstByte & 0x3f
-		let offset = 6
+		let mult = 64
 
 		while(haveNext){
 			const byte = this.buffer[this.index++]!
 			haveNext = !!(byte & 0x80)
-			int |= (byte & 0x7f) << offset
-			offset += 7
+			int += (byte & 0x7f) * mult
+			mult *= 128
 		}
 
 		return neg ? -int : int
