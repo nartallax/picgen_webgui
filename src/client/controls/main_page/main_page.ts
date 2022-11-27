@@ -95,7 +95,7 @@ export function MainPage(): HTMLElement {
 					for(const paramName in paramValues){
 						const paramValue = unbox(paramValues[paramName])!
 						const def = paramDefsByName.get(paramName)
-						if(def!.type === "picture" && paramValue === 0){
+						if(def!.type === "picture" && typeof(paramValue) === "object" && paramValue.id === 0){
 							continue // not passed
 						}
 						paramValuesForApi[paramName] = paramValue

@@ -19,7 +19,14 @@ export function PromptInput(opts: PromptInputOptions): HTMLElement {
 		attrs: {
 			placeholder: "...Enter a description of the desired result"
 		},
-		on: {input: () => opts.promptValue(input.value)}
+		on: {
+			input: () => opts.promptValue(input.value),
+			keydown: e => {
+				if(e.key === "Enter"){
+					opts.startGeneration()
+				}
+			}
+		}
 	})
 
 	const result = tag({class: "prompt-input"}, [
