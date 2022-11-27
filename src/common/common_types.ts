@@ -5,6 +5,13 @@ import {GenerationTask, GenerationTaskParameterValue, Picture} from "common/enti
  * Therefore, runtyper cannot use types from it, which is bad */
 export const justForRuntyper = "nya"
 
+export interface GenerationParameterSet {
+	readonly uiName: string
+	readonly internalName: string
+	readonly parameters: readonly GenParameterDefinition[]
+	readonly commandTemplate: string
+}
+
 export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition | PictureGenParamDefinition
 
 interface BaseParamDefinition {

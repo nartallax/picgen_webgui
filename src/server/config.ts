@@ -1,4 +1,4 @@
-import {GenParameterDefinition, justForRuntyper} from "common/common_types"
+import {GenerationParameterSet, justForRuntyper} from "common/common_types"
 import {CLIArgs, getCliArgs} from "server/cli_args"
 import {promises as Fs} from "fs"
 import {Runtyper} from "@nartallax/runtyper"
@@ -20,9 +20,8 @@ interface ConfigFile {
 	readonly discordClientId: string
 	readonly discordClientSecretFile: string
 	readonly deleteFilesReceivedFromGenerator: boolean
-	readonly generationCommandTemplate: string
 	readonly dbFilePath: string
-	readonly generationParameters: readonly GenParameterDefinition[]
+	readonly parameterSets: readonly GenerationParameterSet[]
 	readonly tags: {
 		readonly shapeTagsFile: string
 		readonly contentTagsFile: string

@@ -11,6 +11,7 @@ export type GenerationTaskParameterValue = number | boolean | string | PicturePa
 
 export interface GenerationTaskInputData {
 	prompt: string
+	paramSetName: string
 	params: {[key: string]: GenerationTaskParameterValue}
 }
 

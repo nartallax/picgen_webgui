@@ -175,10 +175,15 @@ function updateChildren(parent: Element, newChildren: readonly Element[]): void 
  * Won't re-render an element if already has one for the value */
 export function renderArray<T, K, E extends Element>(src: WBox<T[]>, getKey: (value: T) => K, render: (value: WBox<T>) => E): RBox<E[]>
 export function renderArray<T, K, E extends Element>(src: RBox<T[]>, getKey: (value: T) => K, render: (value: RBox<T>) => E): RBox<E[]>
-export function renderArray<T, K, E extends Element>(src: WBox<T[]>, getKey: (value: T) => K, render: (value: WBox<T>) => E): RBox<E[]> {
+export function renderArray<T, K, E extends Element>(src: MaybeRBoxed<readonly T[]>, getKey: (value: T) => K, render: (value: MaybeRBoxed<T>) => E): E[]
+export function renderArray<T, K, E extends Element>(src: MaybeRBoxed<readonly T[]> | WBox<T[]>, getKey: (value: T) => K, render: (value: WBox<T> | T) => E): E[] | RBox<E[]> {
+	if(Array.isArray(src)){
+		return src.map(el => render(el))
+	}
+
 	const map = new Map<WBox<T>, E>()
 
-	return src.wrapElements(getKey).map(itemBoxes => {
+	return (src as WBox<T[]>).wrapElements(getKey).map(itemBoxes => {
 		const leftoverBoxes = new Set(map.keys())
 
 		const result = itemBoxes.map(itemBox => {

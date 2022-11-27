@@ -1,4 +1,4 @@
-import {GenParameterDefinition, SimpleListQueryParams} from "common/common_types"
+import {GenerationParameterSet, SimpleListQueryParams} from "common/common_types"
 import {ApiError} from "common/api_error"
 import {cont} from "server/async_context"
 import {config} from "server/config"
@@ -6,8 +6,8 @@ import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Pic
 
 export namespace ServerApi {
 
-	export function getGenerationParameterDefinitions(): readonly GenParameterDefinition[] {
-		return config.generationParameters
+	export function getGenerationParameterSets(): readonly GenerationParameterSet[] {
+		return config.parameterSets
 	}
 
 	export function getShapeTags(): readonly string[] {
@@ -128,13 +128,19 @@ export namespace ServerApi {
 		await context.taskQueue.kill(id)
 	}
 
-	export async function uploadPictureAsParameterValue(paramName: string, fileName: string, data: unknown): Promise<Picture> {
+	export async function uploadPictureAsParameterValue(paramSetName: string, paramName: string, fileName: string, data: unknown): Promise<Picture> {
 		if(!(data instanceof Buffer)){
 			throw new Error("Data is not buffer!")
 		}
 
 		const context = cont()
-		const paramDef = context.config.generationParameters.find(def => def.jsonName === paramName)
+
+		const paramSet = context.config.parameterSets.find(set => set.internalName === paramSetName)
+		if(!paramSet){
+			throw new ApiError("validation_not_passed", "Unknown parameter set name: " + paramSetName)
+		}
+
+		const paramDef = paramSet.parameters.find(def => def.jsonName === paramName)
 		if(!paramDef){
 			throw new ApiError("validation_not_passed", "Unknown parameter name: " + paramName)
 		}

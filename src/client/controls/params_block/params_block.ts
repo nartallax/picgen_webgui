@@ -1,5 +1,5 @@
 import {getBinder} from "client/base/binder/binder"
-import {box, RBox, unbox, WBox} from "client/base/box"
+import {box, MaybeRBoxed, RBox, unbox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {ParamLine} from "client/controls/param_line/param_line"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
@@ -10,6 +10,7 @@ import {GenerationTaskParameterValue} from "common/entity_types"
 interface ParamsBlockOptions {
 	readonly paramDefs: RBox<null | readonly GenParameterDefinition[]>
 	readonly paramValues: {readonly [key: string]: WBox<GenerationTaskParameterValue>}
+	readonly paramSetName: MaybeRBoxed<string>
 }
 
 export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
@@ -31,7 +32,7 @@ export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
 				console.error("No value is defined for parameter " + def.jsonName)
 				continue
 			}
-			const line = ParamLine(def, value);
+			const line = ParamLine(opts.paramSetName, def, value);
 			(def.isTest ? testLines : nonTestLines).push(line)
 		}
 

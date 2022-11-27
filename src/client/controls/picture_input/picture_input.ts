@@ -1,6 +1,6 @@
 import {ClientApi} from "client/app/client_api"
 import {getBinder} from "client/base/binder/binder"
-import {box, WBox} from "client/base/box"
+import {box, MaybeRBoxed, unbox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {generateUniqDomID} from "client/client_common/generate_uniq_dom_id"
 import {readFileToArrayBuffer} from "client/client_common/read_file_to_array_buffer"
@@ -11,6 +11,7 @@ import {Picture, PictureParameterValue} from "common/entity_types"
 interface PictureInputOptions {
 	readonly value: WBox<PictureParameterValue>
 	readonly param: PictureGenParamDefinition
+	readonly paramSetName: MaybeRBoxed<string>
 }
 
 interface ErrorState {
@@ -74,7 +75,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 					}
 					const name = file.name
 					const nameWithoutExt = name.replace(/\.[^.]*$/, "")
-					const picture = await ClientApi.uploadPictureAsParameterValue(opts.param.jsonName, nameWithoutExt, fileData)
+					const picture = await ClientApi.uploadPictureAsParameterValue(unbox(opts.paramSetName), opts.param.jsonName, nameWithoutExt, fileData)
 					if(!isUploadingThisFile(file)){
 						console.log("Stopping upload process after file is uploaded because different file is selected")
 						return

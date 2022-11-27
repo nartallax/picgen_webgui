@@ -180,8 +180,13 @@ export const migrations: Migration[] = [
 			alter table "pictures"
 			add "name" text;
 		`)
+	}},
+
+	{name: "00008", handler: async db => {
+		await db.run(`
+			alter table "generationTasks"
+			add "paramSetName" text;
+		`)
 	}}
-
-
 
 ]

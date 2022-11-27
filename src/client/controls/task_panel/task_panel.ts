@@ -36,7 +36,8 @@ export function TaskPanel(opts: TaskPanelOptions): HTMLElement {
 					const task = opts.task()
 					ClientApi.createGenerationTask({
 						params: task.params,
-						prompt: task.prompt
+						prompt: task.prompt,
+						paramSetName: task.paramSetName
 					})
 				})}
 			}),

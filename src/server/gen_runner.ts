@@ -140,8 +140,15 @@ export class GenRunner {
 			prompt: task.prompt,
 			...task.params
 		})
-		const entries = ShellQuote.parse(this.config.generationCommandTemplate, {
-			INPUT_JSON: json
+
+		const paramSet = this.config.parameterSets.find(set => set.internalName === task.paramSetName)
+		if(!paramSet){
+			throw new Error(`No param set named ${task.paramSetName}! This should be caught at validation phase.`)
+		}
+
+		const entries = ShellQuote.parse(paramSet.commandTemplate, {
+			INPUT_JSON: json,
+			PARAM_SET: task.paramSetName
 		})
 
 		for(const entry of entries){

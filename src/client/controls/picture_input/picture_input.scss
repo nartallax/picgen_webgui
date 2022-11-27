@@ -1,8 +1,14 @@
 .picture-input {
 
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+
 	label {
 		display: block;
-		width: 100%;
+		flex-grow: 1;
+		flex-shrink: 1;
 		cursor: pointer;
 		font-size: 1.2rem;
 		text-align: center;
@@ -20,8 +26,6 @@
 	}
 
 	.mask-button {
-		position: absolute;
-		right: 3px;
 		height: 2rem;
 		width: 2rem;
 		cursor: pointer;

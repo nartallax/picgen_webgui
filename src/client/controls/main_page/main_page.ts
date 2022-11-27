@@ -1,16 +1,17 @@
 import {ClientApi} from "client/app/client_api"
 import {WebsocketListener} from "client/app/websocket_listener"
 import {getBinder} from "client/base/binder/binder"
-import {box, unbox, WBox} from "client/base/box"
+import {box, unbox, viewBox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {Feed} from "client/controls/feed/feed"
 import {LoginBar} from "client/controls/login_bar/login_bar"
 import {ParamsBlock} from "client/controls/params_block/params_block"
 import {defaultValueOfParam} from "client/controls/param_line/param_line"
 import {PromptInput} from "client/controls/prompt_input/prompt_input"
+import {Select} from "client/controls/select/select"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {TaskPanel} from "client/controls/task_panel/task_panel"
-import {BinaryQueryCondition, GenParameterDefinition} from "common/common_types"
+import {BinaryQueryCondition, GenerationParameterSet, GenParameterDefinition} from "common/common_types"
 import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
 
 function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, defs: readonly GenParameterDefinition[]) {
@@ -53,8 +54,17 @@ async function loadNextTaskPack(existingTasks: GenerationTaskWithPictures[]): Pr
 
 export function MainPage(): HTMLElement {
 
+	const selectedParamSetName = box("")
+	const knownParamSets = box([] as GenerationParameterSet[])
+	const selectedParamSet = viewBox(() => {
+		const paramSetName = selectedParamSetName()
+		const paramSets = knownParamSets()
+		const selectedSet = paramSets.find(set => set.internalName === paramSetName)
+		return selectedSet
+	})
+
 	const paramValues = {} as {[key: string]: WBox<GenerationTaskParameterValue>}
-	const paramDefsBox = box(null as null | readonly GenParameterDefinition[])
+	const paramDefsBox = selectedParamSet.map(set => set?.parameters ?? [])
 
 	const contentTagBox = box(null as null | {readonly [tagContent: string]: readonly string[]})
 	const selectedContentTags = box([] as string[])
@@ -71,7 +81,11 @@ export function MainPage(): HTMLElement {
 	const result = tag({class: "page-root"}, [
 		tag({class: "settings-column"}, [
 			LoginBar(),
-			ParamsBlock({paramDefs: paramDefsBox, paramValues}),
+			Select({
+				options: knownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
+				value: selectedParamSetName
+			}),
+			ParamsBlock({paramSetName: selectedParamSetName, paramDefs: paramDefsBox, paramValues}),
 			TagSearchBlock({
 				selectedContentTags,
 				contentTags: contentTagBox,
@@ -102,6 +116,7 @@ export function MainPage(): HTMLElement {
 					}
 					await ClientApi.createGenerationTask({
 						prompt: fullPrompt,
+						paramSetName: selectedParamSetName(),
 						params: paramValuesForApi
 					})
 				}
@@ -118,11 +133,15 @@ export function MainPage(): HTMLElement {
 
 	const binder = getBinder(result)
 	binder.onNodeInserted(() => websocket?.start())
-	binder.onNodeRemoved(() => websocket?.stop());
+	binder.onNodeRemoved(() => websocket?.stop())
+
+	binder.watch(paramDefsBox, paramDefs => {
+		updateParamValues(paramValues, paramDefs)
+	});
 
 	(async() => {
-		const [paramDefs, contentTags, shapeTags] = await Promise.all([
-			ClientApi.getGenerationParameterDefinitions(),
+		const [paramSets, contentTags, shapeTags] = await Promise.all([
+			ClientApi.getGenerationParameterSets(),
 			ClientApi.getContentTags(),
 			ClientApi.getShapeTags()
 		])
@@ -137,8 +156,11 @@ export function MainPage(): HTMLElement {
 			shapeTagValue(shapeTags[0] || "Landscape")
 		}
 
-		updateParamValues(paramValues, paramDefs)
-		paramDefsBox(paramDefs)
+		knownParamSets(paramSets)
+		const firstParamSet = paramSets[0]
+		if(firstParamSet){
+			selectedParamSetName(firstParamSet.internalName)
+		}
 
 		contentTagBox(contentTags)
 	})()

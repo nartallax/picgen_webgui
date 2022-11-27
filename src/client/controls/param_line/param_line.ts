@@ -1,4 +1,4 @@
-import {viewBox, WBox} from "client/base/box"
+import {MaybeRBoxed, viewBox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {NumberInput} from "client/controls/number_input/number_input"
@@ -16,7 +16,7 @@ export function defaultValueOfParam(def: GenParameterDefinition): GenerationTask
 	}
 }
 
-export function ParamLine(def: GenParameterDefinition, value: WBox<GenerationTaskParameterValue>): HTMLElement {
+export function ParamLine(paramSetName: MaybeRBoxed<string>, def: GenParameterDefinition, value: WBox<GenerationTaskParameterValue>): HTMLElement {
 	let input: HTMLElement
 	switch(def.type){
 		case "int":
@@ -43,6 +43,7 @@ export function ParamLine(def: GenParameterDefinition, value: WBox<GenerationTas
 			break
 		case "picture":
 			input = PictureInput({
+				paramSetName,
 				value: value as WBox<PictureParameterValue>,
 				param: def
 			})

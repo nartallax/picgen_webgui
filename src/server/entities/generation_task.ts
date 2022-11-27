@@ -1,5 +1,5 @@
 import {ApiError} from "common/api_error"
-import {GenParameterDefinition, PictureGenParamDefinition} from "common/common_types"
+import {GenerationParameterSet, GenParameterDefinition, PictureGenParamDefinition} from "common/common_types"
 import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus, generationTaskStatusList} from "common/entity_types"
 import {DAO} from "server/dao"
 import {UserlessContext} from "server/request_context"
@@ -15,8 +15,7 @@ interface ServerPictureParameterValue {
 
 type ServerGenerationTaskParameterValue = number | boolean | string | ServerPictureParameterValue
 
-export interface ServerGenerationTaskInputData {
-	prompt: string
+export interface ServerGenerationTaskInputData extends Omit<GenerationTaskInputData, "params"> {
 	params: {[key: string]: ServerGenerationTaskParameterValue}
 }
 
@@ -60,9 +59,10 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	// which must be resolved in one way or another before passed to generator
 	async prepareInputData(origInputData: GenerationTaskInputData): Promise<ServerGenerationTaskInputData> {
 		const context = this.getContext()
-		const inputData: ServerGenerationTaskInputData = JSON.parse(JSON.stringify(origInputData))
+		const resultInputData: ServerGenerationTaskInputData = JSON.parse(JSON.stringify(origInputData))
+		const paramSet = this.getParamSet(origInputData.paramSetName)
+		const paramDefs = paramSet.parameters
 
-		const paramDefs = context.config.generationParameters
 		for(const def of paramDefs){
 			const paramValue = origInputData.params[def.jsonName]
 			if(paramValue === undefined){
@@ -72,7 +72,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 						// should never happen; probably will be caught at validation
 						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} is absent`)
 					}
-					inputData.params[def.jsonName] = dflt
+					resultInputData.params[def.jsonName] = dflt
 				}
 				continue
 			}
@@ -86,19 +86,20 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 				const newParamValue: ServerPictureParameterValue = {
 					picture: picturePath
 				}
-				inputData.params[def.jsonName] = newParamValue
+				resultInputData.params[def.jsonName] = newParamValue
 				if(paramValue.mask){
 					newParamValue.mask = await context.picture.getMaskPathForGenerationRun(paramValue.mask, pictureInfo)
 				}
 			}
 		}
 
-		return inputData
+		return resultInputData
 	}
 
 	async cleanupInputData(inputData: ServerGenerationTaskInputData): Promise<void> {
 		const context = this.getContext()
-		const paramDefs = context.config.generationParameters
+		const paramSet = this.getParamSet(inputData.paramSetName)
+		const paramDefs = paramSet.parameters
 		for(const def of paramDefs){
 			if(def.type !== "picture"){
 				continue
@@ -117,15 +118,25 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		}
 	}
 
+	private getParamSet(name: string): GenerationParameterSet {
+		const context = this.getContext()
+
+		const paramSet = context.config.parameterSets.find(set => set.internalName === name)
+		if(!paramSet){
+			throw new ApiError("validation_not_passed", `Name ${name} is not a known parameter set name.`)
+		}
+
+		return paramSet
+	}
+
 	async validateInputData(inputData: GenerationTaskInputData): Promise<void> {
 		const context = this.getContext()
-		const paramDefs = context.config.generationParameters
+		const paramSet = this.getParamSet(inputData.paramSetName)
+		const paramDefs = paramSet.parameters
 		for(const def of paramDefs){
 			const paramValue = inputData.params[def.jsonName]
 			if(paramValue === undefined){
-				// TODO: why we make exception for picture here?
-				// this is wrong, and should be gone after we introduce config param sets
-				if(def.type === "picture" || getServerGenParamDefault(def) !== undefined){
+				if(getServerGenParamDefault(def) !== undefined){
 					continue // parameter not passed, whatever, we can live with it
 				}
 				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} is absent`)
