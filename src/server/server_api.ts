@@ -81,6 +81,8 @@ export namespace ServerApi {
 
 	export async function listTasks(query: SimpleListQueryParams<GenerationTask>): Promise<GenerationTaskWithPictures[]> {
 		const context = cont()
+		const currentUser = await context.user.getCurrent();
+		(query.filters ||= []).push({op: "=", a: {field: "userId"}, b: {value: currentUser.id}})
 		const tasks = await context.generationTask.list(query)
 		const serverPictures = await context.picture.queryAllFieldIncludes("generationTaskId", tasks.map(x => x.id))
 		const pictures = serverPictures.map(pic => context.picture.stripServerData(pic))

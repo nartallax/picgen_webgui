@@ -205,7 +205,7 @@ export class TaskQueueController {
 
 		function sendTaskNotification(body: ApiNotification): void {
 			update((_, actions) => actions.push(context => {
-				context.websockets.sendNotificationToAll(body)
+				context.websockets.sendNotificationToUser(task.userId, body)
 			}))
 		}
 
