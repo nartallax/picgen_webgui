@@ -44,7 +44,7 @@ export class TaskQueueController {
 			const task = await context.generationTask.getById(id)
 			task.status = "completed"
 			task.finishTime = unixtime()
-			context.websockets.sendNotificationToAll({
+			context.websockets.sendNotificationToUser(task.userId, {
 				type: "task_finished",
 				taskId: task.id,
 				finishTime: task.finishTime
@@ -75,7 +75,7 @@ export class TaskQueueController {
 		const result = await context.generationTask.create(genTask)
 		log("Enqueued task #" + result.id)
 
-		context.websockets.sendNotificationToAll({
+		context.websockets.sendNotificationToUser(result.userId, {
 			type: "task_created",
 			task: result
 		})
