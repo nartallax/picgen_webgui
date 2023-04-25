@@ -1,14 +1,18 @@
-import {MaybeRBoxed, viewBox, WBox} from "client/base/box"
+import {isRBox, MaybeRBoxed, RBox, viewBox, WBox} from "client/base/box"
 import {tag} from "client/base/tag"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {PictureInput} from "client/controls/picture_input/picture_input"
 import {TextInput} from "client/controls/text_input/text_input"
 import {TooltipIcon} from "client/controls/tooltip/tooltip"
-import {GenParameterDefinition} from "common/common_types"
+import {GenParameterDefinition, GenParameterGroupToggle} from "common/common_types"
 import {GenerationTaskParameterValue, PictureParameterValue} from "common/entity_types"
 
-export function defaultValueOfParam(def: GenParameterDefinition): GenerationTaskParameterValue {
+export function defaultValueOfParam(def: GenParameterDefinition | GenParameterGroupToggle): GenerationTaskParameterValue {
+	if(!("type" in def)){
+		return def.default
+	}
+
 	switch(def.type){
 		case "picture":
 			return {id: 0}
@@ -16,7 +20,7 @@ export function defaultValueOfParam(def: GenParameterDefinition): GenerationTask
 	}
 }
 
-export function ParamLine(paramSetName: MaybeRBoxed<string>, def: GenParameterDefinition, value: WBox<GenerationTaskParameterValue>): HTMLElement {
+export function ParamLine(paramSetName: MaybeRBoxed<string>, def: GenParameterDefinition, value: WBox<GenerationTaskParameterValue>, visible?: RBox<boolean>): HTMLElement {
 	let input: HTMLElement
 	switch(def.type){
 		case "int":
@@ -50,7 +54,9 @@ export function ParamLine(paramSetName: MaybeRBoxed<string>, def: GenParameterDe
 			break
 	}
 
-	return tag({tagName: "tr", class: "param-line"}, [
+	const display = !isRBox(visible) ? "" : visible.map(visible => visible ? "" : "none")
+
+	return tag({tagName: "tr", class: "param-line", style: {display}}, [
 		tag({
 			tagName: "td",
 			class: "param-line-label",

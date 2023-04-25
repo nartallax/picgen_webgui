@@ -29,6 +29,8 @@ export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
 		for(const group of groups){
 			const defs = group.parameters
 
+			const groupToggle = !group.toggle ? undefined : (opts.paramValues[group.toggle.jsonName] as WBox<boolean>)
+
 			lines.push(tag({
 				tagName: "tr",
 				class: "params-block-header"
@@ -37,7 +39,10 @@ export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
 					tagName: "td",
 					attrs: {colspan: 3}
 				}, [
-					SettingsSubblockHeader({header: group.uiName})
+					SettingsSubblockHeader({
+						header: group.uiName,
+						toggle: groupToggle
+					})
 				])
 			]))
 
@@ -47,7 +52,7 @@ export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
 					console.error("No value is defined for parameter " + def.jsonName)
 					continue
 				}
-				lines.push(ParamLine(opts.paramSetName, def, value))
+				lines.push(ParamLine(opts.paramSetName, def, value, groupToggle))
 			}
 
 		}

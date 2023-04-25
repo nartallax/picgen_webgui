@@ -3,6 +3,12 @@
 	flex-direction: row;
 	align-items: center;
 	padding: 0.6rem;
+	padding-bottom: 0;
+	gap: 0.5rem;
+
+	&.children-visible {
+		padding-bottom: 0.6rem;
+	}
 }
 
 .settings-subblock-header > hr {
@@ -16,6 +22,5 @@
 	flex-grow: 0;
 	font-weight: bold;
 	color: #D5C6C2;
-	padding: 0 0.5em;
 	font-size: 1.35rem;
 }

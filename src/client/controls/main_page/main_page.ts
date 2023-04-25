@@ -11,11 +11,18 @@ import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {Select} from "client/controls/select/select"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {TaskPanel} from "client/controls/task_panel/task_panel"
-import {BinaryQueryCondition, GenerationParameterSet, GenParameterDefinition} from "common/common_types"
+import {BinaryQueryCondition, GenerationParameterSet, GenParameterDefinition, GenParameterGroup, GenParameterGroupToggle} from "common/common_types"
 import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
 import {flatten} from "common/flatten"
 
-function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, defs: readonly GenParameterDefinition[]) {
+function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, groups: readonly GenParameterGroup[]) {
+	const defs: (GenParameterDefinition | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
+	for(const group of groups){
+		if(group.toggle){
+			defs.push(group.toggle)
+		}
+	}
+
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
 	for(const name in paramValues){
 		const value = paramValues[name]!
@@ -110,7 +117,7 @@ export function MainPage(): HTMLElement {
 					for(const paramName in paramValues){
 						const paramValue = unbox(paramValues[paramName])!
 						const def = paramDefsByName.get(paramName)
-						if(def!.type === "picture" && typeof(paramValue) === "object" && paramValue.id === 0){
+						if(def && def.type === "picture" && typeof(paramValue) === "object" && paramValue.id === 0){
 							continue // not passed
 						}
 						paramValuesForApi[paramName] = paramValue
@@ -137,7 +144,7 @@ export function MainPage(): HTMLElement {
 	binder.onNodeRemoved(() => websocket?.stop())
 
 	binder.watch(paramGroups, groups => {
-		updateParamValues(paramValues, flatten(groups.map(group => group.parameters)))
+		updateParamValues(paramValues, groups)
 	});
 
 	(async() => {

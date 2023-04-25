@@ -18,6 +18,10 @@
 		"commandTemplate": "node picture_generator_example.js $INPUT_JSON --param-set-name $PARAM_SET",
 		"parameterGroups": [{
 			"uiName": "Parameters",
+			"toggle": {
+				"jsonName": "parameters_enabled",
+				"default": false
+			},
 			"parameters": [{
 				"type": "float",
 				"jsonName": "scale",

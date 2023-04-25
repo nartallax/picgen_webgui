@@ -17,6 +17,12 @@ export interface GenerationParameterSet {
 export interface GenParameterGroup {
 	readonly uiName: string
 	readonly parameters: readonly GenParameterDefinition[]
+	readonly toggle?: GenParameterGroupToggle
+}
+
+export type GenParameterGroupToggle = {
+	readonly jsonName: string
+	readonly default: boolean
 }
 
 export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition | PictureGenParamDefinition
