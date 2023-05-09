@@ -1,41 +1,4 @@
 { 
-    "imploderConfig": {
-        "profiles": {
-            "test": {
-                "entryModule": "src/test/test_main.ts",
-                "entryFunction": "main",
-                "outFile": "target/test.js",
-                "target": "es5"
-            },
-            "client_dev": {
-                "moduleBlacklistRegexp": ["^/test/.*?$", "^/server/.*?$"],
-                "entryModule": "src/client/client_main.ts",
-                "entryFunction": "main",
-                "outFile": "target/client.js",
-                "target": "es2018",
-            },
-            "client_release": {
-                "moduleBlacklistRegexp": ["^/test/.*?$", "^/server/.*?$"],
-                "entryModule": "src/client/client_main.ts",
-                "entryFunction": "main",
-                "outFile": "target/client.js",
-                "target": "es5",
-                "minify": true
-            },
-            "server": {
-                "moduleBlacklistRegexp": ["^/test/.*?$", "^/client/.*?$"],
-                "plugins": [{
-                    "transform": "@nartallax/runtyper", 
-                    "type":"program"
-                }],
-                "entryModule": "src/server/server_main.ts",
-                "entryFunction": "main",
-                "outFile": "target/server.js",
-                "target": "es2018"
-            },
-        }
-    },
-
     "include": [
         "./src/**/*"
     ],
@@ -53,7 +16,7 @@
 
 
         "moduleResolution": "Node",
-        "lib": ["dom", "es2017"],
+        "lib": ["dom", "ESNext"],
 
         "allowJs": false,
 
@@ -71,7 +34,7 @@
         "declaration": false,
         "emitBOM": false,
         "module": "amd",
-        "target": "es5",
+        "target": "esnext",
 
         "importsNotUsedAsValues": "remove",
         "forceConsistentCasingInFileNames": true,

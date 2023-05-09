@@ -1,98 +1,23 @@
+import {RC} from "@nartallax/ribcage"
 import {ApiErrorType} from "common/api_error"
 import {GenerationTask, GenerationTaskParameterValue, Picture} from "common/entity_types"
 import {flatten} from "common/flatten"
+import {RCise} from "common/rcise"
 
+// TODO: move this stuff in like 5 other files, this file is a mess
 
-/** Without this value, this file is not included in bundle
- * Therefore, runtyper cannot use types from it, which is bad */
-export const justForRuntyper = "nya"
+const pictureTypeArr = ["gif", "png", "jpg", "webp", "bmp", "tiff", "svg", "psd", "ico", "avif", "heic", "heif"] as const
+export type PictureType = RC.Value<typeof PictureType>
+export const PictureType = RC.constUnion(pictureTypeArr)
 
-export interface GenerationParameterSet {
-	readonly uiName: string
-	readonly internalName: string
-	readonly parameterGroups: readonly GenParameterGroup[]
-	readonly commandTemplate: string
-}
+export const pictureTypeSet: ReadonlySet<PictureType> = new Set(pictureTypeArr)
 
-export interface GenParameterGroup {
-	readonly uiName: string
-	readonly parameters: readonly GenParameterDefinition[]
-	readonly toggle?: GenParameterGroupToggle
-}
-
-export type GenParameterGroupToggle = {
-	readonly jsonName: string
-	readonly default: boolean
-}
-
-export type GenParameterDefinition = FloatGenParamDefinition | IntGenParamDefinition | BoolGenParamDefinition | StringGenParamDefinition | PictureGenParamDefinition
-
-interface BaseParamDefinition {
-	readonly jsonName: string
-	readonly uiName: string
-	readonly tooltip?: string
-}
-
-export interface FloatGenParamDefinition extends BaseParamDefinition {
-	readonly type: "float"
-	readonly default: number
-	readonly min?: number
-	readonly max?: number
-}
-
-export interface IntGenParamDefinition extends BaseParamDefinition {
-	readonly type: "int"
-	readonly default: number
-	readonly min?: number
-	readonly max?: number
-	readonly step?: number
-}
-
-export interface BoolGenParamDefinition extends BaseParamDefinition {
-	readonly type: "bool"
-	readonly default: boolean
-}
-
-export interface StringGenParamDefinition extends BaseParamDefinition {
-	readonly type: "string"
-	readonly default: string
-	readonly minLength?: number
-	readonly maxLength?: number
-}
-
-const _allowedPicExts = {
-	gif: true,
-	png: true,
-	jpg: true,
-	webp: true,
-	bmp: true,
-	tiff: true,
-	svg: true,
-	psd: true,
-	ico: true,
-	avif: true,
-	heic: true,
-	heif: true
-}
-
-export type PictureType = keyof typeof _allowedPicExts
-export const pictureTypeSet: ReadonlySet<PictureType> = new Set(Object.keys(_allowedPicExts) as PictureType[])
-
-export type PictureMask = Polygon[]
-export type Polygon = Point2D[]
-export type Point2D = {x: number, y: number}
-
-export interface PictureGenParamDefinition extends BaseParamDefinition {
-	readonly type: "picture"
-	readonly allowedTypes?: readonly PictureType[]
-	readonly maxWidth?: number
-	readonly maxHeight?: number
-	readonly minWidth?: number
-	readonly minHeight?: number
-	readonly sizeStep?: number
-	readonly square?: boolean
-	readonly mask?: boolean
-}
+export type Point2D = RC.Value<typeof Point2D>
+export const Point2D = RC.struct({x: RC.number(), y: RC.number()})
+export type Polygon = RC.Value<typeof Polygon>
+export const Polygon = RC.array(Point2D)
+export type PictureMask = RC.Value<typeof PictureMask>
+export const PictureMask = RC.array(Polygon)
 
 export interface SuccessApiResponse<T> {
 	result: T
@@ -166,40 +91,44 @@ export interface TaskCreatedNotification {
 	task: GenerationTask
 }
 
-export interface FilterField<T> {
-	field: keyof T
-}
+export type FilterField<T> = RC.Value<ReturnType<typeof FilterField<RC.FieldsOf<RCise<T>>>>>
+export const FilterField = <F extends RC.StructFields>(itemType: RC.Struct<F>) => RC.struct({
+	field: RC.keyOf(itemType)
+})
 
-export interface FilterConstantValue {
-	value: string | number
-}
+export type FilterConstantValue = RC.Value<typeof FilterConstantValue>
+export const FilterConstantValue = RC.struct({
+	value: RC.union([RC.string(), RC.number()])
+})
 
-export type FilterValue<T> = FilterConstantValue | FilterField<T>
+export type FilterValue<T> = RC.Value<ReturnType<typeof FilterValue<RC.FieldsOf<RCise<T>>>>>
+export const FilterValue = <F extends RC.StructFields>(itemType: RC.Struct<F>) => RC.union([
+	FilterConstantValue,
+	FilterField(itemType)
+])
 
-// this is declared this way mostly due to Runtyper being too stupid to understand simplier notations
-const _allowedOpsObj = {
-	">": true,
-	">=": true,
-	"<": true,
-	"<=": true,
-	"=": true
-}
-type FilterOps = keyof typeof _allowedOpsObj
-export const allowedFilterOps = new Set(Object.keys(_allowedOpsObj)) as ReadonlySet<FilterOps>
 
-export interface BinaryQueryCondition<T> {
-	a: FilterValue<T>
-	b: FilterValue<T>
-	op: FilterOps
-}
+const filterOpsArray = [">", ">=", "<", "<=", "="] as const
 
-export interface SimpleListQueryParams<T>{
-	sortBy?: keyof T & string
-	filters?: BinaryQueryCondition<T>[]
-	desc?: boolean
-	offset?: number
-	limit?: number
-}
+type FilterOp = RC.Value<typeof FilterOp>
+const FilterOp = RC.union(filterOpsArray.map(x => RC.constant(x)))
+export const allowedFilterOps = new Set(filterOpsArray) as ReadonlySet<FilterOp>
+
+export type BinaryQueryCondition<T> = RC.Value<ReturnType<typeof BinaryQueryCondition<RC.FieldsOf<RCise<T>>>>>
+export const BinaryQueryCondition = <F extends RC.StructFields>(itemType: RC.Struct<F>) => RC.struct({
+	a: FilterValue(itemType),
+	b: FilterValue(itemType),
+	op: FilterOp
+})
+
+export type SimpleListQueryParams<T> = RC.Value<ReturnType<typeof SimpleListQueryParams<RC.FieldsOf<RCise<T>>>>>
+export const SimpleListQueryParams = <F extends RC.StructFields>(itemType: RC.Struct<F>) => RC.struct(RC.structFields({opt: {
+	sortBy: RC.keyOf(itemType),
+	filters: RC.array(BinaryQueryCondition(itemType)),
+	desc: RC.bool(),
+	offset: RC.number(),
+	limit: RC.number()
+}}))
 
 export function getGenParamDefault(def: GenParameterDefinition): GenerationTaskParameterValue | undefined {
 	return "default" in def ? def.default : undefined
@@ -208,3 +137,104 @@ export function getGenParamDefault(def: GenParameterDefinition): GenerationTaskP
 export function getParamDefList(paramSet: GenerationParameterSet): GenParameterDefinition[] {
 	return flatten(paramSet.parameterGroups.map(group => group.parameters))
 }
+
+export type GenParameterGroupToggle = RC.Value<typeof GenParameterGroupToggle>
+export const GenParameterGroupToggle = RC.roStruct({
+	jsonName: RC.string(),
+	default: RC.bool()
+})
+
+type BaseParamDefinition = RC.Value<typeof BaseParamDefinition>
+const BaseParamDefinition = RC.struct(RC.structFields({
+	ro: {
+		jsonName: RC.string(),
+		uiName: RC.string()
+	},
+	roOpt: {
+		tooltip: RC.string()
+	}
+}))
+
+export type FloatGenParamDefinition = RC.Value<typeof FloatGenParamDefinition>
+export const FloatGenParamDefinition = RC.struct(RC.structFields({
+	ro: {
+		type: RC.constant("float" as const),
+		default: RC.number()
+	},
+	roOpt: {
+		min: RC.number(),
+		max: RC.number()
+	}
+}), {}, BaseParamDefinition)
+
+export type IntGenParamDefinition = RC.Value<typeof IntGenParamDefinition>
+export const IntGenParamDefinition = RC.struct(RC.structFields({
+	ro: {
+		type: RC.constant("int" as const),
+		default: RC.int()
+	},
+	roOpt: {
+		min: RC.int(),
+		max: RC.int(),
+		step: RC.int()
+	}
+}), {}, BaseParamDefinition)
+
+export type BoolGenParamDefinition = RC.Value<typeof BoolGenParamDefinition>
+export const BoolGenParamDefinition = RC.roStruct({
+	type: RC.constant("bool" as const),
+	default: RC.bool()
+}, {}, BaseParamDefinition)
+
+export type StringGenParamDefinition = RC.Value<typeof StringGenParamDefinition>
+export const StringGenParamDefinition = RC.struct(RC.structFields({
+	ro: {
+		type: RC.constant("string" as const),
+		default: RC.string()
+	},
+	roOpt: {
+		minLength: RC.int(),
+		maxLength: RC.int()
+	}
+}), {}, BaseParamDefinition)
+
+export type PictureGenParamDefinition = RC.Value<typeof PictureGenParamDefinition>
+export const PictureGenParamDefinition = RC.struct(RC.structFields({
+	ro: {
+		type: RC.constant("picture" as const)
+	},
+	roOpt: {
+		allowedTypes: RC.roArray(PictureType),
+		maxWidth: RC.int(),
+		maxHeight: RC.int(),
+		minWidth: RC.int(),
+		minHeight: RC.int(),
+		sizeStep: RC.int(),
+		square: RC.bool(),
+		mask: RC.bool()
+	}
+}), {}, BaseParamDefinition)
+
+export type GenParameterDefinition = RC.Value<typeof GenParameterDefinition>
+export const GenParameterDefinition = RC.union([
+	FloatGenParamDefinition, IntGenParamDefinition, StringGenParamDefinition, BoolGenParamDefinition, PictureGenParamDefinition
+])
+
+export type GenParameterGroup = RC.Value<typeof GenParameterGroup>
+export const GenParameterGroup = RC.struct(RC.structFields({
+	ro: {
+		uiName: RC.string(),
+		parameters: RC.roArray(GenParameterDefinition)
+	},
+	roOpt: {
+		toggle: GenParameterGroupToggle
+	}
+}))
+
+export type GenerationParameterSet = RC.Value<typeof GenerationParameterSet>
+export const GenerationParameterSet = RC.roStruct({
+	uiName: RC.string(),
+	internalName: RC.string(),
+	parameterGroups: RC.roArray(GenParameterGroup),
+	commandTemplate: RC.string()
+})

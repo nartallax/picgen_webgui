@@ -60,25 +60,25 @@ body {
 
 @font-face {
 	font-family: 'fontello';
-	src: url('./font/fontello.eot');
-	src: url('./font/fontello.eot#iefix') format('embedded-opentype'),
-		 url('./font/fontello.woff2') format('woff2'),
-		 url('./font/fontello.woff') format('woff'),
-		 url('./font/fontello.ttf') format('truetype');
+	src: url('../../static/font/fontello.eot');
+	src: url('../../static/font/fontello.eot#iefix') format('embedded-opentype'),
+		 url('../../static/font/fontello.woff2') format('woff2'),
+		 url('../../static/font/fontello.woff') format('woff'),
+		 url('../../static/font/fontello.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
 }
 
 @font-face {
 	font-family: 'OpenSans';
-	src: url('./font/opensans_medium.ttf') format('truetype');
+	src: url('../../static/font/opensans_medium.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
 }
 
 @font-face {
 	font-family: 'OpenSans';
-	src: url('./font/opensans_bold.ttf') format('truetype');
+	src: url('../../static/font/opensans_bold.ttf') format('truetype');
 	font-weight: bold;
 	font-style: normal;
 }

@@ -16,6 +16,11 @@ const cli = new CLI({
 			keys: ["--config"],
 			definition: "Path to config.json",
 			default: "./config.json"
+		}),
+		httpRootUrl: CLI.str({
+			keys: ["--http-root-url"],
+			definition: "Override URL for non-API requests. Mainly intended for development.",
+			default: ""
 		})
 	}
 })

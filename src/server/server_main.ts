@@ -1,4 +1,3 @@
-import {Runtyper} from "@nartallax/runtyper"
 import {closeAsyncContext, initAsyncContext} from "server/async_context"
 import {config, loadConfig} from "server/config"
 import {DbController} from "server/db/db_controller"
@@ -57,8 +56,9 @@ async function mainInternal(): Promise<void> {
 		inputSizeLimit: 1024 * 1024 * 16,
 		readTimeoutSeconds: 3 * 60,
 		cacheDuration: 0,
-		apiMethods: ServerApi,
-		contextFactory
+		apiMethods: ServerApi as any, // ffs
+		contextFactory,
+		httpRootUrl: config.httpRootUrl ? config.httpRootUrl : undefined // don't pass empty str
 	})
 
 	const websocketServer = new WebsocketServer(server.server, req => contextFactory(req, async context => {
@@ -69,8 +69,6 @@ async function mainInternal(): Promise<void> {
 	const taskQueue = new TaskQueueController(userlessContextFactory)
 
 	initAsyncContext("picgen-gui")
-
-	Runtyper.cleanup()
 
 	await taskQueue.init()
 	const port = await server.start()
@@ -131,3 +129,5 @@ async function mainInternal(): Promise<void> {
 		log("Shutdown sequence is completed.")
 	})
 }
+
+main()

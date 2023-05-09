@@ -1,7 +1,6 @@
 import * as Http from "http"
 import * as Path from "path"
 import * as Fs from "fs"
-import {Runtyper} from "@nartallax/runtyper"
 import {isPathInsidePath} from "server/utils/is_path_inside_path"
 import {isEnoent} from "server/utils/is_enoent"
 import {errToString} from "server/utils/err_to_string"
@@ -10,6 +9,8 @@ import {RequestContext, RequestContextFactory} from "server/request_context"
 import {ApiResponse} from "common/common_types"
 import {ApiError, errorToErrorApiResp} from "common/api_error"
 import {log} from "server/log"
+import {RCV} from "@nartallax/ribcage-validation"
+import {httpGet} from "server/http/http_req"
 
 interface HttpServerOptions {
 	readonly port: number
@@ -20,28 +21,23 @@ interface HttpServerOptions {
 	readonly inputSizeLimit: number
 	readonly readTimeoutSeconds: number
 	readonly apiMethods: {
-		readonly [name: string]: (...args: never[]) => (unknown | Promise<unknown>)
+		readonly [name: string]: (args: Record<string, unknown>) => (unknown | Promise<unknown>)
 	}
 	readonly contextFactory: RequestContextFactory
+	readonly httpRootUrl?: string
+}
+
+if(Math.random() > 1){
+	// this helps with weird parcel bug about http
+	console.log(Http)
 }
 
 export class HttpServer {
 
 	readonly server: Http.Server
-	private readonly validators: {readonly [name: string]: ReturnType<typeof Runtyper.getObjectParameterChecker>}
 
 	constructor(private readonly opts: HttpServerOptions) {
 		this.server = new Http.Server((req, res) => this.processRequest(req, res))
-
-		const validators = {} as Record<string, ReturnType<typeof Runtyper.getObjectParameterChecker>>
-		for(const apiMethodName in opts.apiMethods){
-			const apiFn = opts.apiMethods[apiMethodName]!
-			const validator = Runtyper.getObjectParameterChecker(apiFn, {
-				onUnknown: "allow_anything" // just to pass Buffer without extreme type bloat
-			})
-			validators[apiMethodName] = validator
-		}
-		this.validators = validators
 	}
 
 	start(): Promise<number> {
@@ -87,7 +83,11 @@ export class HttpServer {
 			} else {
 				switch(method){
 					case "GET":
-						await this.processStaticRequest(path, res)
+						if(this.opts.httpRootUrl){
+							this.processStaticRequestByProxy(path, this.opts.httpRootUrl, res)
+						} else {
+							await this.processStaticRequestByFile(path, res)
+						}
 						return
 					default:
 						await endRequest(res, 400, "What The Fuck Do You Want From Me")
@@ -100,10 +100,17 @@ export class HttpServer {
 		}
 	}
 
-	private async processStaticRequest(resourcePath: string, res: Http.ServerResponse): Promise<void> {
+	private async processStaticRequestByProxy(path: string, proxyRoot: string, res: Http.ServerResponse): Promise<void> {
+		const resolvedUrl = new URL(path, proxyRoot)
+		const result = await httpGet(resolvedUrl)
+		res.end(result)
+	}
+
+	private async processStaticRequestByFile(resourcePath: string, res: Http.ServerResponse): Promise<void> {
 		if(resourcePath.endsWith("/")){
 			resourcePath += "index.html"
 		}
+
 		if(resourcePath.startsWith("/")){ // probably
 			resourcePath = "." + resourcePath
 		}
@@ -138,7 +145,7 @@ export class HttpServer {
 		}
 	}
 
-	private async getApiBody(methodName: string, req: Http.IncomingMessage, url: URL): Promise<unknown[]> {
+	private async getApiBody(req: Http.IncomingMessage, url: URL): Promise<Record<string, unknown>> {
 		let argsObj: Record<string, unknown>
 		if(req.method === "GET" || req.method === "PUT"){
 			argsObj = {}
@@ -152,8 +159,7 @@ export class HttpServer {
 			const body = await readStreamToBuffer(req, this.opts.inputSizeLimit, this.opts.readTimeoutSeconds * 1000)
 			argsObj = JSON.parse(body.toString("utf-8"))
 		}
-		const validator = this.validators[methodName]!
-		return validator(argsObj)
+		return argsObj
 	}
 
 	private async processApiRequest(url: URL, req: Http.IncomingMessage, res: Http.ServerResponse): Promise<void> {
@@ -163,7 +169,7 @@ export class HttpServer {
 			return await endRequest(res, 404, "Your Api Call Sucks")
 		}
 
-		const methodArgs = await this.getApiBody(methodName, req, url)
+		const methodArgs = await this.getApiBody(req, url)
 		let result: unknown = null
 		let error: Error | null = null
 		let context: RequestContext | null = null
@@ -174,23 +180,31 @@ export class HttpServer {
 					// if it goes through GET - it's not very important probably, no need to log
 					const user = await context.user.mbGetCurrent()
 					const userStr = !user ? "<anon>" : user.displayName
-					log(`${userStr}: ${methodName}(${methodArgs.map(paramValue => {
-						if(paramValue instanceof Buffer){
-							return "<binary>"
-						} else {
-							return JSON.stringify(paramValue)
-						}
-					}).join(", ")})`)
+					log(`${userStr}: ${methodName}(${argsToString(methodArgs)})`)
 				}
 
-				return [await apiMethod(...methodArgs as never[]), context]
+				let callResult: unknown
+				if(apiMethod.length === 0){
+					const keys = Object.keys(methodArgs)
+					if(keys.length > 0){
+						throw new ApiError("validation_not_passed", `Method ${methodName} does not expect any arguments (was passed: ${keys.join(", ")})`)
+					}
+					callResult = (apiMethod as (() => unknown))()
+				} else {
+					callResult = apiMethod(methodArgs)
+				}
+
+				return [await Promise.resolve(callResult), context]
 			})
 		} catch(e){
 			if(e instanceof Error){
-				const errStr = ApiError.isApiError(e) ? e.message : e.stack || e.message
-				const fixedMethodArgs = methodArgs.map(x => x instanceof Buffer ? "<binary>" : JSON.stringify(x))
-				log(`Error calling ${methodName}(${fixedMethodArgs.join(", ")}): ${errStr}`)
-				error = e
+				let err: Error = e
+				if(err instanceof RCV.Error){
+					err = new ApiError("validation_not_passed", e.message)
+				}
+				const errStr = ApiError.isApiError(err) ? err.message : err.stack || err.message
+				log(`Error calling ${methodName}(${argsToString(methodArgs)}): ${errStr}`)
+				error = err
 			} else {
 				throw e
 			}
@@ -249,4 +263,10 @@ function waitReadStreamToEnd(stream: Fs.ReadStream): Promise<void> {
 		stream.on("error", e => bad(e))
 		stream.on("end", () => ok())
 	})
+}
+
+function argsToString(methodArgs: Record<string, unknown>): string {
+	return Object.entries(methodArgs).map(([k, v]) => {
+		return k + ": " + (v instanceof Uint8Array ? "<binary>" : JSON.stringify(v))
+	}).join(", ")
 }

@@ -1,12 +1,9 @@
 import {ApiError} from "common/api_error"
 import {GenerationParameterSet, GenParameterDefinition, getParamDefList, PictureGenParamDefinition} from "common/common_types"
-import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus, generationTaskStatusList} from "common/entity_types"
+import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus} from "common/entity_types"
 import {DAO} from "server/dao"
 import {UserlessContext} from "server/request_context"
 import {PictureInfo, ServerPicture} from "server/entities/picture"
-
-const reverseStatusMapping = new Map<number, GenerationTaskStatus>()
-Object.entries(generationTaskStatusList).forEach(([name, value]) => reverseStatusMapping.set(value, name as GenerationTaskStatus))
 
 interface ServerPictureParameterValue {
 	picture: string
@@ -31,7 +28,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 
 	protected override fieldFromDb<K extends keyof DbGenerationTask & keyof GenerationTask & string>(field: K, value: DbGenerationTask[K]): unknown {
 		switch(field){
-			case "status": return reverseStatusMapping.get(value as DbGenerationTask["status"])
+			case "status": return GenerationTaskStatus[value as DbGenerationTask["status"]]
 			case "params": return JSON.parse(value as DbGenerationTask["params"])
 			default: return value
 		}
@@ -39,7 +36,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 
 	protected fieldToDb<K extends keyof DbGenerationTask & keyof GenerationTask & string>(field: K, value: GenerationTask[K]): unknown {
 		switch(field){
-			case "status": return generationTaskStatusList[value as GenerationTask["status"]]
+			case "status": return GenerationTaskStatus[value as GenerationTask["status"]]
 			case "params": return JSON.stringify(value as GenerationTask["params"])
 			default: return value
 		}

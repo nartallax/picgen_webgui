@@ -1,7 +1,8 @@
-import {GenerationParameterSet, justForRuntyper} from "common/common_types"
+import {GenerationParameterSet} from "common/common_types"
 import {CLIArgs, getCliArgs} from "server/cli_args"
 import {promises as Fs} from "fs"
-import {Runtyper} from "@nartallax/runtyper"
+import {RCV} from "@nartallax/ribcage-validation"
+import {RC} from "@nartallax/ribcage"
 
 interface AuxConfigFilesData {
 	readonly discordClientSecret: string
@@ -11,34 +12,39 @@ interface AuxConfigFilesData {
 	}
 }
 
-interface ConfigFile {
-	readonly pictureStorageDir: string
-	readonly runningGenerationPictureStorageDir: string
-	readonly haveHttps: boolean
-	readonly httpHost?: string
-	readonly httpPort: number
-	readonly discordClientId: string
-	readonly discordClientSecretFile: string
-	readonly deleteFilesReceivedFromGenerator: boolean
-	readonly dbFilePath: string
-	readonly parameterSets: readonly GenerationParameterSet[]
-	readonly tags: {
-		readonly shapeTagsFile: string
-		readonly contentTagsFile: string
+const ConfigFile = RC.struct(RC.structFields({
+	ro: {
+		pictureStorageDir: RC.string(),
+		runningGenerationPictureStorageDir: RC.string(),
+		haveHttps: RC.bool(),
+		httpPort: RC.int(),
+		discordClientId: RC.string(),
+		discordClientSecretFile: RC.string(),
+		deleteFilesReceivedFromGenerator: RC.bool(),
+		dbFilePath: RC.string(),
+		parameterSets: RC.roArray(GenerationParameterSet),
+		tags: RC.struct(RC.structFields({ro: {
+			shapeTagsFile: RC.string(),
+			contentTagsFile: RC.string()
+		}}))
+	},
+	roOpt: {
+		httpHost: RC.string()
 	}
-}
+}))
+
+export type ConfigFile = RC.Value<typeof ConfigFile>
 
 export type Config = CLIArgs & ConfigFile & AuxConfigFilesData
 
 export let config: Config = null as unknown as Config
 
 let configFileValidator: ((configFile: unknown) => void) | null = null
-void justForRuntyper
 
 export async function loadConfig(): Promise<void> {
 
 	if(!configFileValidator){
-		configFileValidator = Runtyper.getValidatorBuilder().build(Runtyper.getSimplifier().simplify(Runtyper.getType<ConfigFile>()))
+		configFileValidator = RCV.getValidatorBuilder().build(ConfigFile)
 	}
 
 	const args = getCliArgs()
