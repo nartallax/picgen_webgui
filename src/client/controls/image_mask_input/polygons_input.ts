@@ -1,6 +1,7 @@
 import {WBox} from "@nartallax/cardboard"
 import {onMount, svgTag, whileMounted} from "@nartallax/cardboard-dom"
 import {Point2D, Polygon} from "common/common_types"
+import * as css from "./image_mask_input.module.scss"
 
 interface PolygonsInputProps {
 	value: WBox<Polygon[]>
@@ -31,7 +32,7 @@ export function PolygonsInput(props: PolygonsInputProps): SVGElement {
 	}
 
 	function makeNewPolygonElement(): void {
-		currentPolygonElement = svgTag({tag: "path", class: "polygon"})
+		currentPolygonElement = svgTag({tag: "path", class: css.polygon})
 		svg.appendChild(currentPolygonElement)
 	}
 
@@ -105,7 +106,7 @@ export function PolygonsInput(props: PolygonsInputProps): SVGElement {
 
 	const svg = svgTag({
 		tag: "svg",
-		class: "polygons-input",
+		class: css.polygonsInput,
 		attrs: {
 			x: "0",
 			y: "0",

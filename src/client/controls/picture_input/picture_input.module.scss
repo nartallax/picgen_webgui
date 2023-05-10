@@ -1,4 +1,7 @@
+@use "../input_styles.scss";
+
 .picture-input {
+	@extend .input;
 
 	display: flex;
 	flex-direction: row;
@@ -25,7 +28,7 @@
 		z-index: -1;
 	}
 
-	.mask-button {
+	.maskButton {
 		height: 2rem;
 		width: 2rem;
 		cursor: pointer;

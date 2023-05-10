@@ -1,5 +1,6 @@
 import {RBox, WBox, isWBox} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import * as css from "./tag_list.module.scss"
 
 interface TagListProps {
 	values: WBox<string[]> | RBox<readonly string[]>
@@ -8,8 +9,8 @@ interface TagListProps {
 }
 
 export function TagList(props: TagListProps): HTMLElement {
-	const result = tag({class: ["tag-list", {
-		center: !!props.center
+	const result = tag({class: [css.tagList, {
+		[css.center!]: !!props.center
 	}]})
 
 	whileMounted(result, props.values, values => {
@@ -17,7 +18,7 @@ export function TagList(props: TagListProps): HTMLElement {
 			result.firstChild.remove()
 		}
 		for(const tagStr of values){
-			const item = tag({class: "tag-item"}, [tagStr])
+			const item = tag({class: css.tagItem}, [tagStr])
 			if(props.onclick){
 				item.addEventListener("click", () => props.onclick!(tagStr))
 			}
@@ -25,11 +26,11 @@ export function TagList(props: TagListProps): HTMLElement {
 			const valueBox = props.values
 			if(isWBox(valueBox)){
 				const cross = tag({
-					class: ["tag-remove-button", "icon-cancel"],
+					class: "icon-cancel",
 					onClick: () => valueBox(valueBox().filter(x => x !== tagStr))
 				})
 				item.appendChild(cross)
-				item.classList.add("editable")
+				item.classList.add(css.editable!)
 			}
 			result.appendChild(item)
 		}

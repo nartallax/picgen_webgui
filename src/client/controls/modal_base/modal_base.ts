@@ -1,5 +1,6 @@
 import {MRBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
+import * as css from "./modal_base.module.scss"
 
 interface ModalBaseProps {
 	closeByBackgroundClick?: boolean
@@ -16,8 +17,8 @@ export interface Modal {
 
 export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement[]>): Modal {
 	const result = tag({
-		class: ["modal-base", {
-			"closeable-by-click": props.closeByBackgroundClick
+		class: [css.modalBase, {
+			[css.closeableByClick!]: props.closeByBackgroundClick
 		}]
 	}, children)
 

@@ -6,6 +6,7 @@ import {windowSizeBox} from "client/client_common/window_size_box"
 import {PolygonsInput} from "client/controls/image_mask_input/polygons_input"
 import {Modal, showModalBase} from "client/controls/modal_base/modal_base"
 import {decodePictureMask, encodePictureMask} from "common/picture_mask_encoding"
+import * as css from "./image_mask_input.module.scss"
 
 interface ImageMaskInputProps {
 	imageId: number
@@ -68,29 +69,29 @@ export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalC
 	}
 
 	const wrap = tag({
-		class: "image-mask-input-wrap"
+		class: css.imageMaskInputWrap
 	}, [
 		tag({
-			class: "image-mask-input",
+			class: css.imageMaskInput,
 			style: {
 				width: imageDims.map(wh => wh.width + "px"),
 				height: imageDims.map(wh => wh.height + "px")
 			}
 		}, [background, polygonsInput]),
-		tag({class: "image-mask-input-buttons"}, [
+		tag({class: css.imageMaskInputButtons}, [
 			tag({
 				tag: "button",
-				class: "image-mask-input-button icon-ok",
+				class: [css.imageMaskInputButton, "icon-ok"], // TODO: rethink icons ffs
 				onClick: props.onApply
 			}, ["Apply"]),
 			tag({
 				tag: "button",
-				class: "image-mask-input-button icon-trash-empty",
+				class: [css.imageMaskInputButton, "icon-trash-empty"],
 				onClick: clear
 			}, ["Clear"]),
 			tag({
 				tag: "button",
-				class: "image-mask-input-button icon-cancel",
+				class: [css.imageMaskInputButton, "icon-cancel"],
 				onClick: props.onCancel
 			}, ["Cancel"])
 		])

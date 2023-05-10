@@ -1,4 +1,4 @@
-.tooltip-icon {
+.tooltipIcon {
 	font-size: 0.9rem;
     border-radius: 100%;
     border: 2px solid #625e5e;
@@ -11,7 +11,7 @@
     margin-left: 0.25rem;
     cursor: default;
 
-	.tooltip-content-wrap {
+	.contentWrap {
 		display: none;
 		position: absolute;
 		top: 100%;
@@ -21,7 +21,7 @@
 		height: 100vh;
 		z-index: 100;
 		
-		.tooltip-content {
+		.content {
 			pointer-events: none;
 
 			background: #cdbbb6;
@@ -34,7 +34,7 @@
 		}
 	}
 
-	&:hover .tooltip-content-wrap {
+	&:hover .contentWrap {
 		display: block;
 	}
 }

@@ -2,6 +2,7 @@ import {RBox, WBox} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {SelectSearch} from "client/controls/select_search/select_search"
 import {TagList} from "client/controls/tag_list/tag_list"
+import * as css from "./prompt_input.module.scss"
 
 interface PromptInputProps {
 	shapeValues: RBox<null | readonly string[]>
@@ -14,7 +15,7 @@ interface PromptInputProps {
 export function PromptInput(props: PromptInputProps): HTMLElement {
 	const input: HTMLInputElement = tag({
 		tag: "input",
-		class: "prompt-input-input",
+		class: css.inputInput,
 		attrs: {
 			placeholder: "...Enter a description of the desired result"
 		},
@@ -26,8 +27,8 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 		}
 	})
 
-	const result = tag({class: "prompt-input"}, [
-		tag({class: "prompt-input-first-line"}, [
+	const result = tag({class: css.promptInput}, [
+		tag({class: css.firstLine}, [
 			SelectSearch({
 				availableValues: props.shapeValues,
 				value: props.shapeValue,
@@ -35,7 +36,7 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 			}),
 			input,
 			tag({
-				class: ["prompt-input-generate-button", "icon-brush"],
+				class: [css.generateButton, "icon-brush"],
 				onClick: props.startGeneration // TODO: falloff to prevent doubleclicking
 			})
 		]),

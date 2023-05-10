@@ -1,5 +1,6 @@
 import {WBox} from "@nartallax/cardboard"
 import {defineControl, onMount, tag} from "@nartallax/cardboard-dom"
+import * as css from "./visibility_notifier.module.scss"
 
 interface VisibilityNotifierProps {
 	isOnScreen: WBox<boolean>
@@ -7,8 +8,8 @@ interface VisibilityNotifierProps {
 }
 
 export const VisibilityNotifier = defineControl<VisibilityNotifierProps>((props, children) => {
-	const result = tag({class: ["visibility-notifier", {
-		hidden: props.hide
+	const result = tag({class: [css.visibilityNotifier, {
+		[css.hidden!]: props.hide
 	}]}, children || [])
 
 	const observer = new IntersectionObserver(entries => {

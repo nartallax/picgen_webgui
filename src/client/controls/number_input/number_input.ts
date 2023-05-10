@@ -1,5 +1,6 @@
 import {WBox, unbox} from "@nartallax/cardboard"
 import {defineControl, tag, whileMounted} from "@nartallax/cardboard-dom"
+import * as css from "./number_input.module.scss"
 
 interface NumberInputProps {
 	value: WBox<number>
@@ -30,7 +31,7 @@ const defaults = {
 export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defaults, props => {
 	const input = tag({
 		tag: "input",
-		class: "input number-input"
+		class: css.numberInput
 	})
 
 	const dflt = props.value()

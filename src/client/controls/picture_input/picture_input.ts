@@ -6,6 +6,7 @@ import {readFileToArrayBuffer} from "client/client_common/read_file_to_array_buf
 import {showImageMaskInput} from "client/controls/image_mask_input/image_mask_input"
 import {PictureGenParamDefinition, pictureTypeSet} from "common/common_types"
 import {Picture, PictureParameterValue} from "common/entity_types"
+import * as css from "./picture_input.module.scss"
 
 interface PictureInputProps {
 	readonly value: WBox<PictureParameterValue>
@@ -146,7 +147,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		return s.type === "loading" && s.id === id
 	}
 
-	const result = tag({class: ["input picture-input", state.map(state => state.type)]}, [
+	const result = tag({class: [css.pictureInput, state.map(state => css[state.type])]}, [
 		tag({
 			tag: "label",
 			attrs: {for: inputDomId}
@@ -161,8 +162,8 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		})]),
 		input,
 		!props.param.mask ? null : tag({
-			class: ["icon-puzzle mask-button", {
-				hidden: props.value.map(x => !x.id)
+			class: [css.maskButton, "icon-puzzle", {
+				[css.hidden!]: props.value.map(x => !x.id)
 			}],
 			attrs: {title: "Draw mask for this picture"},
 			onClick: async() => {

@@ -1,6 +1,7 @@
 import {RBox, WBox, box} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {PrefixTree} from "client/data_structure/prefix_tree"
+import * as css from "./select_search.module.scss"
 
 interface SelectSearchProps {
 	availableValues: RBox<(readonly string[]) | null>
@@ -12,7 +13,7 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 
 	const input: HTMLInputElement = tag({
 		tag: "input",
-		class: "select-search-input",
+		class: css.searchInput,
 		onInput: () => {
 			props.value(input.value)
 			selectedItem(-1)
@@ -48,18 +49,18 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 	const selectedItem = box(-1)
 
 	const listWrap = tag({
-		class: ["select-search-dropdown", {
-			hidden: listHidden
+		class: [css.dropdown, {
+			[css.hidden!]: listHidden
 		}]
 	})
 
 	const wrap = tag({
-		class: "select-search"
+		class: css.selectSearch
 	}, [
-		tag({class: ["select-search-left-icon icon-picture"]}),
+		tag({class: [css.leftIcon, "icon-picture"]}),
 		input,
-		tag({class: ["select-search-right-icon", "icon-down-open", {
-			open: listHidden.map(hidden => !hidden)
+		tag({class: [css.rightIcon, "icon-down-open", {
+			[css.open!]: listHidden.map(hidden => !hidden)
 		}]}),
 		listWrap
 	])
@@ -97,23 +98,22 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 			selectedItems = prefixTree().getAllValuesWhichKeysInclude(searchStr.toLowerCase(), undefined, props.listSizeLimit)
 		}
 		for(const item of selectedItems){
-			const itemEl = tag({class: "select-search-item"}, [item])
+			const itemEl = tag({class: css.item}, [item])
 			itemEl.addEventListener("mousedown", onItemClick, {capture: true})
 			listWrap.appendChild(itemEl)
 		}
 	})
 
-	const selectedItemClass = "select-search-selected-item"
 	whileMounted(wrap, selectedItem, selectedItem => {
 		for(let i = 0; i < listWrap.children.length; i++){
 			const child = listWrap.children[i]!
-			const hasClass = child.classList.contains(selectedItemClass)
+			const hasClass = child.classList.contains(css.selectedItem!)
 			if(i === selectedItem){
 				if(!hasClass){
-					child.classList.add(selectedItemClass)
+					child.classList.add(css.selectedItem!)
 				}
 			} else if(hasClass){
-				child.classList.remove(selectedItemClass)
+				child.classList.remove(css.selectedItem!)
 			}
 		}
 	})

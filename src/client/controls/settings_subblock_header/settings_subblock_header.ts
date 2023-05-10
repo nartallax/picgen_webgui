@@ -1,6 +1,7 @@
 import {MRBox, WBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {BoolInput} from "client/controls/bool_input/bool_input"
+import * as css from "./settings_subblock_header.module.scss"
 
 interface SettingsSubblockProps {
 	header: MRBox<string>
@@ -8,9 +9,9 @@ interface SettingsSubblockProps {
 }
 
 export function SettingsSubblockHeader(props: SettingsSubblockProps): HTMLElement {
-	return tag({class: ["settings-subblock-header", {"children-visible": !props.toggle ? true : props.toggle}]}, [
+	return tag({class: [css.settingsSubblockHeader, {[css.childrenVisible!]: !props.toggle ? true : props.toggle}]}, [
 		tag({tag: "hr"}),
-		tag({class: "settings-subblock-header-text"}, [props.header]),
+		tag({class: css.text}, [props.header]),
 		!props.toggle ? null : BoolInput({value: props.toggle}),
 		tag({tag: "hr"})
 	])

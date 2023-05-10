@@ -1,34 +1,4 @@
-@import "../../fontello/fontello-codes";
-
-@import "controls/input_styles";
-
-@import "controls/settings_block/settings_block";
-@import "controls/settings_subblock_header/settings_subblock_header";
-@import "controls/tag_list/tag_list";
-@import "controls/params_block/params_block";
-@import "controls/param_line/param_line";
-@import "controls/number_input/number_input";
-@import "controls/bool_input/bool_input";
-@import "controls/text_input/text_input";
-@import "controls/picture_input/picture_input";
-@import "controls/button/button";
-@import "controls/select_search/select_search";
-@import "controls/prompt_input/prompt_input";
-@import "controls/multi_panel/multi_panel";
-@import "controls/login_bar/login_bar";
-@import "controls/feed/feed";
-@import "controls/toast/toast";
-@import "controls/task_panel/task_panel";
-@import "controls/task_picture/task_picture";
-@import "controls/visibility_notifier/visibility_notifier";
-@import "controls/image_mask_input/image_mask_input";
-@import "controls/modal_base/modal_base";
-@import "controls/tooltip/tooltip";
-@import "controls/select/select";
-
-@import "controls/main_page/main_page";
-@import "controls/loading_page/loading_page";
-@import "controls/login_page/login_page";
+@use "../../fontello/fontello-codes";
 
 html {
 	font-size: 12px;

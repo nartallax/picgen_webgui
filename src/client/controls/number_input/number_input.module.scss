@@ -1,0 +1,7 @@
+@use "../input_styles.scss";
+
+.numberInput {
+	@extend .input;
+
+	text-align: center;
+}

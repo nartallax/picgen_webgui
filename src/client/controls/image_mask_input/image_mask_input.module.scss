@@ -1,10 +1,10 @@
-.image-mask-input-wrap {
+.imageMaskInputWrap {
 
 	padding: 0.5rem;
 	border-radius: 0.25rem;
 	background: #cdbbb6;
 
-	.image-mask-input {
+	.imageMaskInput {
 		position: relative;
 
 		> * {
@@ -20,13 +20,13 @@
 		}
 	}
 
-	.image-mask-input-buttons {
+	.imageMaskInputButtons {
 		display: flex;
 		flex-direction: row;
 		justify-content: flex-end;
 		align-items: stretch;
 
-		.image-mask-input-button {
+		.imageMaskInputButton {
 			margin: 0.25rem;
 			font-size: 1.25rem;
 			border-radius: 1rem;
@@ -40,7 +40,7 @@
 
 }
 
-.polygons-input {
+.polygonsInput {
 	.polygon {
 		fill: gray;
 	}

@@ -1,6 +1,7 @@
 import {WBox, box} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {VisibilityNotifier} from "client/controls/visibility_notifier/visibility_notifier"
+import * as css from "./feed.module.scss"
 
 interface FeedProps<T> {
 	values: WBox<T[]>
@@ -15,9 +16,9 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	const reachedEndOfFeed = box(false)
 	let isLoadingNow = false
 
-	const result = tag({class: "feed"}, [
+	const result = tag({class: css.feed}, [
 		tag({
-			class: "feed-items-container"
+			class: css.feedItemsContainer
 		}, props.values.mapArray(props.getId, props.renderElement)),
 		VisibilityNotifier({
 			isOnScreen: isBottomVisible,

@@ -1,12 +1,6 @@
-.multi-panel {
+.feed, .feedItemsContainer {
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
 	justify-content: flex-start;
-	overflow: auto;
-
-
-	> * {
-		flex-grow: 1;
-	}
 }

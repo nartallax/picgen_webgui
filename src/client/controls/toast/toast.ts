@@ -1,5 +1,6 @@
 import {MRBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
+import * as css from "./toast.module.scss"
 
 interface ToastParams {
 	type?: "error" | "info" | "success"
@@ -21,7 +22,7 @@ function incrementToastCount(): void {
 	activeToasts++
 	console.log(`Active toasts count: ${activeToasts}`)
 	if(activeToasts === 1){
-		toastContainer = tag({class: "toast-container"})
+		toastContainer = tag({class: css.toastContainer})
 		document.body.appendChild(toastContainer)
 		console.log("Toast container added.")
 	}
@@ -51,7 +52,7 @@ export function showToast(params: ToastParams): void {
 	}
 
 	const el = tag({
-		class: "toast " + (params.type || "info"),
+		class: [css.toast, css[params.type || "info"]],
 		onClick: () => removeToast()
 	}, [params.text])
 

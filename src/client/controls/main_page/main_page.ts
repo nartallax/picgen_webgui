@@ -13,6 +13,7 @@ import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures
 import {flatten} from "common/flatten"
 import {box, unbox, viewBox, WBox} from "@nartallax/cardboard"
 import {isInDOM, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
+import * as css from "./main_page.module.scss"
 
 function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameterDefinition | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -85,8 +86,8 @@ export function MainPage(): HTMLElement {
 
 	const promptValue = box("")
 
-	const result = tag({class: "page-root"}, [
-		tag({class: "settings-column"}, [
+	const result = tag({class: css.pageRoot}, [
+		tag({class: css.settingsColumn}, [
 			LoginBar(),
 			Select({
 				options: knownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
@@ -99,7 +100,7 @@ export function MainPage(): HTMLElement {
 				visibleTagLimit: 10
 			})
 		]),
-		tag({class: "generation-column"}, [
+		tag({class: css.generationColumn}, [
 			PromptInput({
 				promptValue: promptValue,
 				selectedContentTags: selectedContentTags,

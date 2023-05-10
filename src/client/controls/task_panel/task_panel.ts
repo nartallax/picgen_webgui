@@ -6,6 +6,7 @@ import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
 import {RBox, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
+import * as css from "./task_panel.module.scss"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>
@@ -14,10 +15,10 @@ interface TaskPanelProps {
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
 
-	return tag({class: "task-panel"}, [
-		tag({class: "task-panel-header"}, [
-			tag({class: "task-panel-id"}, [props.task.map(task => "#" + task.id)]),
-			tag({class: "task-panel-status"}, [
+	return tag({class: css.taskPanel}, [
+		tag({class: css.header}, [
+			tag({class: css.id}, [props.task.map(task => "#" + task.id)]),
+			tag({class: css.status}, [
 				props.task.map(task => {
 					switch(task.status){
 						case "completed": return "Done"
@@ -26,7 +27,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					}
 				})
 			]),
-			tag({class: "task-panel-done-counter"}, [
+			tag({class: css.doneCounter}, [
 				props.task.map(task => {
 					if(task.generatedPictures < 1 && !task.expectedPictures){
 						return ""
@@ -35,7 +36,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				})
 			]),
 			tag({
-				class: ["task-panel-repeat-button", "icon-loop", {hidden: props.task.map(task => task.status !== "completed")}],
+				class: [css.repeatButton, "icon-loop", {[css.hidden!]: props.task.map(task => task.status !== "completed")}],
 				onClick: limitClickRate(() => {
 					const task = props.task()
 					ClientApi.createGenerationTask({
@@ -46,12 +47,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				})
 			}),
 			tag({
-				class: ["task-panel-kill-button", "icon-trash-empty", {hidden: props.task.map(task => task.status === "completed")}],
+				class: [css.killButton, "icon-trash-empty", {[css.hidden!]: props.task.map(task => task.status === "completed")}],
 				onClick: limitClickRate(() => {
 					ClientApi.killTask(props.task().id)
 				})
 			}),
-			tag({class: "task-panel-timer"}, [viewBox(() => {
+			tag({class: css.timer}, [viewBox(() => {
 				const task = props.task()
 				switch(task.status){
 					case "queued": return ""
@@ -65,21 +66,21 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				}
 			})])
 		]),
-		tag({class: "task-panel-pictures-wrap"}, [
-			tag({class: "task-panel-pictures"}, props.task.prop("pictures").mapArray(
+		tag({class: css.picturesWrap}, [
+			tag({class: css.pictures}, props.task.prop("pictures").mapArray(
 				picture => picture.id,
 				picture => TaskPicture({picture})
 			))
 		]),
-		tag({class: "task-panel-footer"}, [
-			tag({class: "task-panel-prompt"}, [props.task.map(task => task.prompt)]),
+		tag({class: css.footer}, [
+			tag({class: css.prompt}, [props.task.map(task => task.prompt)]),
 			tag({
-				class: ["task-panel-copy-prompt-button", "icon-docs"],
+				class: [css.copyPromptButton, "icon-docs"],
 				onClick: limitClickRate(function() {
 					navigator.clipboard.writeText(props.task().prompt)
-					this.classList.add("task-panel-button-recently-clicked")
+					this.classList.add(css.recentlyClicked!)
 					setTimeout(() => {
-						this.classList.remove("task-panel-button-recently-clicked")
+						this.classList.remove(css.recentlyClicked!)
 					}, 500)
 				})
 			})

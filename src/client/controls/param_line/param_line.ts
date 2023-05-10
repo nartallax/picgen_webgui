@@ -7,6 +7,7 @@ import {TextInput} from "client/controls/text_input/text_input"
 import {TooltipIcon} from "client/controls/tooltip/tooltip"
 import {GenParameterDefinition, GenParameterGroupToggle} from "common/common_types"
 import {GenerationTaskParameterValue, PictureParameterValue} from "common/entity_types"
+import * as css from "./param_line.module.scss"
 
 export function defaultValueOfParam(def: GenParameterDefinition | GenParameterGroupToggle): GenerationTaskParameterValue {
 	if(!("type" in def)){
@@ -68,18 +69,18 @@ export const ParamLine = defineControl<ParamLineProps, typeof defaults>(defaults
 
 	const display = props.visible.map(visible => visible ? "" : "none")
 
-	return tag({tag: "tr", class: "param-line", style: {display}}, [
+	return tag({tag: "tr", class: css.paramLine, style: {display}}, [
 		tag({
 			tag: "td",
-			class: "param-line-label"
+			class: css.label
 		}, [
 			def.uiName,
 			!def.tooltip ? null : TooltipIcon({tooltip: def.tooltip})
 		]),
 		tag({
 			tag: "td",
-			class: ["param-line-revert-button", "icon-ccw", {
-				hidden: viewBox(() => {
+			class: [css.revertButton, "icon-ccw", {
+				[css.hidden!]: viewBox(() => {
 					if(def.type === "picture"){
 						return (props.value() as PictureParameterValue).id === 0
 					}
@@ -90,7 +91,7 @@ export const ParamLine = defineControl<ParamLineProps, typeof defaults>(defaults
 		}),
 		tag({
 			tag: "td",
-			class: "param-line-input-wrap"
+			class: css.inputWrap
 		}, [input])
 	])
 })

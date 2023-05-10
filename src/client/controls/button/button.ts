@@ -1,5 +1,6 @@
 import {box} from "@nartallax/cardboard"
 import {defineControl, tag} from "@nartallax/cardboard-dom"
+import * as css from "./button.module.scss"
 
 interface ButtonProps {
 	onclick(): void | Promise<void>
@@ -27,9 +28,9 @@ export const Button = defineControl<ButtonProps, typeof defaults>(defaults, prop
 
 	return tag({
 		tag: "button",
-		class: ["button", props.iconClass, {
-			disabled: clickIsActive,
-			"more-h-padding": props.text.map(text => !!text)
+		class: [css.button, props.iconClass, {
+			[css.disabled!]: clickIsActive,
+			[css.moreHPadding!]: props.text.map(text => !!text)
 		}],
 		onClick: wrappedOnclick
 	}, [props.text])

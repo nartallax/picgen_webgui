@@ -1,5 +1,6 @@
 import {WBox} from "@nartallax/cardboard"
 import {defineControl, tag, whileMounted} from "@nartallax/cardboard-dom"
+import * as css from "./text_input.module.scss"
 
 interface TextInputProps {
 	value: WBox<string>
@@ -19,7 +20,7 @@ const defaults = {
 export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults, props => {
 	const input: HTMLInputElement = tag({
 		tag: "input",
-		class: "input text-input",
+		class: css.textInput,
 		onBlur: () => props.value(input.value)
 	})
 
@@ -49,13 +50,13 @@ export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults
 	}
 
 	const iconEl = tag({
-		class: ["text-input-icon", props.iconClass, {
-			hidden: props.iconClass.map(cls => !cls)
+		class: [css.textInputIcon, props.iconClass, {
+			[css.hidden!]: props.iconClass.map(cls => !cls)
 		}]
 	})
 
 	const wrap = tag({
-		class: "text-input-wrap"
+		class: css.textInputWrap
 	}, [
 		input,
 		iconEl

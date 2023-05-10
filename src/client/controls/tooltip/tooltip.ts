@@ -1,4 +1,5 @@
 import {defineControl, tag} from "@nartallax/cardboard-dom"
+import * as css from "./tooltip.module.scss"
 
 interface TooltipIconProps {
 	tooltip: string
@@ -7,12 +8,12 @@ interface TooltipIconProps {
 export const TooltipIcon = defineControl<TooltipIconProps>(props => {
 
 	return tag({
-		class: "tooltip-icon"
+		class: css.tooltipIcon
 	}, [
 		"?",
-		tag({class: "tooltip-content-wrap"}, [
+		tag({class: css.contentWrap}, [
 			tag({
-				class: "tooltip-content"
+				class: css.content
 			}, [props.tooltip])
 		])
 	])
