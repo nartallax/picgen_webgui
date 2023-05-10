@@ -1,32 +1,36 @@
-import {box, MaybeRBoxed, unbox, viewBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {box} from "@nartallax/cardboard"
+import {defineControl, tag} from "@nartallax/cardboard-dom"
 
-interface ButtonOptions {
+interface ButtonProps {
 	onclick(): void | Promise<void>
-	text?: MaybeRBoxed<string>
-	iconClass?: MaybeRBoxed<string>
+	text?: string | null
+	iconClass?: string | null
 }
 
-export function Button(opts: ButtonOptions): HTMLElement {
+const defaults = {
+	text: null,
+	iconClass: null
+} satisfies Partial<ButtonProps>
+
+export const Button = defineControl<ButtonProps, typeof defaults>(defaults, props => {
 
 	const clickIsActive = box(false)
 
 	async function wrappedOnclick() {
 		clickIsActive(true)
 		try {
-			await Promise.resolve(opts.onclick())
+			await Promise.resolve(props.onclick())
 		} finally {
 			clickIsActive(false)
 		}
 	}
 
 	return tag({
-		tagName: "button",
-		class: ["button", opts.iconClass, {
+		tag: "button",
+		class: ["button", props.iconClass, {
 			disabled: clickIsActive,
-			"more-h-padding": viewBox(() => !!unbox(opts.text))
+			"more-h-padding": props.text.map(text => !!text)
 		}],
-		on: {click: wrappedOnclick},
-		text: opts.text
-	})
-}
+		onClick: wrappedOnclick
+	}, [props.text])
+})

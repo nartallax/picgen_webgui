@@ -1,9 +1,9 @@
-import {MaybeRBoxed} from "client/base/box"
-import {tag} from "client/base/tag"
+import {MRBox} from "@nartallax/cardboard"
+import {tag} from "@nartallax/cardboard-dom"
 
 interface ToastParams {
 	type?: "error" | "info" | "success"
-	text: MaybeRBoxed<string>
+	text: MRBox<string>
 	timeoutSeconds?: number
 }
 
@@ -52,10 +52,8 @@ export function showToast(params: ToastParams): void {
 
 	const el = tag({
 		class: "toast " + (params.type || "info"),
-		on: {click: () => removeToast()}
-	}, [tag({
-		text: params.text
-	})])
+		onClick: () => removeToast()
+	}, [params.text])
 
 	getToastContainer().appendChild(el)
 }

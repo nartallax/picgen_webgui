@@ -1,30 +1,30 @@
-import {getBinder} from "client/base/binder/binder"
-import {RBox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {WBox} from "@nartallax/cardboard"
+import {defineControl, onMount, tag} from "@nartallax/cardboard-dom"
 
-interface VisibilityNotifierOptions {
+interface VisibilityNotifierProps {
 	isOnScreen: WBox<boolean>
-	hide: RBox<boolean>
+	hide?: boolean
 }
 
-export function VisibilityNotifier(opts: VisibilityNotifierOptions, children?: HTMLElement[]): HTMLElement {
+export const VisibilityNotifier = defineControl<VisibilityNotifierProps>((props, children) => {
 	const result = tag({class: ["visibility-notifier", {
-		hidden: opts.hide
+		hidden: props.hide
 	}]}, children || [])
 
 	const observer = new IntersectionObserver(entries => {
 		entries.forEach(entry => {
 			if(entry.target === result){
-				opts.isOnScreen(entry.isIntersecting)
+				props.isOnScreen(entry.isIntersecting)
 			}
 		})
 	}, {
 		threshold: 0.1
 	})
 
-	const binder = getBinder(result)
-	binder.onNodeInserted(() => observer.observe(result))
-	binder.onNodeRemoved(() => observer.unobserve(result))
+	onMount(result, () => {
+		observer.observe(result)
+		return () => observer.unobserve(result)
+	})
 
 	return result
-}
+})

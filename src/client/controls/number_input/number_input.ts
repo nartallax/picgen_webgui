@@ -1,9 +1,7 @@
-import {getBinder} from "client/base/binder/binder"
-import {unbox, WBox} from "client/base/box"
-import {ControlOptions} from "client/base/control"
-import {tag} from "client/base/tag"
+import {WBox, unbox} from "@nartallax/cardboard"
+import {defineControl, tag, whileMounted} from "@nartallax/cardboard-dom"
 
-interface NumberInputOptions {
+interface NumberInputProps {
 	value: WBox<number>
 	int?: boolean
 	min?: number
@@ -21,24 +19,32 @@ function formatToPrecision(value: number, precision?: number): string {
 	return value.toFixed(precision ?? 4).replace(/\.?0*$/, "")
 }
 
-export function NumberInput(opts: ControlOptions<NumberInputOptions>): HTMLElement {
+const defaults = {
+	int: false,
+	min: undefined,
+	max: undefined,
+	step: undefined,
+	precision: undefined
+} satisfies Partial<NumberInputProps>
+
+export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defaults, props => {
 	const input = tag({
-		tagName: "input",
+		tag: "input",
 		class: "input number-input"
 	})
 
-	const dflt = opts.value()
+	const dflt = props.value()
 
 	input.addEventListener("keypress", e => {
 		const code = e.key.charCodeAt(0)
 		if((code >= zeroCode && code <= nineCode)){
 			return
 		}
-		const min = unbox(opts.min)
+		const min = unbox(props.min)
 		if(typeof(min) === "number" && min < 0 && code === minusCode){
 			return
 		}
-		if(!unbox(opts.int) && code === dotCode){
+		if(!unbox(props.int) && code === dotCode){
 			return
 		}
 		e.preventDefault()
@@ -51,33 +57,32 @@ export function NumberInput(opts: ControlOptions<NumberInputOptions>): HTMLEleme
 			valueNum = dflt
 		}
 
-		const min = unbox(opts.min)
+		const min = unbox(props.min)
 		if(typeof(min) === "number" && valueNum < min){
 			valueNum = min
 		}
 
-		const max = unbox(opts.max)
+		const max = unbox(props.max)
 		if(typeof(max) === "number" && valueNum > max){
 			valueNum = max
 		}
 
-		if(unbox(opts.int) && valueNum % 1){
+		if(unbox(props.int) && valueNum % 1){
 			valueNum = Math.floor(valueNum)
 		}
 
-		const step = unbox(opts.step)
+		const step = unbox(props.step)
 		if(step && valueNum % step){
 			valueNum = Math.round(valueNum / step) * step
 		}
 
-		input.value = formatToPrecision(valueNum, unbox(opts.precision))
-		opts.value(valueNum)
+		input.value = formatToPrecision(valueNum, unbox(props.precision))
+		props.value(valueNum)
 	})
 
-	const binder = getBinder(input)
-	binder.watch(opts.value, v => {
-		input.value = formatToPrecision(v, unbox(opts.precision))
+	whileMounted(input, props.value, v => {
+		input.value = formatToPrecision(v, unbox(props.precision))
 	})
 
 	return input
-}
+})

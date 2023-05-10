@@ -1,49 +1,46 @@
-import {getBinder} from "client/base/binder/binder"
-import {box, RBox, viewBox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {RBox, WBox, box} from "@nartallax/cardboard"
+import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {PrefixTree} from "client/data_structure/prefix_tree"
 
-interface SelectSearchOptions {
+interface SelectSearchProps {
 	availableValues: RBox<(readonly string[]) | null>
 	value: WBox<string>
 	listSizeLimit: number
 }
 
-export function SelectSearch(opts: SelectSearchOptions): HTMLElement {
+export function SelectSearch(props: SelectSearchProps): HTMLElement {
 
 	const input: HTMLInputElement = tag({
-		tagName: "input",
+		tag: "input",
 		class: "select-search-input",
-		on: {
-			input: () => {
-				opts.value(input.value)
-				selectedItem(-1)
-			},
-			focus: () => listHidden(false),
-			blur: () => listHidden(true),
-			keydown: e => {
-				const down = e.key === "ArrowDown"
-				const up = e.key === "ArrowUp"
-				if(down || up){
-					let value = selectedItem()
-					if(down){
-						value++
-					} else if(up){
-						value--
-					}
-					const listLength = listWrap.children.length
-					selectedItem((value + listLength) % listLength)
-				} else if(e.key === "Enter"){
-					if(selectedItem() >= 0){
-						const item = listWrap.children[selectedItem()]
-						if(item){
-							opts.value(item.textContent + "")
-							input.blur()
-						}
+		onInput: () => {
+			props.value(input.value)
+			selectedItem(-1)
+		},
+		onFocus: () => listHidden(false),
+		onBlur: () => listHidden(true),
+		onKeydown: e => {
+			const down = e.key === "ArrowDown"
+			const up = e.key === "ArrowUp"
+			if(down || up){
+				let value = selectedItem()
+				if(down){
+					value++
+				} else if(up){
+					value--
+				}
+				const listLength = listWrap.children.length
+				selectedItem((value + listLength) % listLength)
+			} else if(e.key === "Enter"){
+				if(selectedItem() >= 0){
+					const item = listWrap.children[selectedItem()]
+					if(item){
+						props.value(item.textContent + "")
+						input.blur()
 					}
 				}
-
 			}
+
 		}
 	})
 
@@ -62,13 +59,12 @@ export function SelectSearch(opts: SelectSearchOptions): HTMLElement {
 		tag({class: ["select-search-left-icon icon-picture"]}),
 		input,
 		tag({class: ["select-search-right-icon", "icon-down-open", {
-			open: viewBox(() => !listHidden())
+			open: listHidden.map(hidden => !hidden)
 		}]}),
 		listWrap
 	])
 
-	const prefixTree = viewBox(() => {
-		const srcData = opts.availableValues()
+	const prefixTree = props.availableValues.map(srcData => {
 		if(!srcData){
 			return new PrefixTree<string>([])
 		}
@@ -81,12 +77,11 @@ export function SelectSearch(opts: SelectSearchOptions): HTMLElement {
 		console.log("click")
 		e.preventDefault()
 		e.stopPropagation()
-		opts.value(this.textContent + "")
+		props.value(this.textContent + "")
 		input.blur()
 	}
 
-	const binder = getBinder(wrap)
-	binder.watchAndRun(opts.value, searchStr => {
+	whileMounted(wrap, props.value, searchStr => {
 		if(input.value !== searchStr){
 			input.value = searchStr
 		}
@@ -97,22 +92,19 @@ export function SelectSearch(opts: SelectSearchOptions): HTMLElement {
 
 		let selectedItems: Iterable<string>
 		if(searchStr === ""){
-			selectedItems = (opts.availableValues() || []).slice(0, opts.listSizeLimit)
+			selectedItems = (props.availableValues() || []).slice(0, props.listSizeLimit)
 		} else {
-			selectedItems = prefixTree().getAllValuesWhichKeysInclude(searchStr.toLowerCase(), undefined, opts.listSizeLimit)
+			selectedItems = prefixTree().getAllValuesWhichKeysInclude(searchStr.toLowerCase(), undefined, props.listSizeLimit)
 		}
 		for(const item of selectedItems){
-			const itemEl = tag({
-				class: "select-search-item",
-				text: item
-			})
+			const itemEl = tag({class: "select-search-item"}, [item])
 			itemEl.addEventListener("mousedown", onItemClick, {capture: true})
 			listWrap.appendChild(itemEl)
 		}
 	})
 
 	const selectedItemClass = "select-search-selected-item"
-	binder.watchAndRun(selectedItem, selectedItem => {
+	whileMounted(wrap, selectedItem, selectedItem => {
 		for(let i = 0; i < listWrap.children.length; i++){
 			const child = listWrap.children[i]!
 			const hasClass = child.classList.contains(selectedItemClass)

@@ -1,21 +1,17 @@
-import {WBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {WBox} from "@nartallax/cardboard"
+import {defineControl, tag} from "@nartallax/cardboard-dom"
 
-interface BoolInputOptions {
+interface BoolInputProps {
 	readonly value: WBox<boolean>
 }
 
-export function BoolInput(opts: BoolInputOptions): HTMLElement {
+export const BoolInput = defineControl<BoolInputProps>(props => {
 	const result = tag({
-		class: ["input bool-input", {
-			on: opts.value
-		}],
-		on: {
-			click: () => opts.value(!opts.value()),
-			keydown: e => {
-				if(e.key === "Enter" || e.key === "Space" || e.key === " "){
-					opts.value(!opts.value())
-				}
+		class: ["input bool-input", {on: props.value}],
+		onClick: () => props.value(!props.value()),
+		onKeydown: e => {
+			if(e.key === "Enter" || e.key === "Space" || e.key === " "){
+				props.value(!props.value())
 			}
 		}
 	}, [
@@ -25,4 +21,4 @@ export function BoolInput(opts: BoolInputOptions): HTMLElement {
 	result.tabIndex = 0
 
 	return result
-}
+})

@@ -1,10 +1,9 @@
-import {getBinder} from "client/base/binder/binder"
-import {RBox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {RBox, WBox} from "@nartallax/cardboard"
+import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {SelectSearch} from "client/controls/select_search/select_search"
 import {TagList} from "client/controls/tag_list/tag_list"
 
-interface PromptInputOptions {
+interface PromptInputProps {
 	shapeValues: RBox<null | readonly string[]>
 	shapeValue: WBox<string>
 	selectedContentTags: WBox<string[]>
@@ -12,19 +11,17 @@ interface PromptInputOptions {
 	startGeneration(): void
 }
 
-export function PromptInput(opts: PromptInputOptions): HTMLElement {
+export function PromptInput(props: PromptInputProps): HTMLElement {
 	const input: HTMLInputElement = tag({
-		tagName: "input",
+		tag: "input",
 		class: "prompt-input-input",
 		attrs: {
 			placeholder: "...Enter a description of the desired result"
 		},
-		on: {
-			input: () => opts.promptValue(input.value),
-			keydown: e => {
-				if(e.key === "Enter"){
-					opts.startGeneration()
-				}
+		onInput: () => props.promptValue(input.value),
+		onKeydown: e => {
+			if(e.key === "Enter"){
+				props.startGeneration()
 			}
 		}
 	})
@@ -32,24 +29,23 @@ export function PromptInput(opts: PromptInputOptions): HTMLElement {
 	const result = tag({class: "prompt-input"}, [
 		tag({class: "prompt-input-first-line"}, [
 			SelectSearch({
-				availableValues: opts.shapeValues,
-				value: opts.shapeValue,
+				availableValues: props.shapeValues,
+				value: props.shapeValue,
 				listSizeLimit: 10
 			}),
 			input,
 			tag({
 				class: ["prompt-input-generate-button", "icon-brush"],
-				on: {click: opts.startGeneration} // TODO: falloff to prevent doubleclicking
+				onClick: props.startGeneration // TODO: falloff to prevent doubleclicking
 			})
 		]),
 		TagList({
-			values: opts.selectedContentTags,
+			values: props.selectedContentTags,
 			center: true
 		})
 	])
 
-	const binder = getBinder(result)
-	binder.watchAndRun(opts.promptValue, v => input.value = v)
+	whileMounted(result, props.promptValue, v => input.value = v)
 
 	return result
 }

@@ -1,5 +1,5 @@
+import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
-import {tag} from "client/base/tag"
 import {Button} from "client/controls/button/button"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
 import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"

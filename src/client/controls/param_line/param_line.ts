@@ -1,5 +1,5 @@
-import {isRBox, MaybeRBoxed, RBox, viewBox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {WBox, viewBox} from "@nartallax/cardboard"
+import {defineControl, tag} from "@nartallax/cardboard-dom"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {PictureInput} from "client/controls/picture_input/picture_input"
@@ -20,13 +20,25 @@ export function defaultValueOfParam(def: GenParameterDefinition | GenParameterGr
 	}
 }
 
-export function ParamLine(paramSetName: MaybeRBoxed<string>, def: GenParameterDefinition, value: WBox<GenerationTaskParameterValue>, visible?: RBox<boolean>): HTMLElement {
+interface ParamLineProps {
+	paramSetName: string
+	def: GenParameterDefinition
+	value: WBox<GenerationTaskParameterValue>
+	visible?: boolean
+}
+
+const defaults = {
+	visible: true
+} satisfies Partial<ParamLineProps>
+
+export const ParamLine = defineControl<ParamLineProps, typeof defaults>(defaults, props => {
 	let input: HTMLElement
+	const def = props.def()
 	switch(def.type){
 		case "int":
 		case "float":
 			input = NumberInput({
-				value: value as WBox<number>,
+				value: props.value as WBox<number>,
 				int: def.type === "int",
 				max: def.max,
 				min: def.min,
@@ -35,52 +47,50 @@ export function ParamLine(paramSetName: MaybeRBoxed<string>, def: GenParameterDe
 			break
 		case "bool":
 			input = BoolInput({
-				value: value as WBox<boolean>
+				value: props.value as WBox<boolean>
 			})
 			break
 		case "string":
 			input = TextInput({
-				value: value as WBox<string>,
+				value: props.value as WBox<string>,
 				maxLength: def.maxLength,
 				minLength: def.minLength
 			})
 			break
 		case "picture":
 			input = PictureInput({
-				paramSetName,
-				value: value as WBox<PictureParameterValue>,
+				paramSetName: props.paramSetName,
+				value: props.value as WBox<PictureParameterValue>,
 				param: def
 			})
 			break
 	}
 
-	const display = !isRBox(visible) ? "" : visible.map(visible => visible ? "" : "none")
+	const display = props.visible.map(visible => visible ? "" : "none")
 
-	return tag({tagName: "tr", class: "param-line", style: {display}}, [
+	return tag({tag: "tr", class: "param-line", style: {display}}, [
 		tag({
-			tagName: "td",
-			class: "param-line-label",
-			text: def.uiName
+			tag: "td",
+			class: "param-line-label"
 		}, [
+			def.uiName,
 			!def.tooltip ? null : TooltipIcon({tooltip: def.tooltip})
 		]),
 		tag({
-			tagName: "td",
+			tag: "td",
 			class: ["param-line-revert-button", "icon-ccw", {
 				hidden: viewBox(() => {
 					if(def.type === "picture"){
-						return (value() as PictureParameterValue).id === 0
+						return (props.value() as PictureParameterValue).id === 0
 					}
-					return value() === defaultValueOfParam(def)
+					return props.value() === defaultValueOfParam(def)
 				})
 			}],
-			on: {
-				click: () => value(defaultValueOfParam(def))
-			}
+			onClick: () => props.value(defaultValueOfParam(def))
 		}),
 		tag({
-			tagName: "td",
+			tag: "td",
 			class: "param-line-input-wrap"
 		}, [input])
 	])
-}
+})

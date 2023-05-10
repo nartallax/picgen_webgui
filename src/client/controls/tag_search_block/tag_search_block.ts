@@ -1,18 +1,18 @@
-import {getBinder} from "client/base/binder/binder"
-import {box, RBox, unbox, viewBox, WBox} from "client/base/box"
+import {RBox, WBox, box, unbox, viewBox} from "@nartallax/cardboard"
+import {whileMounted} from "@nartallax/cardboard-dom"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
 import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
 import {TagList} from "client/controls/tag_list/tag_list"
 import {TextInput} from "client/controls/text_input/text_input"
 import {PrefixTree} from "client/data_structure/prefix_tree"
 
-interface TagSearchBlockOptions {
+interface TagSearchBlockProps {
 	selectedContentTags: WBox<string[]>
 	contentTags: RBox<null | {readonly [tagContent: string]: readonly string[]}>
 	visibleTagLimit: number
 }
 
-export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
+export function TagSearchBlock(props: TagSearchBlockProps): HTMLElement {
 
 	const contentItems = box([] as HTMLElement[])
 
@@ -20,13 +20,12 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 
 	const visibleContentTags = viewBox(() => {
 		const promptStr = prompt().toLowerCase()
-		const selectedTagSet = new Set(opts.selectedContentTags())
-		const visibleTags = prefixTree().getAllValuesWhichKeysInclude(promptStr, selectedTagSet, opts.visibleTagLimit)
+		const selectedTagSet = new Set(props.selectedContentTags())
+		const visibleTags = prefixTree().getAllValuesWhichKeysInclude(promptStr, selectedTagSet, props.visibleTagLimit)
 		return [...visibleTags] as readonly string[]
 	})
 
-	const prefixTree = viewBox(() => {
-		const rawTags = unbox(opts.contentTags)
+	const prefixTree = props.contentTags.map(rawTags => {
 		if(!rawTags){
 			return new PrefixTree([])
 		}
@@ -40,7 +39,7 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 	})
 
 	function renderItems(): HTMLElement[] {
-		const tags = unbox(opts.contentTags)
+		const tags = unbox(props.contentTags)
 		if(!tags){
 			return [SettingsSubblockHeader({header: "Loading..."})]
 		}
@@ -55,7 +54,7 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 			TagList({
 				values: visibleContentTags,
 				onclick: tagStr => {
-					opts.selectedContentTags([...opts.selectedContentTags(), tagStr])
+					props.selectedContentTags([...props.selectedContentTags(), tagStr])
 				}
 			})
 		]
@@ -63,8 +62,7 @@ export function TagSearchBlock(opts: TagSearchBlockOptions): HTMLElement {
 
 	const result = SettingsBlock(contentItems)
 
-	const binder = getBinder(result)
-	binder.watchAndRun(opts.contentTags, () => contentItems(renderItems()))
+	whileMounted(result, props.contentTags, () => contentItems(renderItems()))
 
 	return result
 

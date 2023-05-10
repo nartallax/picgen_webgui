@@ -1,5 +1,6 @@
-import {box, RBox} from "client/base/box"
+import {RBox, box} from "@nartallax/cardboard"
 
+// TODO: this looks excessive
 let nowBox: RBox<number> | null = null
 export function getNowBox(): RBox<number> {
 	if(!nowBox){

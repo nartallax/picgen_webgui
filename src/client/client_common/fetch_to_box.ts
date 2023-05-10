@@ -1,4 +1,4 @@
-import {box, RBox} from "client/base/box"
+import {RBox, box} from "@nartallax/cardboard"
 
 export function fetchToBox<T>(fetcher: () => Promise<T>): RBox<T | undefined> {
 	const b = box<T | undefined>(undefined);

@@ -33,6 +33,8 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "@nartallax/cardboard": "^1.0.19",
+    "@nartallax/cardboard-dom": "^1.0.25",
     "@nartallax/ribcage": "^1.1.5",
     "@nartallax/ribcage-validation": "^1.0.1",
     "cls-hooked": "^4.2.2",

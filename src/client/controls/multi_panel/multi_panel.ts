@@ -1,24 +1,11 @@
-import {getBinder} from "client/base/binder/binder"
-import {RBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {RBox} from "@nartallax/cardboard"
+import {tag} from "@nartallax/cardboard-dom"
 
-interface MultiPanelOptions<T extends string = string> {
+interface MultiPanelProps<T extends string = string> {
 	items: Record<T, () => HTMLElement>
 	value: RBox<T>
 }
 
-export function MultiPanel<T extends string = string>(opts: MultiPanelOptions<T>): HTMLElement {
-	const result = tag({class: "multi-panel"})
-
-	const binder = getBinder(result)
-	binder.watchAndRun(opts.value, value => {
-		const renderer = opts.items[value]!
-		const item = renderer()
-		while(result.firstChild){
-			result.firstChild.remove()
-		}
-		result.appendChild(item)
-	})
-
-	return result
+export function MultiPanel<T extends string = string>(props: MultiPanelProps<T>): HTMLElement {
+	return tag({class: "multi-panel"}, props.value.map(value => [props.items[value]!()]))
 }

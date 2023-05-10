@@ -1,40 +1,47 @@
-import {getBinder} from "client/base/binder/binder"
-import {MaybeRBoxed, unbox, viewBox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {WBox} from "@nartallax/cardboard"
+import {defineControl, tag, whileMounted} from "@nartallax/cardboard-dom"
 
-interface TextInputOptions {
+interface TextInputProps {
 	value: WBox<string>
-	iconClass?: MaybeRBoxed<string>
+	iconClass?: string
 	updateAsUserType?: boolean
 	maxLength?: number
 	minLength?: number
 }
 
-export function TextInput(opts: TextInputOptions): HTMLElement {
+const defaults = {
+	iconClass: undefined,
+	updateAsUserType: false,
+	maxLength: undefined,
+	minLength: undefined
+} satisfies Partial<TextInputProps>
+
+export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults, props => {
 	const input: HTMLInputElement = tag({
-		tagName: "input",
+		tag: "input",
 		class: "input text-input",
-		on: {
-			blur: () => opts.value(input.value)
-		}
+		onBlur: () => props.value(input.value)
 	})
 
 	function clamp(x: string): string {
-		if(opts.minLength !== undefined){
-			while(x.length < opts.minLength){
+		const min = props.minLength()
+		if(min !== undefined){
+			while(x.length < min){
 				x += "?"
 			}
 		}
-		if(opts.maxLength !== undefined && x.length > opts.maxLength){
-			x = x.substring(0, opts.maxLength)
+
+		const max = props.maxLength()
+		if(max !== undefined && x.length > max){
+			x = x.substring(0, max)
 		}
 		return x
 	}
 
-	if(opts.updateAsUserType){
+	if(props.updateAsUserType()){
 		input.addEventListener("input", () => {
 			const v = clamp(input.value)
-			opts.value(v)
+			props.value(v)
 			if(v !== input.value){
 				input.value = v
 			}
@@ -42,8 +49,8 @@ export function TextInput(opts: TextInputOptions): HTMLElement {
 	}
 
 	const iconEl = tag({
-		class: ["text-input-icon", opts.iconClass, {
-			hidden: viewBox(() => !unbox(opts.iconClass))
+		class: ["text-input-icon", props.iconClass, {
+			hidden: props.iconClass.map(cls => !cls)
 		}]
 	})
 
@@ -54,15 +61,14 @@ export function TextInput(opts: TextInputOptions): HTMLElement {
 		iconEl
 	])
 
-	const binder = getBinder(input)
-	binder.watchAndRun(opts.value, v => {
+	whileMounted(input, props.value, v => {
 		const clamped = clamp(v)
 		if(clamped !== v){
-			opts.value(clamped)
+			props.value(clamped)
 		} else {
 			input.value = clamped
 		}
 	})
 
 	return wrap
-}
+})

@@ -102,7 +102,7 @@ module.exports = {
 			multiline: {delimiter: "none"},
 			singleline: {delimiter: "comma", requireLast: false}
 		}],
-		"@typescript-eslint/method-signature-style": ["warn", "method"],
+		"@typescript-eslint/method-signature-style": "off",
 		"@typescript-eslint/no-confusing-non-null-assertion": ["warn"],
 		"@typescript-eslint/type-annotation-spacing": ["warn"],
 		"@typescript-eslint/brace-style": ["warn", "1tbs"],

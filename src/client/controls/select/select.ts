@@ -1,25 +1,22 @@
-import {MaybeRBoxed, unbox, WBox} from "client/base/box"
-import {renderArray, tag} from "client/base/tag"
+import {MRBox, WBox, constBoxWrap, unbox} from "@nartallax/cardboard"
+import {tag} from "@nartallax/cardboard-dom"
 
-interface SelectOptions {
+interface SelectProps {
 	value: WBox<string>
-	options: MaybeRBoxed<readonly {readonly label: string, readonly value: string}[]>
+	options: MRBox<readonly {readonly label: string, readonly value: string}[]>
 }
 
-export function Select(opts: SelectOptions): HTMLElement {
+export function Select(props: SelectProps): HTMLElement {
 
-	const select = tag({
-		tagName: "select",
-		on: {change: () => {
-			opts.value(select.value)
-		}}
-	}, renderArray(opts.options, opt => opt.value, opt => tag({
-		tagName: "option",
+	const select: HTMLSelectElement = tag({
+		tag: "select",
+		onChange: () => props.value(select.value)
+	}, constBoxWrap(props.options).mapArray(opt => opt.value, opt => tag({
+		tag: "option",
 		attrs: {
 			value: unbox(opt).value
-		},
-		text: unbox(opt).label
-	})))
+		}
+	}, [unbox(opt).label])))
 
 	return select
 }

@@ -1,22 +1,20 @@
-import {MaybeRBoxed} from "client/base/box"
-import {tag} from "client/base/tag"
+import {defineControl, tag} from "@nartallax/cardboard-dom"
 
-interface TooltipIconOptions {
-	tooltip: MaybeRBoxed<string>
+interface TooltipIconProps {
+	tooltip: string
 }
 
-export function TooltipIcon(opts: TooltipIconOptions) {
+export const TooltipIcon = defineControl<TooltipIconProps>(props => {
 
 	return tag({
-		class: "tooltip-icon",
-		text: "?"
+		class: "tooltip-icon"
 	}, [
+		"?",
 		tag({class: "tooltip-content-wrap"}, [
 			tag({
-				class: "tooltip-content",
-				text: opts.tooltip
-			})
+				class: "tooltip-content"
+			}, [props.tooltip])
 		])
 	])
 
-}
+})

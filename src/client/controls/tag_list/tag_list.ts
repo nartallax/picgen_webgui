@@ -1,39 +1,32 @@
-import {getBinder} from "client/base/binder/binder"
-import {isWBox, RBox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {RBox, WBox, isWBox} from "@nartallax/cardboard"
+import {tag, whileMounted} from "@nartallax/cardboard-dom"
 
-interface TagListOptions {
+interface TagListProps {
 	values: WBox<string[]> | RBox<readonly string[]>
 	onclick?(tagStr: string): void
 	center?: boolean
 }
 
-export function TagList(opts: TagListOptions): HTMLElement {
+export function TagList(props: TagListProps): HTMLElement {
 	const result = tag({class: ["tag-list", {
-		center: !!opts.center
+		center: !!props.center
 	}]})
 
-	const binder = getBinder(result)
-	binder.watch(opts.values, values => {
+	whileMounted(result, props.values, values => {
 		while(result.firstChild){
 			result.firstChild.remove()
 		}
 		for(const tagStr of values){
-			const item = tag({
-				class: "tag-item",
-				text: tagStr
-			})
-			if(opts.onclick){
-				item.addEventListener("click", () => opts.onclick!(tagStr))
+			const item = tag({class: "tag-item"}, [tagStr])
+			if(props.onclick){
+				item.addEventListener("click", () => props.onclick!(tagStr))
 			}
 
-			const valueBox = opts.values
+			const valueBox = props.values
 			if(isWBox(valueBox)){
 				const cross = tag({
 					class: ["tag-remove-button", "icon-cancel"],
-					on: {click: () => {
-						valueBox(valueBox().filter(x => x !== tagStr))
-					}}
+					onClick: () => valueBox(valueBox().filter(x => x !== tagStr))
 				})
 				item.appendChild(cross)
 				item.classList.add("editable")

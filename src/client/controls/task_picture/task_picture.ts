@@ -1,22 +1,22 @@
+import {RBox} from "@nartallax/cardboard"
+import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
-import {RBox} from "client/base/box"
-import {tag} from "client/base/tag"
 import {Picture} from "common/entity_types"
 
-interface TaskPictureOpts {
+interface TaskPictureProps {
 	picture: RBox<Picture>
 }
 
-export function TaskPicture(opts: TaskPictureOpts): HTMLElement {
+export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	// TODO: url duplication here and in api client
-	const url = opts.picture.map(picture => ClientApi.getPictureUrl(picture.id))
+	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id))
 	return tag({
 		class: "task-picture",
-		tagName: "a",
+		tag: "a",
 		attrs: {href: url, target: "blank"}
 	}, [
 		tag({
-			tagName: "img",
+			tag: "img",
 			attrs: {
 				alt: "Generated picture",
 				src: url

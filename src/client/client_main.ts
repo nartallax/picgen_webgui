@@ -1,6 +1,6 @@
+import {waitDocumentLoaded} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {currentPage, currentUser, pages} from "client/app/global_values"
-import {waitDocumentLoaded} from "client/base/wait_document_loaded"
 import {MultiPanel} from "client/controls/multi_panel/multi_panel"
 import {ApiError} from "common/api_error"
 

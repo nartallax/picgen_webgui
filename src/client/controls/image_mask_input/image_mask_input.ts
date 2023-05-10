@@ -1,27 +1,26 @@
+import {WBox, box, viewBox} from "@nartallax/cardboard"
+import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
-import {getBinder} from "client/base/binder/binder"
-import {box, viewBox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
 import {fetchToBox} from "client/client_common/fetch_to_box"
 import {windowSizeBox} from "client/client_common/window_size_box"
 import {PolygonsInput} from "client/controls/image_mask_input/polygons_input"
 import {Modal, showModalBase} from "client/controls/modal_base/modal_base"
 import {decodePictureMask, encodePictureMask} from "common/picture_mask_encoding"
 
-interface ImageMaskInputOptions {
+interface ImageMaskInputProps {
 	imageId: number
 	value: WBox<string>
 }
 
-interface ImageMaskInputModalControlOptions {
+interface ImageMaskInputModalControlProps {
 	onApply(): void
 	onCancel(): void
 }
 
 const offsetRatio = 0.9
 
-export function ImageMaskInput(opts: ImageMaskInputOptions & ImageMaskInputModalControlOptions) {
-	const imageInfo = fetchToBox(() => ClientApi.getPictureInfoById(opts.imageId))
+export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalControlProps) {
+	const imageInfo = fetchToBox(() => ClientApi.getPictureInfoById(props.imageId))
 
 	const winSize = windowSizeBox()
 	const imageDims = viewBox(() => {
@@ -54,12 +53,12 @@ export function ImageMaskInput(opts: ImageMaskInputOptions & ImageMaskInputModal
 
 	const background = tag({
 		style: {
-			backgroundImage: `url(${JSON.stringify(ClientApi.getPictureUrl(opts.imageId))})`
+			backgroundImage: `url(${JSON.stringify(ClientApi.getPictureUrl(props.imageId))})`
 		},
 		class: "image-mask-input-background"
 	})
 
-	const polygons = box(decodePictureMask(opts.value()))
+	const polygons = box(decodePictureMask(props.value()))
 	const polygonsInput = PolygonsInput({
 		value: polygons
 	})
@@ -80,36 +79,32 @@ export function ImageMaskInput(opts: ImageMaskInputOptions & ImageMaskInputModal
 		}, [background, polygonsInput]),
 		tag({class: "image-mask-input-buttons"}, [
 			tag({
-				tagName: "button",
+				tag: "button",
 				class: "image-mask-input-button icon-ok",
-				on: {click: opts.onApply},
-				text: "Apply"
-			}),
+				onClick: props.onApply
+			}, ["Apply"]),
 			tag({
-				tagName: "button",
+				tag: "button",
 				class: "image-mask-input-button icon-trash-empty",
-				on: {click: clear},
-				text: "Clear"
-			}),
+				onClick: clear
+			}, ["Clear"]),
 			tag({
-				tagName: "button",
+				tag: "button",
 				class: "image-mask-input-button icon-cancel",
-				on: {click: opts.onCancel},
-				text: "Cancel"
-			})
+				onClick: props.onCancel
+			}, ["Cancel"])
 		])
 	])
 
-	const binder = getBinder(wrap)
-	binder.watch(polygons, polygons => {
-		opts.value(encodePictureMask(polygons))
+	whileMounted(wrap, polygons, polygons => {
+		props.value(encodePictureMask(polygons))
 	})
 
 	return wrap
 
 }
 
-export function showImageMaskInput(opts: ImageMaskInputOptions): Modal {
+export function showImageMaskInput(opts: ImageMaskInputProps): Modal {
 	const preEditValue = opts.value()
 	const innerModal: Modal = showModalBase({closeByBackgroundClick: true}, [
 		ImageMaskInput({

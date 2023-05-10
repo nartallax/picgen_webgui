@@ -1,17 +1,16 @@
-import {getBinder} from "client/base/binder/binder"
-import {box, WBox} from "client/base/box"
-import {renderArray, tag} from "client/base/tag"
+import {WBox, box} from "@nartallax/cardboard"
+import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {VisibilityNotifier} from "client/controls/visibility_notifier/visibility_notifier"
 
-interface FeedOptions<T> {
+interface FeedProps<T> {
 	values: WBox<T[]>
-	loadNext(currentValues: T[]): T[] | Promise<T[]>
-	getId(value: T): string | number
-	renderElement(value: WBox<T>): HTMLElement
+	loadNext: (currentValues: T[]) => T[] | Promise<T[]>
+	getId: (value: T) => string | number
+	renderElement: (value: WBox<T>) => HTMLElement
 	bottomLoadingPlaceholder: HTMLElement
 }
 
-export function Feed<T>(opts: FeedOptions<T>): HTMLElement {
+export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	const isBottomVisible = box(false)
 	const reachedEndOfFeed = box(false)
 	let isLoadingNow = false
@@ -19,24 +18,24 @@ export function Feed<T>(opts: FeedOptions<T>): HTMLElement {
 	const result = tag({class: "feed"}, [
 		tag({
 			class: "feed-items-container"
-		}, renderArray(opts.values, opts.getId, opts.renderElement)),
+		}, props.values.mapArray(props.getId, props.renderElement)),
 		VisibilityNotifier({
 			isOnScreen: isBottomVisible,
 			hide: reachedEndOfFeed
-		}, [opts.bottomLoadingPlaceholder])
+		}, [props.bottomLoadingPlaceholder])
 	])
 
 	async function loadNext(): Promise<void> {
-		let currentValues = opts.values()
+		isLoadingNow = true
+		let currentValues = props.values()
 		console.log("Loading next, starting with " + currentValues.length)
-		const newValues = await Promise.resolve(opts.loadNext(currentValues))
+		const newValues = await Promise.resolve(props.loadNext(currentValues))
 		reachedEndOfFeed(newValues.length === 0)
 		currentValues = [...currentValues, ...newValues]
-		opts.values(currentValues)
+		props.values(currentValues)
 	}
 
-	const binder = getBinder(result)
-	binder.watch(isBottomVisible, async visible => {
+	whileMounted(result, isBottomVisible, async visible => {
 		if(!visible || isLoadingNow){
 			return
 		}

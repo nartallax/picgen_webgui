@@ -1,7 +1,7 @@
 import {allowedFilterOps, FilterField, FilterValue, SimpleListQueryParams} from "common/common_types"
 import {UserlessContext} from "server/request_context"
 
-export interface IdentifiedEntity {
+export type IdentifiedEntity = {
 	readonly id: number
 }
 
@@ -204,6 +204,6 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 
 }
 
-function isFilterField<T>(x: FilterValue<T>): x is FilterField<T> {
+function isFilterField<T extends Record<string, unknown>>(x: FilterValue<T>): x is FilterField<T> {
 	return typeof((x as FilterField<T>).field) === "string"
 }

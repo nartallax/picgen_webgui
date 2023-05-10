@@ -1,4 +1,4 @@
-import {box, RBox} from "client/base/box"
+import {RBox, box} from "@nartallax/cardboard"
 
 type WH = {width: number, height: number}
 

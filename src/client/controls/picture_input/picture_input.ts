@@ -1,17 +1,16 @@
+import {MRBox, WBox, box, unbox} from "@nartallax/cardboard"
+import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
-import {getBinder} from "client/base/binder/binder"
-import {box, MaybeRBoxed, unbox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
 import {generateUniqDomID} from "client/client_common/generate_uniq_dom_id"
 import {readFileToArrayBuffer} from "client/client_common/read_file_to_array_buffer"
 import {showImageMaskInput} from "client/controls/image_mask_input/image_mask_input"
 import {PictureGenParamDefinition, pictureTypeSet} from "common/common_types"
 import {Picture, PictureParameterValue} from "common/entity_types"
 
-interface PictureInputOptions {
+interface PictureInputProps {
 	readonly value: WBox<PictureParameterValue>
 	readonly param: PictureGenParamDefinition
-	readonly paramSetName: MaybeRBoxed<string>
+	readonly paramSetName: MRBox<string>
 }
 
 interface ErrorState {
@@ -40,8 +39,8 @@ interface NonEmptyState {
 
 type State = LoadingState | UploadingState | EmptyState | NonEmptyState | ErrorState
 
-export function PictureInput(opts: PictureInputOptions): HTMLElement {
-	const pictureTypesArr: string[] = opts.param.allowedTypes ? [...opts.param.allowedTypes] : [...pictureTypeSet]
+export function PictureInput(props: PictureInputProps): HTMLElement {
+	const pictureTypesArr: string[] = props.param.allowedTypes ? [...props.param.allowedTypes] : [...pictureTypeSet]
 	if(pictureTypesArr.includes("jpg")){
 		pictureTypesArr.push("jpeg")
 	}
@@ -50,60 +49,57 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 
 	const inputDomId = generateUniqDomID()
 	const input: HTMLInputElement = tag({
-		tagName: "input",
+		tag: "input",
 		attrs: {
 			id: inputDomId,
 			type: "file",
 			accept: pictureTypesArr.map(x => "." + x).join(",")
 		},
-		on: {
-			change: async() => {
-				const file = input.files?.[0]
-				if(!file){
-					opts.value({id: 0})
-					state({type: "empty"})
+		onChange: async() => {
+			const file = input.files?.[0]
+			if(!file){
+				props.value({id: 0})
+				state({type: "empty"})
+				return
+			}
+
+			state({type: "uploading", file})
+
+			try {
+				const fileData = await readFileToArrayBuffer(file)
+				if(!isUploadingThisFile(file)){
+					console.log("Stopping upload process after file is red because different file is selected")
+					return
+				}
+				const name = file.name
+				const nameWithoutExt = name.replace(/\.[^.]*$/, "")
+				const picture = await ClientApi.uploadPictureAsParameterValue(unbox(props.paramSetName), props.param.jsonName, nameWithoutExt, fileData)
+				if(!isUploadingThisFile(file)){
+					console.log("Stopping upload process after file is uploaded because different file is selected")
 					return
 				}
 
-				state({type: "uploading", file})
-
-				try {
-					const fileData = await readFileToArrayBuffer(file)
-					if(!isUploadingThisFile(file)){
-						console.log("Stopping upload process after file is red because different file is selected")
-						return
-					}
-					const name = file.name
-					const nameWithoutExt = name.replace(/\.[^.]*$/, "")
-					const picture = await ClientApi.uploadPictureAsParameterValue(unbox(opts.paramSetName), opts.param.jsonName, nameWithoutExt, fileData)
-					if(!isUploadingThisFile(file)){
-						console.log("Stopping upload process after file is uploaded because different file is selected")
-						return
-					}
-
-					state({type: "value", picture: picture})
-					opts.value({id: picture.id})
-				} catch(e){
-					console.error(e)
-					if(!isUploadingThisFile(file)){
-						console.log("Won't show upload error because different file is selected")
-						return
-					}
-
-					if(!(e instanceof Error)){
-						throw e
-					}
-
-					state({type: "error", error: e})
-					opts.value({id: 0})
+				state({type: "value", picture: picture})
+				props.value({id: picture.id})
+			} catch(e){
+				console.error(e)
+				if(!isUploadingThisFile(file)){
+					console.log("Won't show upload error because different file is selected")
+					return
 				}
 
+				if(!(e instanceof Error)){
+					throw e
+				}
+
+				state({type: "error", error: e})
+				props.value({id: 0})
 			}
+
 		}
 	})
 
-	const binder = getBinder(input)
-	binder.watchAndRun(opts.value, async({id}) => {
+	whileMounted(input, props.value, async({id}) => {
 		// handing external ID changes
 		// need to download data about picture and put it into state
 		if(id === 0){
@@ -135,7 +131,7 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 			}
 
 			state({type: "error", error: e})
-			opts.value({id: 0})
+			props.value({id: 0})
 		}
 	})
 
@@ -152,36 +148,33 @@ export function PictureInput(opts: PictureInputOptions): HTMLElement {
 
 	const result = tag({class: ["input picture-input", state.map(state => state.type)]}, [
 		tag({
-			tagName: "label",
-			attrs: {for: inputDomId},
-			text: state.map(state => {
-				switch(state.type){
-					case "loading": return `Loading (#${state.id})`
-					case "uploading": return `Uploading (${state.file.name})`
-					case "empty": return "Select file"
-					case "error": return "Error!"
-					case "value": return state.picture.name + "." + state.picture.ext
-				}
-			})
-		}),
+			tag: "label",
+			attrs: {for: inputDomId}
+		}, [state.map(state => {
+			switch(state.type){
+				case "loading": return `Loading (#${state.id})`
+				case "uploading": return `Uploading (${state.file.name})`
+				case "empty": return "Select file"
+				case "error": return "Error!"
+				case "value": return state.picture.name + "." + state.picture.ext
+			}
+		})]),
 		input,
-		!opts.param.mask ? null : tag({
+		!props.param.mask ? null : tag({
 			class: ["icon-puzzle mask-button", {
-				hidden: opts.value.map(x => !x.id)
+				hidden: props.value.map(x => !x.id)
 			}],
 			attrs: {title: "Draw mask for this picture"},
-			on: {
-				click: async() => {
-					const maskBox = box(opts.value().mask || "")
-					await showImageMaskInput({
-						imageId: opts.value().id,
-						value: maskBox
-					}).waitClose()
-					opts.value({
-						...opts.value(),
-						mask: maskBox()
-					})
-				}
+			onClick: async() => {
+				const maskBox = box(props.value().mask || "")
+				await showImageMaskInput({
+					imageId: props.value().id,
+					value: maskBox
+				}).waitClose()
+				props.value({
+					...props.value(),
+					mask: maskBox()
+				})
 			}
 		})
 	])

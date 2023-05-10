@@ -1,8 +1,5 @@
 import {ClientApi} from "client/app/client_api"
 import {WebsocketListener} from "client/app/websocket_listener"
-import {getBinder} from "client/base/binder/binder"
-import {box, unbox, viewBox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
 import {Feed} from "client/controls/feed/feed"
 import {LoginBar} from "client/controls/login_bar/login_bar"
 import {ParamsBlock} from "client/controls/params_block/params_block"
@@ -14,6 +11,8 @@ import {TaskPanel} from "client/controls/task_panel/task_panel"
 import {BinaryQueryCondition, GenerationParameterSet, GenParameterDefinition, GenParameterGroup, GenParameterGroupToggle} from "common/common_types"
 import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
 import {flatten} from "common/flatten"
+import {box, unbox, viewBox, WBox} from "@nartallax/cardboard"
+import {isInDOM, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 
 function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameterDefinition | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -134,16 +133,17 @@ export function MainPage(): HTMLElement {
 				loadNext: loadNextTaskPack,
 				values: knownTasks,
 				renderElement: taskBox => TaskPanel({task: taskBox}),
-				bottomLoadingPlaceholder: tag({text: "Loading..."})
+				bottomLoadingPlaceholder: tag(["Loading..."])
 			})
 		])
 	])
 
-	const binder = getBinder(result)
-	binder.onNodeInserted(() => websocket?.start())
-	binder.onNodeRemoved(() => websocket?.stop())
+	onMount(result, () => {
+		websocket?.start()
+		return () => websocket?.stop()
+	})
 
-	binder.watch(paramGroups, groups => {
+	whileMounted(result, paramGroups, groups => {
 		updateParamValues(paramValues, groups)
 	});
 
@@ -155,7 +155,7 @@ export function MainPage(): HTMLElement {
 		])
 
 		websocket = new WebsocketListener(knownTasks)
-		if(binder.isInDom){
+		if(isInDOM(result)){
 			websocket.start()
 		}
 

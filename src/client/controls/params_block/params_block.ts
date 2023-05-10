@@ -1,24 +1,23 @@
-import {getBinder} from "client/base/binder/binder"
-import {box, MaybeRBoxed, RBox, unbox, WBox} from "client/base/box"
-import {tag} from "client/base/tag"
+import {MRBox, RBox, WBox, box, unbox} from "@nartallax/cardboard"
+import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {ParamLine} from "client/controls/param_line/param_line"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
 import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
 import {GenParameterGroup} from "common/common_types"
 import {GenerationTaskParameterValue} from "common/entity_types"
 
-interface ParamsBlockOptions {
+interface ParamsBlockProps {
 	readonly paramGroups: RBox<null | readonly GenParameterGroup[]>
 	readonly paramValues: {readonly [key: string]: WBox<GenerationTaskParameterValue>}
-	readonly paramSetName: MaybeRBoxed<string>
+	readonly paramSetName: MRBox<string>
 }
 
-export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
+export function ParamsBlock(props: ParamsBlockProps): HTMLElement {
 
 	const contentItems = box([] as HTMLElement[])
 
 	function renderItems(): HTMLElement[] {
-		const groups = unbox(opts.paramGroups)
+		const groups = unbox(props.paramGroups)
 
 		if(!groups){
 			return [SettingsSubblockHeader({header: "Loading..."})]
@@ -29,14 +28,14 @@ export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
 		for(const group of groups){
 			const defs = group.parameters
 
-			const groupToggle = !group.toggle ? undefined : (opts.paramValues[group.toggle.jsonName] as WBox<boolean>)
+			const groupToggle = !group.toggle ? undefined : (props.paramValues[group.toggle.jsonName] as WBox<boolean>)
 
 			lines.push(tag({
-				tagName: "tr",
+				tag: "tr",
 				class: "params-block-header"
 			}, [
 				tag({
-					tagName: "td",
+					tag: "td",
 					attrs: {colspan: 3}
 				}, [
 					SettingsSubblockHeader({
@@ -47,25 +46,24 @@ export function ParamsBlock(opts: ParamsBlockOptions): HTMLElement {
 			]))
 
 			for(const def of defs){
-				const value = opts.paramValues[def.jsonName]
+				const value = props.paramValues[def.jsonName]
 				if(!value){
 					console.error("No value is defined for parameter " + def.jsonName)
 					continue
 				}
-				lines.push(ParamLine(opts.paramSetName, def, value, groupToggle))
+				lines.push(ParamLine({paramSetName: props.paramSetName, def, value, visible: groupToggle}))
 			}
 
 		}
 
-		const table = tag({tagName: "table", class: "params-block-table"}, lines)
+		const table = tag({tag: "table", class: "params-block-table"}, lines)
 
 		return [table]
 	}
 
 	const result = SettingsBlock(contentItems)
 
-	const binder = getBinder(result)
-	binder.watchAndRun(opts.paramGroups, () => contentItems(renderItems()))
+	whileMounted(result, props.paramGroups, () => contentItems(renderItems()))
 
 	return result
 }

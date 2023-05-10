@@ -1,16 +1,15 @@
-import {getBinder} from "client/base/binder/binder"
-import {WBox} from "client/base/box"
-import {svgTag} from "client/base/tag"
+import {WBox} from "@nartallax/cardboard"
+import {onMount, svgTag, whileMounted} from "@nartallax/cardboard-dom"
 import {Point2D, Polygon} from "common/common_types"
 
-interface PolygonsInputOptions {
+interface PolygonsInputProps {
 	value: WBox<Polygon[]>
 }
 
 const segmentDistanceLimitPx = 25
 const segmentDistanceLimitPxSquared = segmentDistanceLimitPx ** 2
 
-export function PolygonsInput(opts: PolygonsInputOptions): Element {
+export function PolygonsInput(props: PolygonsInputProps): SVGElement {
 
 	let currentPolygonElement: SVGElement | null = null
 	const currentPolygon: Point2D[] = []
@@ -32,7 +31,7 @@ export function PolygonsInput(opts: PolygonsInputOptions): Element {
 	}
 
 	function makeNewPolygonElement(): void {
-		currentPolygonElement = svgTag({tagName: "path", class: "polygon"})
+		currentPolygonElement = svgTag({tag: "path", class: "polygon"})
 		svg.appendChild(currentPolygonElement)
 	}
 
@@ -74,8 +73,8 @@ export function PolygonsInput(opts: PolygonsInputOptions): Element {
 		window.removeEventListener("mouseup", onEnd)
 		window.removeEventListener("touchend", onEnd)
 		finalizeCurrentPolygonElement()
-		opts.value([
-			...opts.value(),
+		props.value([
+			...props.value(),
 			[...currentPolygon]
 		])
 		currentPolygon.length = 0
@@ -98,14 +97,14 @@ export function PolygonsInput(opts: PolygonsInputOptions): Element {
 
 	function onKey(evt: KeyboardEvent): void {
 		if(evt.key === "z" && (evt.ctrlKey || evt.metaKey)){
-			const polygons = [...opts.value()]
+			const polygons = [...props.value()]
 			polygons.pop()
-			opts.value(polygons)
+			props.value(polygons)
 		}
 	}
 
 	const svg = svgTag({
-		tagName: "svg",
+		tag: "svg",
 		class: "polygons-input",
 		attrs: {
 			x: "0",
@@ -114,21 +113,16 @@ export function PolygonsInput(opts: PolygonsInputOptions): Element {
 			height: "1",
 			viewBox: "0 0 1 1"
 		},
-		on: {
-			mousedown: onStart,
-			touchstart: onStart
-		}
+		onMousedown: onStart,
+		onTouchstart: onStart
 	})
 
-	const binder = getBinder(svg)
-	binder.onNodeInserted(() => {
+	onMount(svg, () => {
 		window.addEventListener("keydown", onKey)
-	})
-	binder.onNodeRemoved(() => {
-		window.removeEventListener("keydown", onKey)
+		return () => window.removeEventListener("keydown", onKey)
 	})
 
-	binder.watchAndRun(opts.value, polygons => {
+	whileMounted(svg, props.value, polygons => {
 		requestAnimationFrame(() => {
 			console.log(polygons)
 			removeAllPolygonElements() // eww.

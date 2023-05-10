@@ -1,7 +1,7 @@
-import {MaybeRBoxed} from "client/base/box"
-import {tag} from "client/base/tag"
+import {MRBox} from "@nartallax/cardboard"
+import {tag} from "@nartallax/cardboard-dom"
 
-interface ModalBaseOptions {
+interface ModalBaseProps {
 	closeByBackgroundClick?: boolean
 }
 
@@ -14,10 +14,10 @@ export interface Modal {
 	waitClose(): Promise<ModalCloseEvent>
 }
 
-export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTMLElement[]>): Modal {
+export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement[]>): Modal {
 	const result = tag({
 		class: ["modal-base", {
-			"closeable-by-click": opts.closeByBackgroundClick
+			"closeable-by-click": props.closeByBackgroundClick
 		}]
 	}, children)
 
@@ -45,7 +45,7 @@ export function showModalBase(opts: ModalBaseOptions, children: MaybeRBoxed<HTML
 		})
 	}
 
-	if(opts.closeByBackgroundClick){
+	if(props.closeByBackgroundClick){
 		result.addEventListener("click", e => {
 			if(e.target === result){
 				close("background_click")

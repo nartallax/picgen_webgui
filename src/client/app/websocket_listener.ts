@@ -1,4 +1,4 @@
-import {WBox} from "client/base/box"
+import {WBox} from "@nartallax/cardboard"
 import {ApiNotification} from "common/common_types"
 import {GenerationTaskWithPictures} from "common/entity_types"
 
