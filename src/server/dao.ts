@@ -111,7 +111,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 			}
 
 			return `${aStr} ${op} ${bStr}`
-		}).join("\nor ")
+		}).join("\nand ")
 
 		this.validateFieldNames(usedFields)
 		const limit = "limit " + Math.min(this.getMaxQueryRows(), query.limit ?? Number.MAX_SAFE_INTEGER)

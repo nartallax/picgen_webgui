@@ -188,6 +188,7 @@ class DbConnectionImpl implements DbConnection {
 
 	async query<T = unknown>(queryStr: string, params?: readonly unknown[]): Promise<T[]> {
 		const conn = await this.getConn()
+		// console.log(queryStr, params)
 		return await new Promise((ok, bad) => {
 			conn.all(queryStr, params, (err, rows) => {
 				err ? bad(new Error(`Failed to run query "${queryStr} because of ${err}`)) : ok(rows as T[])
