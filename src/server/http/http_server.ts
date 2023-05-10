@@ -1,6 +1,7 @@
 import * as Http from "http"
 import * as Path from "path"
 import * as Fs from "fs"
+import * as MimeTypes from "mime-types"
 import {isPathInsidePath} from "server/utils/is_path_inside_path"
 import {isEnoent} from "server/utils/is_enoent"
 import {errToString} from "server/utils/err_to_string"
@@ -84,7 +85,7 @@ export class HttpServer {
 				switch(method){
 					case "GET":
 						if(this.opts.httpRootUrl){
-							this.processStaticRequestByProxy(path, this.opts.httpRootUrl, res)
+							await this.processStaticRequestByProxy(path, this.opts.httpRootUrl, res)
 						} else {
 							await this.processStaticRequestByFile(path, res)
 						}
@@ -100,30 +101,44 @@ export class HttpServer {
 		}
 	}
 
+	private addStaticHeaders(path: string, res: Http.ServerResponse): void {
+		res.setHeader("Cache-Control", this.makeCacheControlHeader(path.toLowerCase().endsWith(".html") ? 0 : this.opts.cacheDuration))
+		const mime = MimeTypes.lookup(path) || "application/octet-stream"
+		const contentType = MimeTypes.contentType(mime) || "application/octet-stream"
+		res.setHeader("Content-Type", contentType)
+	}
+
+	private resolveStaticFileName(path: string): string {
+		if(path.endsWith("/")){
+			path += "index.html"
+		}
+
+		if(path.startsWith("/")){ // probably
+			path = "." + path
+		}
+		path = Path.resolve(this.opts.httpRoot, path)
+
+		if(!isPathInsidePath(path, this.opts.httpRoot)){
+			throw new Error("Weird request path not inside root dir: " + path)
+		}
+
+		return path
+	}
+
+
 	private async processStaticRequestByProxy(path: string, proxyRoot: string, res: Http.ServerResponse): Promise<void> {
 		const resolvedUrl = new URL(path, proxyRoot)
 		const result = await httpGet(resolvedUrl)
+		this.addStaticHeaders(this.resolveStaticFileName(path), res)
 		res.end(result)
 	}
 
 	private async processStaticRequestByFile(resourcePath: string, res: Http.ServerResponse): Promise<void> {
-		if(resourcePath.endsWith("/")){
-			resourcePath += "index.html"
-		}
-
-		if(resourcePath.startsWith("/")){ // probably
-			resourcePath = "." + resourcePath
-		}
-		resourcePath = Path.resolve(this.opts.httpRoot, resourcePath)
-		if(!isPathInsidePath(resourcePath, this.opts.httpRoot)){
-			return await endRequest(res, 403, "Ehehe No Path Tricks Allowed")
-		}
+		resourcePath = this.resolveStaticFileName(resourcePath)
 
 		try {
 			const readStream = Fs.createReadStream(resourcePath)
-			res.writeHead(200, "OK", {
-				"Cache-Control": this.makeCacheControlHeader(resourcePath.toLowerCase().endsWith(".html") ? 0 : this.opts.cacheDuration)
-			})
+			this.addStaticHeaders(resourcePath, res)
 			readStream.pipe(res)
 			await waitReadStreamToEnd(readStream)
 			await waitRequestEnd(res)

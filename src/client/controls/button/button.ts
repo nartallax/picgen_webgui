@@ -20,7 +20,7 @@ export const Button = defineControl<ButtonProps, typeof defaults>(defaults, prop
 	async function wrappedOnclick() {
 		clickIsActive(true)
 		try {
-			await Promise.resolve(props.onclick())
+			await Promise.resolve(props.onclick()())
 		} finally {
 			clickIsActive(false)
 		}

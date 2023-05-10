@@ -6,11 +6,18 @@
   "license": "0BSD",
   "type": "module",
   "scripts": {
+    "release": "npm run release:prepare && npm run release:client && npm run release:server && npm run release:supplementals && npm run release:packagejson && npm run release:package",
+    "release:prepare": "rm -rf ./target && rm -rf ./dist && mkdir target",
+    "release:client": "./node_modules/.bin/parcel build --target client_release --no-cache && mv dist/client_release target/static",
+    "release:server": "./node_modules/.bin/parcel build --target server_release --no-cache && mv dist/server_release/server_main.js target/server.js",
+    "release:packagejson": "cp package.json target && cp package-lock.json target",
+    "release:supplementals": "mkdir target/supplemental && cp picture_generator_example.js target/supplemental && cp config.example.json target/supplemental && cp shape_tags.json target/supplemental && cp content_tags.json target/supplemental && cp README.md target/supplemental",
+    "release:package": "cd target && zip -r `date +\"picgen_webgui.%Y_%m_%d_%H_%M_%S.zip\"` ./* && echo \"Done; result is\" `ls *.zip` && cd ..",
     "dev": "npm run dev:client & npm run dev:server & wait",
-    "dev:client": "./node_modules/.bin/parcel serve --target client --no-cache --no-hmr --port 24658",
-    "dev:server": "npm run build:server && npm run dev:server:run",
-    "dev:server:run": "node ./dist/server/server_main.js --http-root ./target/ --config config.example.json --http-root-url 'http://localhost:24658'",
-    "build:server": "./node_modules/.bin/parcel build --target server --no-cache",
+    "dev:client": "./node_modules/.bin/parcel serve --target client_dev --no-cache --no-hmr --port 24658",
+    "dev:server": "npm run dev:server:build && npm run dev:server:run",
+    "dev:server:build": "./node_modules/.bin/parcel build --target server_dev --no-cache",
+    "dev:server:run": "node ./dist/server_dev/server_main.js --http-root ./target/ --config config.example.json --http-root-url 'http://localhost:24658'",
     "typecheck": "cd src && ../node_modules/typescript/bin/tsc --noEmit && cd - > /dev/null"
   },
   "devDependencies": {
@@ -18,6 +25,7 @@
     "@parcel/plugin": "^2.8.3",
     "@parcel/transformer-sass": "^2.8.3",
     "@types/cls-hooked": "^4.3.3",
+    "@types/mime-types": "^2.1.1",
     "@types/node": "^17.0.5",
     "@types/pngjs": "^6.0.1",
     "@types/probe-image-size": "^7.2.0",
@@ -39,6 +47,7 @@
     "@nartallax/ribcage-validation": "^1.0.1",
     "cls-hooked": "^4.2.2",
     "discord.js": "^14.3.0",
+    "mime-types": "^2.1.35",
     "pngjs": "^6.0.0",
     "probe-image-size": "^7.2.3",
     "shell-quote": "^1.7.3",
@@ -50,14 +59,25 @@
     "utf-8-validate": "^5.0.9"
   },
   "targets": {
-    "server": {
+    "server_dev": {
       "source": "src/server/server_main.ts",
       "context": "node",
       "optimize": false,
       "outputFormat": "esmodule"
     },
-    "client": {
+    "server_release": {
+      "source": "src/server/server_main.ts",
+      "context": "node",
+      "optimize": false,
+      "outputFormat": "esmodule",
+      "sourceMap": false
+    },
+    "client_dev": {
       "source": "static/index.html"
+    },
+    "client_release": {
+      "source": "static/index.html",
+      "optimize": true
     }
   }
 }

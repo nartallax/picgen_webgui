@@ -1,9 +1,10 @@
 export function byteArrayToBase64(arr: Uint8Array): string {
-	if(typeof(Buffer) !== "undefined"){
-		if(arr instanceof Buffer){
+	// global.Buffer here is to prevent Parcel from auto-adding mock Buffer
+	if(typeof(global.Buffer) !== "undefined"){
+		if(arr instanceof global.Buffer){
 			return arr.toString("base64")
 		} else {
-			return Buffer.from(arr).toString("base64")
+			return global.Buffer.from(arr).toString("base64")
 		}
 	} else {
 		return bytesToBase64(arr)
@@ -11,8 +12,8 @@ export function byteArrayToBase64(arr: Uint8Array): string {
 }
 
 export function base64ToByteArray(b64: string): Uint8Array {
-	if(typeof(Buffer) !== "undefined"){
-		const buffer = Buffer.from(b64, "base64")
+	if(typeof(global.Buffer) !== "undefined"){
+		const buffer = global.Buffer.from(b64, "base64")
 		return new Uint8Array(buffer, 0, buffer.length)
 	} else {
 		return base64ToBytes(b64)
