@@ -1,8 +1,8 @@
 import {RBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
-import {Picture} from "common/entity_types"
 import * as css from "./task_picture.module.scss"
+import {Picture} from "common/entities/picture"
 
 interface TaskPictureProps {
 	picture: RBox<Picture>

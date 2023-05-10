@@ -5,11 +5,12 @@ import {NumberInput} from "client/controls/number_input/number_input"
 import {PictureInput} from "client/controls/picture_input/picture_input"
 import {TextInput} from "client/controls/text_input/text_input"
 import {TooltipIcon} from "client/controls/tooltip/tooltip"
-import {GenParameterDefinition, GenParameterGroupToggle} from "common/common_types"
-import {GenerationTaskParameterValue, PictureParameterValue} from "common/entity_types"
 import * as css from "./param_line.module.scss"
+import {GenParameter, GenParameterGroupToggle} from "common/entities/parameter"
+import {GenerationTaskParameterValue} from "common/entities/generation_task"
+import {PictureArgument} from "common/entities/picture"
 
-export function defaultValueOfParam(def: GenParameterDefinition | GenParameterGroupToggle): GenerationTaskParameterValue {
+export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle): GenerationTaskParameterValue {
 	if(!("type" in def)){
 		return def.default
 	}
@@ -23,7 +24,7 @@ export function defaultValueOfParam(def: GenParameterDefinition | GenParameterGr
 
 interface ParamLineProps {
 	paramSetName: string
-	def: GenParameterDefinition
+	def: GenParameter
 	value: WBox<GenerationTaskParameterValue>
 	visible?: boolean
 }
@@ -61,7 +62,7 @@ export const ParamLine = defineControl<ParamLineProps, typeof defaults>(defaults
 		case "picture":
 			input = PictureInput({
 				paramSetName: props.paramSetName,
-				value: props.value as WBox<PictureParameterValue>,
+				value: props.value as WBox<PictureArgument>,
 				param: def
 			})
 			break
@@ -82,7 +83,7 @@ export const ParamLine = defineControl<ParamLineProps, typeof defaults>(defaults
 			class: [css.revertButton, "icon-ccw", {
 				[css.hidden!]: viewBox(() => {
 					if(def.type === "picture"){
-						return (props.value() as PictureParameterValue).id === 0
+						return (props.value() as PictureArgument).id === 0
 					}
 					return props.value() === defaultValueOfParam(def)
 				})

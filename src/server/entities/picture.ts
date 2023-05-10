@@ -1,4 +1,3 @@
-import {GenerationTask, Picture} from "common/entity_types"
 import {DAO} from "server/dao"
 import * as Path from "path"
 import * as ProbeImageSize from "probe-image-size"
@@ -8,11 +7,12 @@ import {directoryExists, fileExists} from "server/utils/file_exists"
 import {unixtime} from "server/utils/unixtime"
 import {RequestContext, UserlessContext} from "server/request_context"
 import {httpGet} from "server/http/http_req"
-import {PictureType, pictureTypeSet} from "common/common_types"
-import {generateRandomIdentifier} from "common/generate_random_identifier"
 import {makeTempFile, makeTempFileName} from "server/utils/with_temp_file"
 import {decodePictureMask} from "common/picture_mask_encoding"
 import {rasterizePictureMask} from "server/utils/picture_mask_rasterizer"
+import {Picture, PictureType, pictureTypeSet} from "common/entities/picture"
+import {GenerationTask} from "common/entities/generation_task"
+import {generateRandomIdentifier} from "common/utils/generate_random_identifier"
 
 export interface ServerPicture extends Picture {
 	directLink: string | null

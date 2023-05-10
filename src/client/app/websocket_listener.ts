@@ -1,6 +1,6 @@
 import {WBox} from "@nartallax/cardboard"
-import {ApiNotification} from "common/common_types"
-import {GenerationTaskWithPictures} from "common/entity_types"
+import {GenerationTaskWithPictures} from "common/entities/generation_task"
+import {ApiNotification} from "common/infra_entities/notifications"
 
 export class WebsocketListener {
 	private socket: WebSocket | null = null

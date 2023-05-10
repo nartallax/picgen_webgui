@@ -1,22 +1,27 @@
-import {ApiError} from "common/api_error"
-import {GenerationParameterSet, GenParameterDefinition, getParamDefList, PictureGenParamDefinition} from "common/common_types"
-import {DbGenerationTask, GenerationTask, GenerationTaskInputData, GenerationTaskStatus} from "common/entity_types"
+import {ApiError} from "common/infra_entities/api_error"
 import {DAO} from "server/dao"
 import {UserlessContext} from "server/request_context"
 import {PictureInfo, ServerPicture} from "server/entities/picture"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskStatus} from "common/entities/generation_task"
+import {GenParameter, GenerationParameterSet, PictureGenParam, getParamDefList} from "common/entities/parameter"
 
-interface ServerPictureParameterValue {
+interface DbGenerationTask extends Omit<GenerationTask, "params" | "status"> {
+	params: string
+	status: GenerationTaskStatus
+}
+
+interface ServerPictureArgument {
 	picture: string
 	mask?: string
 }
 
-type ServerGenerationTaskParameterValue = number | boolean | string | ServerPictureParameterValue
+type ServerGenerationTaskParameterValue = number | boolean | string | ServerPictureArgument
 
 export interface ServerGenerationTaskInputData extends Omit<GenerationTaskInputData, "params"> {
 	params: {[key: string]: ServerGenerationTaskParameterValue}
 }
 
-export function getServerGenParamDefault(def: GenParameterDefinition): ServerGenerationTaskParameterValue | undefined {
+export function getServerGenParamDefault(def: GenParameter): ServerGenerationTaskParameterValue | undefined {
 	return "default" in def ? def.default : undefined
 }
 
@@ -28,7 +33,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 
 	protected override fieldFromDb<K extends keyof DbGenerationTask & keyof GenerationTask & string>(field: K, value: DbGenerationTask[K]): unknown {
 		switch(field){
-			case "status": return GenerationTaskStatus[value as DbGenerationTask["status"]]
+			case "status": return GenerationTaskStatus[value as DbGenerationTask["status"]] // TODO: cringe
 			case "params": return JSON.parse(value as DbGenerationTask["params"])
 			default: return value
 		}
@@ -79,7 +84,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 				}
 				const pic = await context.picture.getById(paramValue.id)
 				const {path: picturePath, info: pictureInfo} = await context.picture.getPicturePathForGenerationRun(pic)
-				const newParamValue: ServerPictureParameterValue = {
+				const newParamValue: ServerPictureArgument = {
 					picture: picturePath
 				}
 				resultInputData.params[def.jsonName] = newParamValue
@@ -124,7 +129,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		return paramSet
 	}
 
-	private getParams(name: string): GenParameterDefinition[] {
+	private getParams(name: string): GenParameter[] {
 		return getParamDefList(this.getParamSet(name))
 	}
 
@@ -188,7 +193,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		}
 	}
 
-	async validateInputPicture(picture: ServerPicture | Buffer, def: PictureGenParamDefinition): Promise<PictureInfo> {
+	async validateInputPicture(picture: ServerPicture | Buffer, def: PictureGenParam): Promise<PictureInfo> {
 		const context = this.getContext()
 		const picInf = await context.picture.getPictureInfo(picture)
 

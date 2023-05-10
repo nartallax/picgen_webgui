@@ -8,15 +8,16 @@ import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {Select} from "client/controls/select/select"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {TaskPanel} from "client/controls/task_panel/task_panel"
-import {BinaryQueryCondition, GenerationParameterSet, GenParameterDefinition, GenParameterGroup, GenParameterGroupToggle} from "common/common_types"
-import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entity_types"
-import {flatten} from "common/flatten"
 import {box, unbox, viewBox, WBox} from "@nartallax/cardboard"
 import {isInDOM, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
+import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {GenerationParameterSet, GenParameter, GenParameterGroup, GenParameterGroupToggle} from "common/entities/parameter"
+import {flatten} from "common/utils/flatten"
+import {BinaryQueryCondition} from "common/infra_entities/query"
 
 function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, groups: readonly GenParameterGroup[]) {
-	const defs: (GenParameterDefinition | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
+	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
 	for(const group of groups){
 		if(group.toggle){
 			defs.push(group.toggle)

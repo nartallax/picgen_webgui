@@ -1,5 +1,5 @@
-import {ApiNotification} from "common/common_types"
-import {GenerationTask, GenerationTaskInputData} from "common/entity_types"
+import {GenerationTask, GenerationTaskInputData} from "common/entities/generation_task"
+import {ApiNotification} from "common/infra_entities/notifications"
 import {cont} from "server/async_context"
 import {Config} from "server/config"
 import {ServerGenerationTaskInputData} from "server/entities/generation_task"

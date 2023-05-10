@@ -4,13 +4,13 @@ import {ClientApi} from "client/app/client_api"
 import {generateUniqDomID} from "client/client_common/generate_uniq_dom_id"
 import {readFileToArrayBuffer} from "client/client_common/read_file_to_array_buffer"
 import {showImageMaskInput} from "client/controls/image_mask_input/image_mask_input"
-import {PictureGenParamDefinition, pictureTypeSet} from "common/common_types"
-import {Picture, PictureParameterValue} from "common/entity_types"
 import * as css from "./picture_input.module.scss"
+import {Picture, PictureArgument, pictureTypeSet} from "common/entities/picture"
+import {PictureGenParam} from "common/entities/parameter"
 
 interface PictureInputProps {
-	readonly value: WBox<PictureParameterValue>
-	readonly param: PictureGenParamDefinition
+	readonly value: WBox<PictureArgument>
+	readonly param: PictureGenParam
 	readonly paramSetName: MRBox<string>
 }
 

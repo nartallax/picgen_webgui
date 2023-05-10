@@ -1,8 +1,8 @@
-import {GenerationParameterSet} from "common/common_types"
 import {CLIArgs, getCliArgs} from "server/cli_args"
 import {promises as Fs} from "fs"
 import {RCV} from "@nartallax/ribcage-validation"
 import {RC} from "@nartallax/ribcage"
+import {GenerationParameterSet} from "common/entities/parameter"
 
 interface AuxConfigFilesData {
 	readonly discordClientSecret: string

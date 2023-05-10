@@ -1,5 +1,5 @@
-import {base64ToByteArray, bytesToBase64} from "common/base64"
-import {PictureMask, Point2D, Polygon} from "common/common_types"
+import {PictureMask, Point2D, Polygon} from "common/entities/picture"
+import {base64ToByteArray, bytesToBase64} from "common/utils/base64"
 
 const floatResolution = 0xffff
 

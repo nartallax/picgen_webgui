@@ -1,4 +1,4 @@
-import {allowedFilterOps, FilterField, FilterValue, SimpleListQueryParams} from "common/common_types"
+import {FilterField, FilterValue, SimpleListQueryParams, allowedFilterOps} from "common/infra_entities/query"
 import {UserlessContext} from "server/request_context"
 
 export type IdentifiedEntity = {

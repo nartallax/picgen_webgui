@@ -1,7 +1,10 @@
 import {ApiClient} from "client/app/api_client"
 import {showToast} from "client/controls/toast/toast"
-import {GenerationParameterSet, SimpleListQueryParams} from "common/common_types"
-import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Picture, PictureInfo, User} from "common/entity_types"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {GenerationParameterSet} from "common/entities/parameter"
+import {Picture, PictureInfo} from "common/entities/picture"
+import {User} from "common/entities/user"
+import {SimpleListQueryParams} from "common/infra_entities/query"
 
 export namespace ClientApi {
 

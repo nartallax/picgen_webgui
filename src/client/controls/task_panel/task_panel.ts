@@ -1,12 +1,12 @@
 import {formatTimeSpan} from "client/client_common/format"
 import {getNowBox} from "client/base/now_box"
 import {TaskPicture} from "client/controls/task_picture/task_picture"
-import {GenerationTaskWithPictures} from "common/entity_types"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
 import {RBox, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
+import {GenerationTaskWithPictures} from "common/entities/generation_task"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>

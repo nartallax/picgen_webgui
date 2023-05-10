@@ -7,11 +7,11 @@ import {isEnoent} from "server/utils/is_enoent"
 import {errToString} from "server/utils/err_to_string"
 import {readStreamToBuffer} from "server/utils/read_stream_to_buffer"
 import {RequestContext, RequestContextFactory} from "server/request_context"
-import {ApiResponse} from "common/common_types"
-import {ApiError, errorToErrorApiResp} from "common/api_error"
+import {ApiError} from "common/infra_entities/api_error"
 import {log} from "server/log"
 import {RCV} from "@nartallax/ribcage-validation"
 import {httpGet} from "server/http/http_req"
+import {ApiResponse, errorToErrorApiResp} from "common/infra_entities/api"
 
 interface HttpServerOptions {
 	readonly port: number

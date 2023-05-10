@@ -1,5 +1,5 @@
-import {ApiError} from "common/api_error"
-import {User} from "common/entity_types"
+import {User} from "common/entities/user"
+import {ApiError} from "common/infra_entities/api_error"
 import {DAO} from "server/dao"
 import {DiscordApiAccessTokenResponse, DiscordApiUser} from "server/discord_api_client"
 import {RequestContext, UserlessContext} from "server/request_context"

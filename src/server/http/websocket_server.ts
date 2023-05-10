@@ -1,8 +1,8 @@
 import * as WebSocket from "ws"
 import * as Http from "http"
 import {log} from "server/log"
-import {errorToErrorApiResp} from "common/api_error"
-import {ApiNotification, ApiNotificationWrap} from "common/common_types"
+import {errorToErrorApiResp} from "common/infra_entities/api"
+import {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
 
 export class WebsocketServer<K extends string | number = string | number> {
 

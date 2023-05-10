@@ -3,9 +3,9 @@ import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {ParamLine} from "client/controls/param_line/param_line"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
 import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
-import {GenParameterGroup} from "common/common_types"
-import {GenerationTaskParameterValue} from "common/entity_types"
 import * as css from "./params_block.module.scss"
+import {GenParameterGroup} from "common/entities/parameter"
+import {GenerationTaskParameterValue} from "common/entities/generation_task"
 
 interface ParamsBlockProps {
 	readonly paramGroups: RBox<null | readonly GenParameterGroup[]>

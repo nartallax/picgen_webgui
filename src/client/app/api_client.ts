@@ -1,5 +1,5 @@
-import {ApiError} from "common/api_error"
-import {ApiResponse, isSuccessApiResponse} from "common/common_types"
+import {ApiResponse, isSuccessApiResponse} from "common/infra_entities/api"
+import {ApiError} from "common/infra_entities/api_error"
 
 export class ApiClient {
 

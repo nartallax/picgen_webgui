@@ -1,7 +1,7 @@
 import {WBox} from "@nartallax/cardboard"
 import {onMount, svgTag, whileMounted} from "@nartallax/cardboard-dom"
-import {Point2D, Polygon} from "common/common_types"
 import * as css from "./image_mask_input.module.scss"
+import {Point2D, Polygon} from "common/entities/picture"
 
 interface PolygonsInputProps {
 	value: WBox<Polygon[]>

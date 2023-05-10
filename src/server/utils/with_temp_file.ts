@@ -1,4 +1,4 @@
-import {generateRandomIdentifier} from "common/generate_random_identifier"
+import {generateRandomIdentifier} from "common/utils/generate_random_identifier"
 import {promises as Fs} from "fs"
 import * as Os from "os"
 import * as Path from "path"

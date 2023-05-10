@@ -2,7 +2,7 @@ import {waitDocumentLoaded} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {currentPage, currentUser, pages} from "client/app/global_values"
 import {MultiPanel} from "client/controls/multi_panel/multi_panel"
-import {ApiError} from "common/api_error"
+import {ApiError} from "common/infra_entities/api_error"
 
 export async function main() {
 	await waitDocumentLoaded()

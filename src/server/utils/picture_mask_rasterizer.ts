@@ -1,6 +1,6 @@
-import {PictureMask, Point2D, Polygon} from "common/common_types"
 import {PNG} from "pngjs"
 import * as Fs from "fs"
+import {PictureMask, Point2D, Polygon} from "common/entities/picture"
 
 type Line = {
 	// it is implied that `from` always has smaller or equal Y than `to`

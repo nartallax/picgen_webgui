@@ -1,29 +1,21 @@
 import {RC} from "@nartallax/ribcage"
-import {PictureType} from "common/common_types"
+import {Picture, PictureArgument} from "common/entities/picture"
 
-export interface User {
-	readonly id: number
-	readonly creationTime: number
-	avatarUrl: string
-	displayName: string
+export enum GenerationTaskStatus {
+	queued = 1,
+	running = 2,
+	completed = 3
 }
 
-export type PictureParameterValue = RC.Value<typeof PictureParameterValue>
-export const PictureParameterValue = RC.struct(RC.structFields({
-	normal: {
-		id: RC.number()
-	},
-	opt: {
-		mask: RC.string()
-	}
-}))
+export type GenerationTaskWithPictures = GenerationTask & {pictures: Picture[]}
 
+// TODO: parameter values are usually named arguments lol
 export type GenerationTaskParameterValue = RC.Value<typeof GenerationTaskParameterValue>
 export const GenerationTaskParameterValue = RC.union([
 	RC.string(),
 	RC.bool(),
 	RC.number(),
-	PictureParameterValue
+	PictureArgument
 ])
 
 export type GenerationTaskInputData = RC.Value<typeof GenerationTaskInputData>
@@ -32,12 +24,6 @@ export const GenerationTaskInputData = RC.struct({
 	paramSetName: RC.string(),
 	params: RC.objectMap(GenerationTaskParameterValue)
 })
-
-export enum GenerationTaskStatus {
-	queued = 1,
-	running = 2,
-	completed = 3
-}
 
 export type GenerationTask = RC.Value<typeof GenerationTask>
 export const GenerationTask = RC.struct(RC.structFields({
@@ -64,26 +50,3 @@ export const GenerationTask = RC.struct(RC.structFields({
 		runOrder: RC.number()
 	}
 }), {}, GenerationTaskInputData)
-
-export interface DbGenerationTask extends Omit<GenerationTask, "params" | "status"> {
-	params: string
-	status: GenerationTaskStatus
-}
-
-export interface Picture {
-	readonly id: number
-	readonly generationTaskId: number | null
-	readonly ownerUserId: number
-	readonly creationTime: number
-	readonly ext: PictureType
-	readonly name: string | null
-}
-
-export interface PictureInfo {
-	width: number
-	height: number
-	ext: PictureType
-}
-
-
-export type GenerationTaskWithPictures = GenerationTask & {pictures: Picture[]}

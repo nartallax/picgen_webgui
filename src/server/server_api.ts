@@ -1,10 +1,13 @@
-import {GenerationParameterSet, getParamDefList, SimpleListQueryParams} from "common/common_types"
-import {ApiError} from "common/api_error"
+import {ApiError} from "common/infra_entities/api_error"
 import {cont} from "server/async_context"
 import {config} from "server/config"
-import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures, Picture, PictureInfo, User} from "common/entity_types"
 import {RC} from "@nartallax/ribcage"
 import {RCV} from "@nartallax/ribcage-validation"
+import {GenerationParameterSet, getParamDefList} from "common/entities/parameter"
+import {User} from "common/entities/user"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {SimpleListQueryParams} from "common/infra_entities/query"
+import {Picture, PictureInfo} from "common/entities/picture"
 
 export namespace ServerApi {
 

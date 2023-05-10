@@ -2,7 +2,7 @@ import {box} from "@nartallax/cardboard"
 import {LoadingPage} from "client/controls/loading_page/loading_page"
 import {LoginPage} from "client/controls/login_page/login_page"
 import {MainPage} from "client/controls/main_page/main_page"
-import {User} from "common/entity_types"
+import {User} from "common/entities/user"
 
 
 export const currentUser = box(null as User | null)
