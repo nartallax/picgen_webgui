@@ -1,6 +1,6 @@
 import {DAO} from "server/dao"
 import * as Path from "path"
-import * as ProbeImageSize from "probe-image-size"
+import ProbeImageSize from "probe-image-size"
 import {promises as Fs} from "fs"
 import * as FsSync from "fs"
 import {directoryExists, fileExists} from "server/utils/file_exists"
