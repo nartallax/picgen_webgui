@@ -55,7 +55,6 @@ async function mainInternal(): Promise<void> {
 		apiRoot: "/api/",
 		inputSizeLimit: 1024 * 1024 * 16,
 		readTimeoutSeconds: 3 * 60,
-		cacheDuration: 0,
 		apiMethods: ServerApi as any, // ffs
 		contextFactory,
 		httpRootUrl: config.httpRootUrl ? config.httpRootUrl : undefined // don't pass empty str

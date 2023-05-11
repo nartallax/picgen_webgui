@@ -8,6 +8,7 @@ import {User} from "common/entities/user"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {Picture, PictureInfo} from "common/entities/picture"
+import * as MimeTypes from "mime-types"
 
 export namespace ServerApi {
 
@@ -133,7 +134,8 @@ export namespace ServerApi {
 			}
 
 			const picture = await context.picture.getById(pictureId)
-			context.responseHeaders["Content-Type"] = "image/" + (picture.ext === "jpg" ? "jpeg" : picture.ext)
+			context.responseHeaders["Content-Type"] = MimeTypes.contentType("img." + picture.ext) || "image/jpeg"
+			context.responseHeaders["Cache-Control"] = "public,max-age=31536000,immutable"
 
 			// TODO: stream directly into http stream?
 			const result = await context.picture.getPictureData(picture)

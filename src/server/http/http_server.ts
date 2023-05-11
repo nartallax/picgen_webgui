@@ -17,7 +17,6 @@ interface HttpServerOptions {
 	readonly port: number
 	readonly host?: string
 	readonly httpRoot: string
-	readonly cacheDuration: number
 	readonly apiRoot: string
 	readonly inputSizeLimit: number
 	readonly readTimeoutSeconds: number
@@ -101,8 +100,13 @@ export class HttpServer {
 		}
 	}
 
-	private addStaticHeaders(path: string, res: Http.ServerResponse): void {
-		res.setHeader("Cache-Control", this.makeCacheControlHeader(path.toLowerCase().endsWith(".html") ? 0 : this.opts.cacheDuration))
+	private addStaticHeaders(path: string, res: Http.ServerResponse, preventCache: boolean): void {
+		if(path.toLowerCase().endsWith(".html") || preventCache){
+			// never store the html
+			res.setHeader("Cache-Control", "max-age=0, no-store")
+		} else {
+			res.setHeader("Cache-Control", "public,max-age=31536000,immutable")
+		}
 		const mime = MimeTypes.lookup(path) || "application/octet-stream"
 		const contentType = MimeTypes.contentType(mime) || "application/octet-stream"
 		res.setHeader("Content-Type", contentType)
@@ -129,7 +133,7 @@ export class HttpServer {
 	private async processStaticRequestByProxy(path: string, proxyRoot: string, res: Http.ServerResponse): Promise<void> {
 		const resolvedUrl = new URL(path, proxyRoot)
 		const result = await httpGet(resolvedUrl)
-		this.addStaticHeaders(this.resolveStaticFileName(path), res)
+		this.addStaticHeaders(this.resolveStaticFileName(path), res, true)
 		res.end(result)
 	}
 
@@ -138,7 +142,7 @@ export class HttpServer {
 
 		try {
 			const readStream = Fs.createReadStream(resourcePath)
-			this.addStaticHeaders(resourcePath, res)
+			this.addStaticHeaders(resourcePath, res, false)
 			readStream.pipe(res)
 			await waitReadStreamToEnd(readStream)
 			await waitRequestEnd(res)
@@ -150,14 +154,6 @@ export class HttpServer {
 			}
 		}
 
-	}
-
-	private makeCacheControlHeader(maxAge: number): string {
-		if(maxAge < 1){
-			return "max-age=0, no-store"
-		} else {
-			return `max-age=${Math.round(maxAge)}`
-		}
 	}
 
 	private async getApiBody(req: Http.IncomingMessage, url: URL): Promise<Record<string, unknown>> {
