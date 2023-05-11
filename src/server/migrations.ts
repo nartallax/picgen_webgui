@@ -187,6 +187,19 @@ export const migrations: Migration[] = [
 			alter table "generationTasks"
 			add "paramSetName" text;
 		`)
+	}},
+
+	{name: "00009", handler: async db => {
+		await db.run(`
+			alter table "generationTasks"
+			add "hidden" bool;
+		`)
+	}},
+
+	{name: "00010", handler: async db => {
+		await db.run(`
+			update "generationTasks" set "hidden"=?;
+		`, [false])
 	}}
 
 ]

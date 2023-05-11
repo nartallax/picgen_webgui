@@ -52,4 +52,7 @@ export namespace ClientApi {
 	// export const getPictureData = (pictureId: number) =>
 	// 	client.callForBinary("getPictureData", {pictureId})
 
+	export const hideTask = (taskId: number) =>
+		client.call<void>("hideTask", {taskId})
+
 }

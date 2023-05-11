@@ -35,6 +35,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		switch(field){
 			case "status": return GenerationTaskStatus[value as DbGenerationTask["status"]] // TODO: cringe
 			case "params": return JSON.parse(value as DbGenerationTask["params"])
+			case "hidden": return !!value
 			default: return value
 		}
 	}

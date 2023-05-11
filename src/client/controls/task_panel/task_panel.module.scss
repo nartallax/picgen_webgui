@@ -3,6 +3,10 @@
 	flex-direction: column;
 	align-items: stretch;
 
+	&.hidden {
+		display: none;
+	}
+
 	.header {
 		display: flex;
 		flex-direction: row;
@@ -22,7 +26,8 @@
 		}
 
 		.repeatButton,
-		.killButton {
+		.killButton,
+		.deleteButton {
 			cursor: pointer;
 			font-size: 1.5rem;
 			padding: 0.25em 0.5em;
@@ -36,7 +41,7 @@
 			color: #87AF8D;
 		}
 
-		.killButton {
+		.killButton, .deleteButton {
 			color: #E55F42;
 		}
 

@@ -8,7 +8,7 @@ export const FilterField = <F extends RC.StructFields>(itemType: RC.Struct<F>) =
 
 export type FilterConstantValue = RC.Value<typeof FilterConstantValue>
 export const FilterConstantValue = RC.struct({
-	value: RC.union([RC.string(), RC.number()])
+	value: RC.union([RC.string(), RC.number(), RC.bool()])
 })
 
 export type FilterValue<T extends Record<string, unknown>> = RC.Value<ReturnType<typeof FilterValue<RC.FieldsOf<RCise<T>>>>>

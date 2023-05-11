@@ -3,7 +3,7 @@ import {getNowBox} from "client/base/now_box"
 import {TaskPicture} from "client/controls/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
-import {RBox, viewBox} from "@nartallax/cardboard"
+import {RBox, box, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
 import {GenerationTaskWithPictures} from "common/entities/generation_task"
@@ -14,8 +14,9 @@ interface TaskPanelProps {
 
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
+	const taskHidden = box(false)
 
-	return tag({class: css.taskPanel}, [
+	return tag({class: [css.taskPanel, {[css.hidden!]: taskHidden}]}, [
 		tag({class: css.header}, [
 			tag({class: css.id}, [props.task.map(task => "#" + task.id)]),
 			tag({class: css.status}, [
@@ -37,6 +38,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			]),
 			tag({
 				class: [css.repeatButton, "icon-loop", {[css.hidden!]: props.task.map(task => task.status !== "completed")}],
+				attrs: {title: "Repeat"},
 				onClick: limitClickRate(() => {
 					const task = props.task()
 					ClientApi.createGenerationTask({
@@ -47,9 +49,18 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				})
 			}),
 			tag({
-				class: [css.killButton, "icon-trash-empty", {[css.hidden!]: props.task.map(task => task.status === "completed")}],
+				class: [css.killButton, "icon-cancel", {[css.hidden!]: props.task.map(task => task.status === "completed")}],
+				attrs: {title: "Cancel"},
 				onClick: limitClickRate(() => {
 					ClientApi.killTask(props.task().id)
+				})
+			}),
+			tag({
+				class: [css.deleteButton, "icon-trash-empty", {[css.hidden!]: props.task.map(task => task.status !== "completed")}],
+				attrs: {title: "Delete"},
+				onClick: limitClickRate(async() => {
+					await ClientApi.hideTask(props.task().id)
+					taskHidden(true)
 				})
 			}),
 			tag({class: css.timer}, [viewBox(() => {

@@ -107,7 +107,10 @@ export namespace ServerApi {
 		async({query}): Promise<GenerationTaskWithPictures[]> => {
 			const context = cont()
 			const currentUser = await context.user.getCurrent();
-			(query.filters ||= []).push({op: "=", a: {field: "userId"}, b: {value: currentUser.id}})
+			(query.filters ||= []).push(
+				{op: "=", a: {field: "userId"}, b: {value: currentUser.id}},
+				{op: "=", a: {field: "hidden"}, b: {value: false}}
+			)
 			const tasks = await context.generationTask.list(query)
 			const serverPictures = await context.picture.queryAllFieldIncludes("generationTaskId", tasks.map(x => x.id))
 			const pictures = serverPictures.map(pic => context.picture.stripServerData(pic))
@@ -189,5 +192,21 @@ export namespace ServerApi {
 			const serverPic = await context.picture.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
 			return context.picture.stripServerData(serverPic)
 		})
+
+	export const hideTask = RCV.validatedFunction(
+		[RC.struct({taskId: RC.int()})] as const,
+		async({taskId}): Promise<void> => {
+			const context = cont()
+			const [user, task] = await Promise.all([
+				context.user.getCurrent(),
+				context.generationTask.getById(taskId)
+			])
+			if(task.userId !== user.id){
+				throw new ApiError("validation_not_passed", `Task ${task.id} does not belong to user ${user.id}.`)
+			}
+			task.hidden = true
+			context.generationTask.update(task)
+		}
+	)
 
 }
