@@ -46,8 +46,8 @@ export namespace ClientApi {
 	export const getPictureInfoById = (id: number) =>
 		client.call<Picture & PictureInfo>("getPictureInfoById", {id})
 
-	export const uploadPictureAsParameterValue = (paramSetName: string, paramName: string, fileName: string, data: ArrayBuffer) =>
-		client.callPut<Picture>("uploadPictureAsParameterValue", data, {paramSetName, paramName, fileName})
+	export const uploadPictureAsArgument = (paramSetName: string, paramName: string, fileName: string, data: ArrayBuffer) =>
+		client.callPut<Picture>("uploadPictureAsArgument", data, {paramSetName, paramName, fileName})
 
 	// export const getPictureData = (pictureId: number) =>
 	// 	client.callForBinary("getPictureData", {pictureId})

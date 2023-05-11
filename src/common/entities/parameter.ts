@@ -1,9 +1,9 @@
 import {RC} from "@nartallax/ribcage"
-import {GenerationTaskParameterValue} from "common/entities/generation_task"
+import {GenerationTaskArgument} from "common/entities/generation_task"
 import {PictureType} from "common/entities/picture"
 import {flatten} from "common/utils/flatten"
 
-export function getGenParamDefault(def: GenParameter): GenerationTaskParameterValue | undefined {
+export function getGenParamDefault(def: GenParameter): GenerationTaskArgument | undefined {
 	return "default" in def ? def.default : undefined
 }
 

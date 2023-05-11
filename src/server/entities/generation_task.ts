@@ -15,13 +15,13 @@ interface ServerPictureArgument {
 	mask?: string
 }
 
-type ServerGenerationTaskParameterValue = number | boolean | string | ServerPictureArgument
+type ServerGenerationTaskArgument = number | boolean | string | ServerPictureArgument
 
 export interface ServerGenerationTaskInputData extends Omit<GenerationTaskInputData, "params"> {
-	params: {[key: string]: ServerGenerationTaskParameterValue}
+	params: {[key: string]: ServerGenerationTaskArgument}
 }
 
-export function getServerGenParamDefault(def: GenParameter): ServerGenerationTaskParameterValue | undefined {
+export function getServerGenParamDefault(def: GenParameter): ServerGenerationTaskArgument | undefined {
 	return "default" in def ? def.default : undefined
 }
 

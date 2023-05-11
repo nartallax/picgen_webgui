@@ -7,10 +7,10 @@ import {TextInput} from "client/controls/text_input/text_input"
 import {TooltipIcon} from "client/controls/tooltip/tooltip"
 import * as css from "./param_line.module.scss"
 import {GenParameter, GenParameterGroupToggle} from "common/entities/parameter"
-import {GenerationTaskParameterValue} from "common/entities/generation_task"
+import {GenerationTaskArgument} from "common/entities/generation_task"
 import {PictureArgument} from "common/entities/picture"
 
-export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle): GenerationTaskParameterValue {
+export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle): GenerationTaskArgument {
 	if(!("type" in def)){
 		return def.default
 	}
@@ -25,7 +25,7 @@ export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle)
 interface ParamLineProps {
 	paramSetName: string
 	def: GenParameter
-	value: WBox<GenerationTaskParameterValue>
+	value: WBox<GenerationTaskArgument>
 	visible?: boolean
 }
 

@@ -74,7 +74,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 				}
 				const name = file.name
 				const nameWithoutExt = name.replace(/\.[^.]*$/, "")
-				const picture = await ClientApi.uploadPictureAsParameterValue(unbox(props.paramSetName), props.param.jsonName, nameWithoutExt, fileData)
+				const picture = await ClientApi.uploadPictureAsArgument(unbox(props.paramSetName), props.param.jsonName, nameWithoutExt, fileData)
 				if(!isUploadingThisFile(file)){
 					console.log("Stopping upload process after file is uploaded because different file is selected")
 					return

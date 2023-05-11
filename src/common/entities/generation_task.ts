@@ -9,9 +9,8 @@ export enum GenerationTaskStatus {
 
 export type GenerationTaskWithPictures = GenerationTask & {pictures: Picture[]}
 
-// TODO: parameter values are usually named arguments lol
-export type GenerationTaskParameterValue = RC.Value<typeof GenerationTaskParameterValue>
-export const GenerationTaskParameterValue = RC.union([
+export type GenerationTaskArgument = RC.Value<typeof GenerationTaskArgument>
+export const GenerationTaskArgument = RC.union([
 	RC.string(),
 	RC.bool(),
 	RC.number(),
@@ -22,7 +21,7 @@ export type GenerationTaskInputData = RC.Value<typeof GenerationTaskInputData>
 export const GenerationTaskInputData = RC.struct({
 	prompt: RC.string(),
 	paramSetName: RC.string(),
-	params: RC.objectMap(GenerationTaskParameterValue)
+	params: RC.objectMap(GenerationTaskArgument)
 })
 
 export type GenerationTask = RC.Value<typeof GenerationTask>

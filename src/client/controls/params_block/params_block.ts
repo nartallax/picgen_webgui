@@ -5,11 +5,11 @@ import {SettingsBlock} from "client/controls/settings_block/settings_block"
 import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
 import * as css from "./params_block.module.scss"
 import {GenParameterGroup} from "common/entities/parameter"
-import {GenerationTaskParameterValue} from "common/entities/generation_task"
+import {GenerationTaskArgument} from "common/entities/generation_task"
 
 interface ParamsBlockProps {
 	readonly paramGroups: RBox<null | readonly GenParameterGroup[]>
-	readonly paramValues: {readonly [key: string]: WBox<GenerationTaskParameterValue>}
+	readonly paramValues: {readonly [key: string]: WBox<GenerationTaskArgument>}
 	readonly paramSetName: MRBox<string>
 }
 

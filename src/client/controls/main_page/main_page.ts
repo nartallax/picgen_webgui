@@ -11,12 +11,12 @@ import {TaskPanel} from "client/controls/task_panel/task_panel"
 import {box, unbox, viewBox, WBox} from "@nartallax/cardboard"
 import {isInDOM, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
-import {GenerationTask, GenerationTaskParameterValue, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {GenerationTask, GenerationTaskArgument, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenerationParameterSet, GenParameter, GenParameterGroup, GenParameterGroupToggle} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
 import {BinaryQueryCondition} from "common/infra_entities/query"
 
-function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskParameterValue>}, groups: readonly GenParameterGroup[]) {
+function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskArgument>}, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
 	for(const group of groups){
 		if(group.toggle){
@@ -72,7 +72,7 @@ export function MainPage(): HTMLElement {
 		return selectedSet
 	})
 
-	const paramValues = {} as {[key: string]: WBox<GenerationTaskParameterValue>}
+	const paramValues = {} as {[key: string]: WBox<GenerationTaskArgument>}
 	const paramGroups = selectedParamSet.map(set => set?.parameterGroups ?? [])
 
 	const contentTagBox = box(null as null | {readonly [tagContent: string]: readonly string[]})
@@ -109,7 +109,7 @@ export function MainPage(): HTMLElement {
 				shapeValues: shapeTagsBox,
 				startGeneration: async() => {
 					const fullPrompt = shapeTagValue() + " " + promptValue() + selectedContentTags().join(", ")
-					const paramValuesForApi = {} as Record<string, GenerationTaskParameterValue>
+					const paramValuesForApi = {} as Record<string, GenerationTaskArgument>
 					const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
 					if(!paramDefs){
 						return

@@ -162,7 +162,7 @@ export namespace ServerApi {
 			await context.taskQueue.kill(id)
 		})
 
-	export const uploadPictureAsParameterValue = RCV.validatedFunction(
+	export const uploadPictureAsArgument = RCV.validatedFunction(
 		[RC.struct({paramSetName: RC.string(), paramName: RC.string(), fileName: RC.string(), data: RC.binary()})] as const,
 		async({paramSetName, paramName, fileName, data}): Promise<Picture> => {
 			if(!(data instanceof Buffer)){
