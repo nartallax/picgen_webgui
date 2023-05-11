@@ -9,13 +9,12 @@ import {Select} from "client/controls/select/select"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {TaskPanel} from "client/controls/task_panel/task_panel"
 import {box, unbox, viewBox, WBox} from "@nartallax/cardboard"
-import {isInDOM, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
+import {isInDOM, localStorageBox, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskArgument, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenerationParameterSet, GenParameter, GenParameterGroup, GenParameterGroupToggle} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
 import {BinaryQueryCondition} from "common/infra_entities/query"
-import {localStorageBox} from "client/base/localstorage_box"
 
 function updateArgumentBoxes(argBoxes: {[key: string]: WBox<GenerationTaskArgument>}, setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))

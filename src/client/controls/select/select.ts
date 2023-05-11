@@ -12,7 +12,9 @@ export function Select(props: SelectProps): HTMLElement {
 	const select: HTMLSelectElement = tag({
 		class: css.select,
 		tag: "select",
-		onChange: () => props.value(select.value)
+		onChange: () => {
+			props.value(select.value)
+		}
 	}, constBoxWrap(props.options).mapArray(opt => opt.value, opt => tag({
 		tag: "option",
 		attrs: {
