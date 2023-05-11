@@ -1,16 +1,14 @@
-import {MRBox, RBox, WBox, box, unbox} from "@nartallax/cardboard"
+import {RBox, WBox, box, unbox} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {ParamLine} from "client/controls/param_line/param_line"
 import {SettingsBlock} from "client/controls/settings_block/settings_block"
 import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
 import * as css from "./params_block.module.scss"
 import {GenParameterGroup} from "common/entities/parameter"
-import {GenerationTaskArgument} from "common/entities/generation_task"
+import {currentArgumentBoxes} from "client/app/global_values"
 
 interface ParamsBlockProps {
 	readonly paramGroups: RBox<null | readonly GenParameterGroup[]>
-	readonly paramValues: {readonly [key: string]: WBox<GenerationTaskArgument>}
-	readonly paramSetName: MRBox<string>
 }
 
 export function ParamsBlock(props: ParamsBlockProps): HTMLElement {
@@ -29,7 +27,7 @@ export function ParamsBlock(props: ParamsBlockProps): HTMLElement {
 		for(const group of groups){
 			const defs = group.parameters
 
-			const groupToggle = !group.toggle ? undefined : (props.paramValues[group.toggle.jsonName] as WBox<boolean>)
+			const groupToggle = !group.toggle ? undefined : (currentArgumentBoxes[group.toggle.jsonName] as WBox<boolean>)
 
 			lines.push(tag({
 				tag: "tr",
@@ -47,12 +45,12 @@ export function ParamsBlock(props: ParamsBlockProps): HTMLElement {
 			]))
 
 			for(const def of defs){
-				const value = props.paramValues[def.jsonName]
+				const value = currentArgumentBoxes[def.jsonName]
 				if(!value){
 					console.error("No value is defined for parameter " + def.jsonName)
 					continue
 				}
-				lines.push(ParamLine({paramSetName: props.paramSetName, def, value, visible: groupToggle}))
+				lines.push(ParamLine({def, value, visible: groupToggle}))
 			}
 
 		}

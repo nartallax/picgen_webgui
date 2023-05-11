@@ -8,15 +8,17 @@ import {PromptInput} from "client/controls/prompt_input/prompt_input"
 import {Select} from "client/controls/select/select"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {TaskPanel} from "client/controls/task_panel/task_panel"
-import {box, unbox, viewBox, WBox} from "@nartallax/cardboard"
+import {box, unbox, viewBox} from "@nartallax/cardboard"
 import {isInDOM, localStorageBox, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskArgument, GenerationTaskWithPictures} from "common/entities/generation_task"
-import {GenerationParameterSet, GenParameter, GenParameterGroup, GenParameterGroupToggle} from "common/entities/parameter"
+import {GenParameter, GenParameterGroup, GenParameterGroupToggle} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
 import {BinaryQueryCondition} from "common/infra_entities/query"
+import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags} from "client/app/global_values"
+import {composePrompt} from "client/app/prompt_composing"
 
-function updateArgumentBoxes(argBoxes: {[key: string]: WBox<GenerationTaskArgument>}, setName: string, groups: readonly GenParameterGroup[]) {
+function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
 	for(const group of groups){
 		if(group.toggle){
@@ -25,21 +27,21 @@ function updateArgumentBoxes(argBoxes: {[key: string]: WBox<GenerationTaskArgume
 	}
 
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
-	for(const name in argBoxes){
-		const value = argBoxes[name]!
+	for(const name in currentArgumentBoxes){
+		const value = currentArgumentBoxes[name]!
 		const def = defMap.get(name)
 		if(!def || typeof(value()) !== typeof(defaultValueOfParam(def))){
-			delete argBoxes[name]
+			delete currentArgumentBoxes[name]
 			continue
 		}
 	}
 
 	for(const def of defs){
-		const oldValue = argBoxes[def.jsonName]
+		const oldValue = currentArgumentBoxes[def.jsonName]
 		if(oldValue){
 			continue
 		}
-		argBoxes[def.jsonName] = localStorageBox(`genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
+		currentArgumentBoxes[def.jsonName] = localStorageBox(`genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
 	}
 }
 
@@ -63,60 +65,51 @@ async function loadNextTaskPack(existingTasks: GenerationTaskWithPictures[]): Pr
 
 export function MainPage(): HTMLElement {
 
-	const selectedParamSetName = localStorageBox("genArgument.selectedParamSetName", "")
-	const knownParamSets = box([] as GenerationParameterSet[])
 	const selectedParamSet = viewBox(() => {
-		const paramSetName = selectedParamSetName()
-		const paramSets = knownParamSets()
+		const paramSetName = currentParamSetName()
+		const paramSets = allKnownParamSets()
 		const selectedSet = paramSets.find(set => set.internalName === paramSetName)
 		return selectedSet
 	})
 
-	const paramValues = {} as {[key: string]: WBox<GenerationTaskArgument>}
 	const paramGroups = selectedParamSet.map(set => set?.parameterGroups ?? [])
-
-	const contentTagBox = box(null as null | {readonly [tagContent: string]: readonly string[]})
-	const selectedContentTags = box([] as string[])
-
 	const knownTasks = box([] as GenerationTaskWithPictures[])
 	let websocket: WebsocketListener | null = null
-
-	const loadingContentShapeValue = "Loading..."
-	const shapeTagValue = box(loadingContentShapeValue)
-	const shapeTagsBox = box(null as null | readonly string[])
-
-	const promptValue = box("")
 
 	const result = tag({class: css.pageRoot}, [
 		tag({class: css.settingsColumn}, [
 			LoginBar(),
 			Select({
-				options: knownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
-				value: selectedParamSetName
+				options: allKnownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
+				value: currentParamSetName
 			}),
-			ParamsBlock({paramSetName: selectedParamSetName, paramGroups, paramValues}),
+			ParamsBlock({paramGroups}),
 			TagSearchBlock({
-				selectedContentTags,
-				contentTags: contentTagBox,
+				selectedContentTags: currentContentTags,
+				contentTags: allKnownContentTags,
 				visibleTagLimit: 10
 			})
 		]),
 		tag({class: css.generationColumn}, [
 			PromptInput({
-				promptValue: promptValue,
-				selectedContentTags: selectedContentTags,
-				shapeValue: shapeTagValue,
-				shapeValues: shapeTagsBox,
+				promptValue: currentPrompt,
+				selectedContentTags: currentContentTags,
+				shapeValue: currentShapeTag,
+				shapeValues: allKnownShapeTags,
 				startGeneration: async() => {
-					const fullPrompt = shapeTagValue() + " " + promptValue() + selectedContentTags().join(", ")
+					const fullPrompt = composePrompt({
+						shape: currentShapeTag(),
+						body: currentPrompt(),
+						content: currentContentTags()
+					})
 					const paramValuesForApi = {} as Record<string, GenerationTaskArgument>
 					const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
 					if(!paramDefs){
 						return
 					}
 					const paramDefsByName = new Map(paramDefs.map(def => [def.jsonName, def]))
-					for(const paramName in paramValues){
-						const paramValue = unbox(paramValues[paramName])!
+					for(const paramName in currentArgumentBoxes){
+						const paramValue = unbox(currentArgumentBoxes[paramName])!
 						const def = paramDefsByName.get(paramName)
 						if(def && def.type === "picture" && typeof(paramValue) === "object" && paramValue.id === 0){
 							continue // not passed
@@ -125,7 +118,7 @@ export function MainPage(): HTMLElement {
 					}
 					await ClientApi.createGenerationTask({
 						prompt: fullPrompt,
-						paramSetName: selectedParamSetName(),
+						paramSetName: currentParamSetName(),
 						params: paramValuesForApi
 					})
 				}
@@ -146,7 +139,7 @@ export function MainPage(): HTMLElement {
 	})
 
 	whileMounted(result, paramGroups, groups => {
-		updateArgumentBoxes(paramValues, selectedParamSetName(), groups)
+		updateArgumentBoxes(currentParamSetName(), groups)
 	});
 
 	(async() => {
@@ -161,23 +154,23 @@ export function MainPage(): HTMLElement {
 			websocket.start()
 		}
 
-		shapeTagsBox(shapeTags)
-		if(shapeTagValue() === loadingContentShapeValue){
-			shapeTagValue(shapeTags[0] || "Landscape")
+		allKnownShapeTags(shapeTags)
+		if(currentShapeTag() === null){
+			currentShapeTag(shapeTags[0] || "Landscape")
 		}
 
-		knownParamSets(paramSets)
+		allKnownParamSets(paramSets)
 
-		const paramSetName = selectedParamSetName()
+		const paramSetName = currentParamSetName()
 		const paramSet = paramSets.find(set => set.internalName === paramSetName)
 		if(!paramSet){
 			const firstParamSet = paramSets[0]
 			if(firstParamSet){
-				selectedParamSetName(firstParamSet.internalName)
+				currentParamSetName(firstParamSet.internalName)
 			}
 		}
 
-		contentTagBox(contentTags)
+		allKnownContentTags(contentTags)
 	})()
 
 	return result

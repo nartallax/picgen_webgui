@@ -6,8 +6,8 @@ import * as css from "./prompt_input.module.scss"
 
 interface PromptInputProps {
 	shapeValues: RBox<null | readonly string[]>
-	shapeValue: WBox<string>
-	selectedContentTags: WBox<string[]>
+	shapeValue: WBox<string | null>
+	selectedContentTags: WBox<readonly string[]>
 	promptValue: WBox<string>
 	startGeneration(): void
 }

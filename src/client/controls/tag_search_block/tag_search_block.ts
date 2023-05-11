@@ -7,7 +7,7 @@ import {TextInput} from "client/controls/text_input/text_input"
 import {PrefixTree} from "client/data_structure/prefix_tree"
 
 interface TagSearchBlockProps {
-	selectedContentTags: WBox<string[]>
+	selectedContentTags: WBox<readonly string[]>
 	contentTags: RBox<null | {readonly [tagContent: string]: readonly string[]}>
 	visibleTagLimit: number
 }

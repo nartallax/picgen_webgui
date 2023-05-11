@@ -125,7 +125,6 @@ export function PolygonsInput(props: PolygonsInputProps): SVGElement {
 
 	whileMounted(svg, props.value, polygons => {
 		requestAnimationFrame(() => {
-			console.log(polygons)
 			removeAllPolygonElements() // eww.
 			for(const polygon of polygons){
 				makeNewPolygonElement()

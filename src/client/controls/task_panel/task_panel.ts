@@ -3,10 +3,13 @@ import {getNowBox} from "client/base/now_box"
 import {TaskPicture} from "client/controls/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
-import {RBox, box, viewBox} from "@nartallax/cardboard"
+import {RBox, WBox, box, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
-import {GenerationTaskWithPictures} from "common/entities/generation_task"
+import {GenerationTask, GenerationTaskArgument, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
+import {decomposePrompt} from "client/app/prompt_composing"
+import {showToast} from "client/controls/toast/toast"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>
@@ -86,9 +89,9 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		tag({class: css.footer}, [
 			tag({class: css.prompt}, [props.task.map(task => task.prompt)]),
 			tag({
-				class: [css.copyPromptButton, "icon-docs"],
+				class: [css.useArgumentsButton, "icon-docs"],
 				onClick: limitClickRate(function() {
-					navigator.clipboard.writeText(props.task().prompt)
+					loadArguments(props.task())
 					this.classList.add(css.recentlyClicked!)
 					setTimeout(() => {
 						this.classList.remove(css.recentlyClicked!)
@@ -97,4 +100,40 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			})
 		])
 	])
+}
+
+function loadArguments(task: GenerationTaskInputData): void {
+	const paramSet = allKnownParamSets().find(paramSet => paramSet.internalName === task.paramSetName)
+	if(!paramSet){
+		showToast({
+			text: `There's no parameter set ${task.paramSetName} anymore. This task used that parameter set. Cannot load values.`,
+			type: "error"
+		})
+		return
+	}
+
+
+	const prompt = decomposePrompt(task.prompt, allKnownShapeTags() ?? [], Object.keys(allKnownContentTags() ?? {}))
+
+	currentParamSetName(task.paramSetName)
+	currentShapeTag(prompt.shape)
+	currentPrompt(prompt.body)
+	currentContentTags(prompt.content)
+
+	const nonLoadableParamNames: string[] = []
+	for(const [key, value] of Object.entries(task.params)){
+		const argBox = currentArgumentBoxes[key]
+		if(!argBox){
+			nonLoadableParamNames.push(key)
+		}
+		(argBox as WBox<GenerationTaskArgument>)(value)
+	}
+
+	if(nonLoadableParamNames.length > 0){
+		showToast({
+			text: `Some of parameters of the task are now non-existent and wasn't loaded: ${nonLoadableParamNames.join(", ")}`,
+			type: "info"
+		})
+	}
+
 }

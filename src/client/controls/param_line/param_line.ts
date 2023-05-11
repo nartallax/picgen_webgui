@@ -23,7 +23,6 @@ export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle)
 }
 
 interface ParamLineProps {
-	paramSetName: string
 	def: GenParameter
 	value: WBox<GenerationTaskArgument>
 	visible?: boolean
@@ -61,7 +60,6 @@ export const ParamLine = defineControl<ParamLineProps, typeof defaults>(defaults
 			break
 		case "picture":
 			input = PictureInput({
-				paramSetName: props.paramSetName,
 				value: props.value as WBox<PictureArgument>,
 				param: def
 			})

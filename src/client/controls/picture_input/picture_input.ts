@@ -1,4 +1,4 @@
-import {MRBox, WBox, box, unbox} from "@nartallax/cardboard"
+import {WBox, box} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {generateUniqDomID} from "client/client_common/generate_uniq_dom_id"
@@ -7,11 +7,11 @@ import {showImageMaskInput} from "client/controls/image_mask_input/image_mask_in
 import * as css from "./picture_input.module.scss"
 import {Picture, PictureArgument, pictureTypeSet} from "common/entities/picture"
 import {PictureGenParam} from "common/entities/parameter"
+import {currentParamSetName} from "client/app/global_values"
 
 interface PictureInputProps {
 	readonly value: WBox<PictureArgument>
 	readonly param: PictureGenParam
-	readonly paramSetName: MRBox<string>
 }
 
 interface ErrorState {
@@ -74,7 +74,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 				}
 				const name = file.name
 				const nameWithoutExt = name.replace(/\.[^.]*$/, "")
-				const picture = await ClientApi.uploadPictureAsArgument(unbox(props.paramSetName), props.param.jsonName, nameWithoutExt, fileData)
+				const picture = await ClientApi.uploadPictureAsArgument(currentParamSetName(), props.param.jsonName, nameWithoutExt, fileData)
 				if(!isUploadingThisFile(file)){
 					console.log("Stopping upload process after file is uploaded because different file is selected")
 					return

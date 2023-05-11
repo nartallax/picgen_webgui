@@ -5,7 +5,7 @@ import * as css from "./select_search.module.scss"
 
 interface SelectSearchProps {
 	availableValues: RBox<(readonly string[]) | null>
-	value: WBox<string>
+	value: WBox<string | null>
 	listSizeLimit: number
 }
 
@@ -84,7 +84,7 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 
 	whileMounted(wrap, props.value, searchStr => {
 		if(input.value !== searchStr){
-			input.value = searchStr
+			input.value = searchStr ?? ""
 		}
 
 		while(listWrap.firstChild){
@@ -92,7 +92,7 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 		}
 
 		let selectedItems: Iterable<string>
-		if(searchStr === ""){
+		if(searchStr === "" || searchStr === null){
 			selectedItems = (props.availableValues() || []).slice(0, props.listSizeLimit)
 		} else {
 			selectedItems = prefixTree().getAllValuesWhichKeysInclude(searchStr.toLowerCase(), undefined, props.listSizeLimit)

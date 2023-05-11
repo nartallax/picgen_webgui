@@ -19,9 +19,13 @@ async function main() {
 	// stderr logs can be seen in bot's own stderr
 	Process.stderr.write("Got parameters! " + JSON.stringify(parameters) + "\n")
 
-	if(parameters.prompt){
-		Process.stdout.write(JSON.stringify({updatedPrompt: parameters.prompt + ", nya!"}) + "\n")
-	}
+	// this is how you can update prompt
+	// this can break tag parsing when loading prompt for reuse; not a fatality, but still unpleasant
+	// so let's not do that
+
+	// if(parameters.prompt){
+	// 	Process.stdout.write(JSON.stringify({updatedPrompt: parameters.prompt + ", nya!"}) + "\n")
+	// }
 
 	const willGenerateFilesCount = 2
 
