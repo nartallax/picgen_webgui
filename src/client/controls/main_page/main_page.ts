@@ -15,8 +15,9 @@ import {GenerationTask, GenerationTaskArgument, GenerationTaskWithPictures} from
 import {GenerationParameterSet, GenParameter, GenParameterGroup, GenParameterGroupToggle} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
 import {BinaryQueryCondition} from "common/infra_entities/query"
+import {localStorageBox} from "client/base/localstorage_box"
 
-function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskArgument>}, groups: readonly GenParameterGroup[]) {
+function updateArgumentBoxes(argBoxes: {[key: string]: WBox<GenerationTaskArgument>}, setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
 	for(const group of groups){
 		if(group.toggle){
@@ -25,21 +26,21 @@ function updateParamValues(paramValues: {[key: string]: WBox<GenerationTaskArgum
 	}
 
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
-	for(const name in paramValues){
-		const value = paramValues[name]!
+	for(const name in argBoxes){
+		const value = argBoxes[name]!
 		const def = defMap.get(name)
 		if(!def || typeof(value()) !== typeof(defaultValueOfParam(def))){
-			delete paramValues[name]
+			delete argBoxes[name]
 			continue
 		}
 	}
 
 	for(const def of defs){
-		const oldValue = paramValues[def.jsonName]
+		const oldValue = argBoxes[def.jsonName]
 		if(oldValue){
 			continue
 		}
-		paramValues[def.jsonName] = box(defaultValueOfParam(def))
+		argBoxes[def.jsonName] = localStorageBox(`genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
 	}
 }
 
@@ -63,7 +64,7 @@ async function loadNextTaskPack(existingTasks: GenerationTaskWithPictures[]): Pr
 
 export function MainPage(): HTMLElement {
 
-	const selectedParamSetName = box("")
+	const selectedParamSetName = localStorageBox("genArgument.selectedParamSetName", "")
 	const knownParamSets = box([] as GenerationParameterSet[])
 	const selectedParamSet = viewBox(() => {
 		const paramSetName = selectedParamSetName()
@@ -146,7 +147,7 @@ export function MainPage(): HTMLElement {
 	})
 
 	whileMounted(result, paramGroups, groups => {
-		updateParamValues(paramValues, groups)
+		updateArgumentBoxes(paramValues, selectedParamSetName(), groups)
 	});
 
 	(async() => {
@@ -167,9 +168,14 @@ export function MainPage(): HTMLElement {
 		}
 
 		knownParamSets(paramSets)
-		const firstParamSet = paramSets[0]
-		if(firstParamSet){
-			selectedParamSetName(firstParamSet.internalName)
+
+		const paramSetName = selectedParamSetName()
+		const paramSet = paramSets.find(set => set.internalName === paramSetName)
+		if(!paramSet){
+			const firstParamSet = paramSets[0]
+			if(firstParamSet){
+				selectedParamSetName(firstParamSet.internalName)
+			}
 		}
 
 		contentTagBox(contentTags)

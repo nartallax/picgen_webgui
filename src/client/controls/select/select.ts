@@ -1,5 +1,5 @@
 import {MRBox, WBox, constBoxWrap, unbox} from "@nartallax/cardboard"
-import {tag} from "@nartallax/cardboard-dom"
+import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./select.module.scss"
 
 interface SelectProps {
@@ -16,9 +16,14 @@ export function Select(props: SelectProps): HTMLElement {
 	}, constBoxWrap(props.options).mapArray(opt => opt.value, opt => tag({
 		tag: "option",
 		attrs: {
-			value: unbox(opt).value
+			value: unbox(opt).value,
+			// select won't take value until there's an <option> that matches the value
+			// so you either wait for DOM tree to be built, or set "selected" on that <option>
+			selected: unbox(opt).value === props.value()
 		}
 	}, [unbox(opt).label])))
+
+	whileMounted(select, props.value, v => select.value = v)
 
 	return select
 }
