@@ -46,7 +46,7 @@ export namespace ServerApi {
 			redirectUrl.search = ""
 			// why TF this works, but just `/` does not?
 			// I don't understand this API
-			redirectUrl.pathname = "/api/" + discordOauth2.name
+			redirectUrl.pathname = "/api/discordOauth2"
 
 			const token = await context.discordApi.getTokenByCode(code, redirectUrl + "")
 			const discordUser = await context.discordApi.getCurrentUser(token.access_token)
