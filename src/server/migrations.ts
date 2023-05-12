@@ -200,6 +200,16 @@ export const migrations: Migration[] = [
 		await db.run(`
 			update "generationTasks" set "hidden"=?;
 		`, [false])
+	}},
+
+	{name: "00011", handler: async db => {
+		await db.run(`
+			alter table "pictures"
+			add "salt" bigint;
+		`)
+		await db.run(`
+			update "pictures" set "salt"=abs(random() % 0xffffffff);
+		`)
 	}}
 
 ]

@@ -128,15 +128,25 @@ export namespace ServerApi {
 
 	export const getPictureData = RCV.validatedFunction(
 		// actually number expected, string is for calling this stuff through HTTP GET
-		[RC.struct({id: RC.union([RC.number(), RC.string()])})] as const,
-		async({id}): Promise<Buffer> => {
+		[RC.struct({id: RC.union([RC.int(), RC.string()]), salt: RC.union([RC.int(), RC.string()])})] as const,
+		async({id, salt}): Promise<Buffer> => {
 			const context = cont()
+
 			const pictureId = typeof(id) === "string" ? parseInt(id) : id
 			if(Number.isNaN(pictureId)){
 				throw new ApiError("generic", "Bad picture ID: " + id)
 			}
 
+			const pictureSalt = typeof(salt) === "string" ? parseInt(salt) : salt
+			if(Number.isNaN(pictureSalt)){
+				throw new ApiError("generic", "Bad picture salt: " + salt)
+			}
+
 			const picture = await context.picture.getById(pictureId)
+			if(picture.salt !== pictureSalt){
+				throw new ApiError("generic", "Wrong salt")
+			}
+
 			context.responseHeaders["Content-Type"] = MimeTypes.contentType("img." + picture.ext) || "image/jpeg"
 			context.responseHeaders["Cache-Control"] = "public,max-age=31536000,immutable"
 
@@ -146,10 +156,13 @@ export namespace ServerApi {
 		})
 
 	export const getPictureInfoById = RCV.validatedFunction(
-		[RC.struct({id: RC.int()})] as const,
-		async({id}): Promise<Picture & PictureInfo> => {
+		[RC.struct({id: RC.int(), salt: RC.int()})] as const,
+		async({id, salt}): Promise<Picture & PictureInfo> => {
 			const context = cont()
 			const picture = await context.picture.getById(id)
+			if(picture.salt !== salt){
+				throw new ApiError("generic", "Wrong salt")
+			}
 			const info = await context.picture.getPictureInfo(picture)
 			const strippedPicture = context.picture.stripServerData(picture)
 			return {
@@ -158,11 +171,12 @@ export namespace ServerApi {
 			}
 		})
 
-	export const killTask = RCV.validatedFunction(
+	export const killOwnTask = RCV.validatedFunction(
 		[RC.struct({id: RC.int()})] as const,
 		async({id}): Promise<void> => {
 			const context = cont()
-			await context.taskQueue.kill(id)
+			const user = await context.user.getCurrent()
+			await context.taskQueue.kill(id, user.id)
 		})
 
 	export const uploadPictureAsArgument = RCV.validatedFunction(

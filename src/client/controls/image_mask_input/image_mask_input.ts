@@ -10,6 +10,7 @@ import * as css from "./image_mask_input.module.scss"
 
 interface ImageMaskInputProps {
 	imageId: number
+	imageSalt: number
 	value: WBox<string>
 }
 
@@ -21,7 +22,7 @@ interface ImageMaskInputModalControlProps {
 const offsetRatio = 0.9
 
 export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalControlProps) {
-	const imageInfo = fetchToBox(() => ClientApi.getPictureInfoById(props.imageId))
+	const imageInfo = fetchToBox(() => ClientApi.getPictureInfoById(props.imageId, props.imageSalt))
 
 	const winSize = windowSizeBox()
 	const imageDims = viewBox(() => {
@@ -54,7 +55,7 @@ export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalC
 
 	const background = tag({
 		style: {
-			backgroundImage: `url(${JSON.stringify(ClientApi.getPictureUrl(props.imageId))})`
+			backgroundImage: `url(${JSON.stringify(ClientApi.getPictureUrl(props.imageId, props.imageSalt))})`
 		},
 		class: "image-mask-input-background"
 	})

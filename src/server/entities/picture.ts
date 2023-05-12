@@ -59,7 +59,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			generationTaskId: pic.generationTaskId,
 			ownerUserId: pic.ownerUserId,
 			ext: pic.ext,
-			name: pic.name
+			name: pic.name,
+			salt: pic.salt
 		}
 	}
 
@@ -89,13 +90,17 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 		return Path.resolve(this.getContext().config.pictureStorageDir, fileName)
 	}
 
+	private getSalt(): number {
+		return Math.floor(Math.random() * 0xffffffff)
+	}
 
 	async storeGeneratedPicture(data: Buffer, genTask: GenerationTask, index: number, ext: PictureType): Promise<ServerPicture> {
 		return await this.storePicture(data, {
 			generationTaskId: genTask.id,
 			ownerUserId: genTask.userId,
 			ext: ext,
-			name: (index + 1) + ""
+			name: (index + 1) + "",
+			salt: this.getSalt()
 		})
 	}
 
@@ -104,7 +109,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			generationTaskId: null,
 			ownerUserId: userId,
 			ext: ext,
-			name: name
+			name: name,
+			salt: this.getSalt()
 		})
 	}
 

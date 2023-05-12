@@ -6,7 +6,7 @@ import {ClientApi} from "client/app/client_api"
 import {RBox, WBox, box, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
-import {GenerationTask, GenerationTaskArgument, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {GenerationTaskArgument, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
 import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
@@ -55,7 +55,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				class: [css.killButton, "icon-cancel", {[css.hidden!]: props.task.map(task => task.status === "completed")}],
 				attrs: {title: "Cancel"},
 				onClick: limitClickRate(() => {
-					ClientApi.killTask(props.task().id)
+					ClientApi.killOwnTask(props.task().id)
 				})
 			}),
 			tag({

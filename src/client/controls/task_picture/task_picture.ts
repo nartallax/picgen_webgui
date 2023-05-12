@@ -10,7 +10,7 @@ interface TaskPictureProps {
 
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	// TODO: url duplication here and in api client
-	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id))
+	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))
 	return tag({
 		class: css.taskPicture,
 		tag: "a",

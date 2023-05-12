@@ -1,4 +1,5 @@
 import {GenerationTask, GenerationTaskInputData} from "common/entities/generation_task"
+import {ApiError} from "common/infra_entities/api_error"
 import {ApiNotification} from "common/infra_entities/notifications"
 import {cont} from "server/async_context"
 import {Config} from "server/config"
@@ -32,16 +33,22 @@ export class TaskQueueController {
 		this.tryStartNextGeneration() // yep, without await. intended.
 	}
 
-	async kill(id: number): Promise<void> {
+	async kill(id: number, userId: number | null): Promise<void> {
 		if(this.runningGeneration && this.runningGeneration.gen.task.id === id){
+			if(userId !== null && this.runningGeneration.gen.task.userId !== userId){
+				throw new ApiError("validation_not_passed", `Task ${id} does not belong to user ${userId}`)
+			}
 			log(`Killing running task #${id}.`)
 			this.runningGeneration.gen.kill()
 			this.tryStartNextGeneration()
 			return
 		} else {
-			log(`Removing task #${id} from queue.`)
 			const context = cont()
 			const task = await context.generationTask.getById(id)
+			if(userId !== null && task.userId !== userId){
+				throw new ApiError("validation_not_passed", `Task ${id} does not belong to user ${userId}`)
+			}
+			log(`Removing task #${id} from queue.`)
 			task.status = "completed"
 			task.finishTime = unixtime()
 			context.websockets.sendNotificationToUser(task.userId, {
@@ -68,7 +75,8 @@ export class TaskQueueController {
 			finishTime: null,
 			generatedPictures: 0,
 			status: "queued",
-			runOrder: -1
+			runOrder: -1,
+			hidden: false
 		}
 
 		// TODO: fix runOrder here? after creation

@@ -51,7 +51,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 
 	async function onFileSelected(file: File | undefined) {
 		if(!file){
-			props.value({id: 0})
+			props.value({id: 0, salt: 0})
 			state({type: "empty"})
 			return
 		}
@@ -73,7 +73,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 			}
 
 			state({type: "value", picture: picture})
-			props.value({id: picture.id})
+			props.value({id: picture.id, salt: picture.salt})
 		} catch(e){
 			console.error(e)
 			if(!isUploadingThisFile(file)){
@@ -86,7 +86,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 			}
 
 			state({type: "error", error: e})
-			props.value({id: 0})
+			props.value({id: 0, salt: 0})
 		}
 	}
 
@@ -101,7 +101,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		onChange: () => onFileSelected(input.files?.[0])
 	})
 
-	whileMounted(input, props.value, async({id}) => {
+	whileMounted(input, props.value, async({id, salt}) => {
 		// handing external ID changes
 		// need to download data about picture and put it into state
 		if(id === 0){
@@ -117,7 +117,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 
 		state({type: "loading", id})
 		try {
-			const picture = await ClientApi.getPictureInfoById(id)
+			const picture = await ClientApi.getPictureInfoById(id, salt)
 			if(!isLoadingThisPicture(id)){
 				return
 			}
@@ -133,7 +133,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 			}
 
 			state({type: "error", error: e})
-			props.value({id: 0})
+			props.value({id: 0, salt: 0})
 		}
 	})
 
@@ -219,6 +219,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 				const maskBox = box(props.value().mask || "")
 				await showImageMaskInput({
 					imageId: props.value().id,
+					imageSalt: props.value().salt,
 					value: maskBox
 				}).waitClose()
 				props.value({

@@ -7,6 +7,7 @@ export interface Picture {
 	readonly creationTime: number
 	readonly ext: PictureType
 	readonly name: string | null
+	readonly salt: number
 }
 
 export interface PictureInfo {
@@ -24,7 +25,8 @@ export const pictureTypeSet: ReadonlySet<PictureType> = new Set(pictureTypeArr)
 export type PictureArgument = RC.Value<typeof PictureArgument>
 export const PictureArgument = RC.struct(RC.structFields({
 	normal: {
-		id: RC.number()
+		id: RC.number(),
+		salt: RC.number()
 	},
 	opt: {
 		mask: RC.string()

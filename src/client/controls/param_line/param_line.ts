@@ -17,7 +17,7 @@ export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle)
 
 	switch(def.type){
 		case "picture":
-			return {id: 0}
+			return {id: 0, salt: 0}
 		default: return def.default
 	}
 }

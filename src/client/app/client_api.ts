@@ -36,15 +36,15 @@ export namespace ClientApi {
 	export const listTasks = (query: SimpleListQueryParams<GenerationTask>) =>
 		client.call<GenerationTaskWithPictures[]>("listTasks", {query})
 
-	export const killTask = (id: number) =>
-		client.call<void>("killTask", {id})
+	export const killOwnTask = (id: number) =>
+		client.call<void>("killOwnTask", {id})
 
-	export function getPictureUrl(id: number): string {
-		return `${apiPrefix}getPictureData?id=${id}`
+	export function getPictureUrl(id: number, salt: number): string {
+		return `${apiPrefix}getPictureData?id=${id}&salt=${salt}`
 	}
 
-	export const getPictureInfoById = (id: number) =>
-		client.call<Picture & PictureInfo>("getPictureInfoById", {id})
+	export const getPictureInfoById = (id: number, salt: number) =>
+		client.call<Picture & PictureInfo>("getPictureInfoById", {id, salt})
 
 	export const uploadPictureAsArgument = (paramSetName: string, paramName: string, fileName: string, data: ArrayBuffer) =>
 		client.callPut<Picture>("uploadPictureAsArgument", data, {paramSetName, paramName, fileName})
