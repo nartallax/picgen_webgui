@@ -13,6 +13,9 @@ import {rasterizePictureMask} from "server/utils/picture_mask_rasterizer"
 import {Picture, PictureType, pictureTypeSet} from "common/entities/picture"
 import {GenerationTask} from "common/entities/generation_task"
 import {generateRandomIdentifier} from "common/utils/generate_random_identifier"
+import {cont} from "server/async_context"
+import {ApiError} from "common/infra_entities/api_error"
+import {getParamDefList} from "common/entities/parameter"
 
 export interface ServerPicture extends Picture {
 	directLink: string | null
@@ -58,6 +61,28 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			ext: pic.ext,
 			name: pic.name
 		}
+	}
+
+	async uploadPictureAsArgumentAndValidate(paramSetName: string, paramName: string, fileName: string, data: Buffer): Promise<ServerPicture> {
+		const context = cont()
+
+		const paramSet = context.config.parameterSets.find(set => set.internalName === paramSetName)
+		if(!paramSet){
+			throw new ApiError("validation_not_passed", "Unknown parameter set name: " + paramSetName)
+		}
+
+		const paramDef = getParamDefList(paramSet).find(def => def.jsonName === paramName)
+		if(!paramDef){
+			throw new ApiError("validation_not_passed", "Unknown parameter name: " + paramName)
+		}
+		if(paramDef.type !== "picture"){
+			throw new ApiError("validation_not_passed", `Parameter ${paramName} is not picture parameter, it's ${paramDef.type} parameter. You cannot upload a picture as this parameter value.`)
+		}
+
+		const pictureInfo = await context.generationTask.validateInputPicture(data, paramDef)
+		const user = await context.user.getCurrent()
+		const serverPic = await context.picture.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
+		return serverPic
 	}
 
 	protected makeFullPicturePath(fileName: string): string {

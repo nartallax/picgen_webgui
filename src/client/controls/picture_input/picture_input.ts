@@ -1,4 +1,4 @@
-import {WBox, box} from "@nartallax/cardboard"
+import {WBox, box, viewBox} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {generateUniqDomID} from "client/client_common/generate_uniq_dom_id"
@@ -47,6 +47,48 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 	}
 
 	const state = box<State>({type: "empty"})
+	const isFocused = box(false)
+
+	async function onFileSelected(file: File | undefined) {
+		if(!file){
+			props.value({id: 0})
+			state({type: "empty"})
+			return
+		}
+
+		state({type: "uploading", file})
+
+		try {
+			const fileData = await readFileToArrayBuffer(file)
+			if(!isUploadingThisFile(file)){
+				console.log("Stopping upload process after file is red because different file is selected")
+				return
+			}
+			const name = file.name
+			const nameWithoutExt = name.replace(/\.[^.]*$/, "")
+			const picture = await ClientApi.uploadPictureAsArgument(currentParamSetName(), props.param.jsonName, nameWithoutExt, fileData)
+			if(!isUploadingThisFile(file)){
+				console.log("Stopping upload process after file is uploaded because different file is selected")
+				return
+			}
+
+			state({type: "value", picture: picture})
+			props.value({id: picture.id})
+		} catch(e){
+			console.error(e)
+			if(!isUploadingThisFile(file)){
+				console.log("Won't show upload error because different file is selected")
+				return
+			}
+
+			if(!(e instanceof Error)){
+				throw e
+			}
+
+			state({type: "error", error: e})
+			props.value({id: 0})
+		}
+	}
 
 	const inputDomId = generateUniqDomID()
 	const input: HTMLInputElement = tag({
@@ -56,48 +98,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 			type: "file",
 			accept: pictureTypesArr.map(x => "." + x).join(",")
 		},
-		onChange: async() => {
-			const file = input.files?.[0]
-			if(!file){
-				props.value({id: 0})
-				state({type: "empty"})
-				return
-			}
-
-			state({type: "uploading", file})
-
-			try {
-				const fileData = await readFileToArrayBuffer(file)
-				if(!isUploadingThisFile(file)){
-					console.log("Stopping upload process after file is red because different file is selected")
-					return
-				}
-				const name = file.name
-				const nameWithoutExt = name.replace(/\.[^.]*$/, "")
-				const picture = await ClientApi.uploadPictureAsArgument(currentParamSetName(), props.param.jsonName, nameWithoutExt, fileData)
-				if(!isUploadingThisFile(file)){
-					console.log("Stopping upload process after file is uploaded because different file is selected")
-					return
-				}
-
-				state({type: "value", picture: picture})
-				props.value({id: picture.id})
-			} catch(e){
-				console.error(e)
-				if(!isUploadingThisFile(file)){
-					console.log("Won't show upload error because different file is selected")
-					return
-				}
-
-				if(!(e instanceof Error)){
-					throw e
-				}
-
-				state({type: "error", error: e})
-				props.value({id: 0})
-			}
-
-		}
+		onChange: () => onFileSelected(input.files?.[0])
 	})
 
 	whileMounted(input, props.value, async({id}) => {
@@ -147,20 +148,68 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		return s.type === "loading" && s.id === id
 	}
 
-	const result = tag({class: [css.pictureInput, state.map(state => css[state.type])]}, [
+	const text = viewBox(() => {
+		const stateValue = state()
+		const inFocus = isFocused()
+		switch(stateValue.type){
+			case "loading": return `Loading (#${stateValue.id})`
+			case "uploading": return `Uploading (${stateValue.file.name})`
+			case "empty": return inFocus ? "Paste enabled" : "Select file"
+			case "error": return "Error!"
+			case "value": return stateValue.picture.name + "." + stateValue.picture.ext
+		}
+	})
+
+	async function tryUsingTextAsUrl(str: string): Promise<void> {
+		if(!str.toLowerCase().startsWith("http")){
+			return
+		}
+		let url: URL
+		try {
+			url = new URL(str)
+		} catch(e){
+			console.log("Text is not URL: " + str, e)
+			return
+		}
+		try {
+			const body = await(await fetch(url)).blob()
+			const f = new File([body], "image")
+			onFileSelected(f)
+		} catch(e){
+			if(e instanceof Error){
+				console.error(e)
+				state({type: "error", error: e})
+			} else {
+				throw e
+			}
+		}
+
+	}
+
+	const result = tag({
+		class: [css.pictureInput, state.map(state => css[state.type])],
+		attrs: {tabindex: 0},
+		onFocus: () => isFocused(true),
+		onBlur: () => isFocused(false),
+		onPaste: e => {
+			const file = e.clipboardData?.files?.[0]
+			if(file){
+				onFileSelected(file)
+				return
+			}
+
+			e.clipboardData?.items?.[0]?.getAsString(str => tryUsingTextAsUrl(str))
+		}
+	}, [
+		tag({class: css.text}, [text]),
+		input,
 		tag({
 			tag: "label",
-			attrs: {for: inputDomId}
-		}, [state.map(state => {
-			switch(state.type){
-				case "loading": return `Loading (#${state.id})`
-				case "uploading": return `Uploading (${state.file.name})`
-				case "empty": return "Select file"
-				case "error": return "Error!"
-				case "value": return state.picture.name + "." + state.picture.ext
-			}
-		})]),
-		input,
+			attrs: {for: inputDomId},
+			class: [css.selectFileButton, "icon-upload", {
+				[css.hidden!]: props.value.map(x => !!x.id)
+			}]
+		}),
 		!props.param.mask ? null : tag({
 			class: [css.maskButton, "icon-puzzle", {
 				[css.hidden!]: props.value.map(x => !x.id)

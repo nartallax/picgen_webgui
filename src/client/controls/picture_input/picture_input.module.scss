@@ -5,17 +5,26 @@
 
 	display: flex;
 	flex-direction: row;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: space-between;
+	overflow: hidden;
 
-	label {
+	&:focus {
+		outline: 2px solid #a0c2a5;
+	}
+
+	.text {
 		display: block;
 		flex-grow: 1;
 		flex-shrink: 1;
+		flex-basis: 0;
+		min-width: 0;
 		cursor: pointer;
 		font-size: 1.2rem;
 		text-align: center;
-		line-height: 2em;
+		line-height: 1.5em;
+		padding: 0.25rem 0 0.25rem 0.5rem;
+		white-space: nowrap;
 	}
 
 	&.uploading, &.loading {
@@ -28,7 +37,7 @@
 		z-index: -1;
 	}
 
-	.maskButton {
+	.maskButton, .selectFileButton {
 		height: 2rem;
 		width: 2rem;
 		cursor: pointer;
@@ -36,6 +45,7 @@
 		background: #a0c2a5;
 		font-size: 1.5rem;
 		border-radius: 100%;
+		color: #fff;
 
 		display: flex;
 		flex-direction: row;

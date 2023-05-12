@@ -3,7 +3,7 @@ import {cont} from "server/async_context"
 import {config} from "server/config"
 import {RC} from "@nartallax/ribcage"
 import {RCV} from "@nartallax/ribcage-validation"
-import {GenerationParameterSet, getParamDefList} from "common/entities/parameter"
+import {GenerationParameterSet} from "common/entities/parameter"
 import {User} from "common/entities/user"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SimpleListQueryParams} from "common/infra_entities/query"
@@ -173,24 +173,8 @@ export namespace ServerApi {
 			}
 
 			const context = cont()
-
-			const paramSet = context.config.parameterSets.find(set => set.internalName === paramSetName)
-			if(!paramSet){
-				throw new ApiError("validation_not_passed", "Unknown parameter set name: " + paramSetName)
-			}
-
-			const paramDef = getParamDefList(paramSet).find(def => def.jsonName === paramName)
-			if(!paramDef){
-				throw new ApiError("validation_not_passed", "Unknown parameter name: " + paramName)
-			}
-			if(paramDef.type !== "picture"){
-				throw new ApiError("validation_not_passed", `Parameter ${paramName} is not picture parameter, it's ${paramDef.type} parameter. You cannot upload a picture as this parameter value.`)
-			}
-
-			const pictureInfo = await context.generationTask.validateInputPicture(data, paramDef)
-			const user = await context.user.getCurrent()
-			const serverPic = await context.picture.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
-			return context.picture.stripServerData(serverPic)
+			const pic = await context.picture.uploadPictureAsArgumentAndValidate(paramSetName, paramName, fileName, data)
+			return context.picture.stripServerData(pic)
 		})
 
 	export const hideTask = RCV.validatedFunction(

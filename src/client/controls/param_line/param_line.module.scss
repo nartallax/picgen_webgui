@@ -8,6 +8,7 @@
 		display: flex;
 		flex-direction: row;
     	align-items: center;
+		padding-top: 0.2rem;
 	}
 
 	.revertButton {
@@ -26,8 +27,12 @@
 
 	.inputWrap {
 		width: 100%;
+		position: relative;
 
 		> * {
+			position: absolute;
+			left: 0;
+			top: 0;
 			width: 100%;
 			max-width: 100%;
 		}
