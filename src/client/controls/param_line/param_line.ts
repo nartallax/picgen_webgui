@@ -9,6 +9,7 @@ import * as css from "./param_line.module.scss"
 import {GenParameter, GenParameterGroupToggle} from "common/entities/parameter"
 import {GenerationTaskArgument} from "common/entities/generation_task"
 import {PictureArgument} from "common/entities/picture"
+import {Select} from "client/controls/select/select"
 
 export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle): GenerationTaskArgument {
 	if(!("type" in def)){
@@ -18,6 +19,14 @@ export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle)
 	switch(def.type){
 		case "picture":
 			return {id: 0, salt: 0}
+		case "enum": {
+			const opt = def.options[0]!
+			if(typeof(opt) === "object"){
+				return opt.value
+			} else {
+				return opt
+			}
+		}
 		default: return def.default
 	}
 }
@@ -64,6 +73,18 @@ export const ParamLine = defineControl<ParamLineProps, typeof defaults>(defaults
 				param: def
 			})
 			break
+		case "enum":
+			input = Select({
+				value: props.value as WBox<string | number>,
+				isParam: true,
+				options: def.options.map(opt => {
+					if(typeof(opt) === "string" || typeof(opt) === "number"){
+						return {label: opt + "", value: opt}
+					} else {
+						return opt
+					}
+				})
+			})
 	}
 
 	const display = props.visible.map(visible => visible ? "" : "none")

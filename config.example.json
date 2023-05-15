@@ -77,6 +77,15 @@
 				"uiName": "Exclude",
 				"default": "",
 				"tooltip": "Content of this string will be used as negative terms, excluding its values from the generated content."
+			}, {
+				"type": "enum",
+				"jsonName": "example_enum",
+				"uiName": "My Enum",
+				"options": [
+					{"label": "this is uwu", "value": "uwu"},
+					5,
+					"ayaya"
+				]
 			}]
 		}, {
 			"uiName": "Test",
