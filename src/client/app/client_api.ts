@@ -49,9 +49,6 @@ export namespace ClientApi {
 	export const uploadPictureAsArgument = (paramSetName: string, paramName: string, fileName: string, data: ArrayBuffer) =>
 		client.callPut<Picture>("uploadPictureAsArgument", data, {paramSetName, paramName, fileName})
 
-	// export const getPictureData = (pictureId: number) =>
-	// 	client.callForBinary("getPictureData", {pictureId})
-
 	export const hideTask = (taskId: number) =>
 		client.call<void>("hideTask", {taskId})
 
