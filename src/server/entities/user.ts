@@ -1,5 +1,6 @@
 import {User} from "common/entities/user"
 import {ApiError} from "common/infra_entities/api_error"
+import {cont} from "server/async_context"
 import {DAO} from "server/dao"
 import {DiscordApiAccessTokenResponse, DiscordApiUser} from "server/discord_api_client"
 import {RequestContext, UserlessContext} from "server/request_context"
@@ -8,13 +9,21 @@ import {unixtime} from "server/utils/unixtime"
 export interface ServerUser extends User {
 	discordAccessToken: string | null
 	discordRefreshToken: string | null
-	discordId: string | null
 	discordTokenExpiresAt: number | null
 }
 
 const timeMarginBeforeRenewal = 15 * 60
 
 export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extends DAO<ServerUser, C> {
+
+	protected override fieldFromDb<K extends keyof ServerUser & string>(field: K, value: ServerUser[K]): unknown {
+		switch(field){
+			case "isAllowed":
+			case "isAdmin":
+				return !!value // TODO: cringe
+			default: return value
+		}
+	}
 
 	setDiscordTokenProps(user: Omit<ServerUser, "id">, token: DiscordApiAccessTokenResponse) {
 		user.discordAccessToken = token.access_token
@@ -32,16 +41,18 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 		return {
 			discordAccessToken: null,
 			discordRefreshToken: null,
-			discordId: null,
+			discordId: "",
 			discordTokenExpiresAt: null,
 			creationTime: unixtime(),
 			displayName: "",
-			avatarUrl: ""
+			avatarUrl: "",
+			isAdmin: false,
+			isAllowed: false
 		}
 	}
 
-	mbGetByDiscordId(discordId: string): Promise<ServerUser | null> {
-		return this.mbGetByFieldValue("discordId", discordId)
+	queryByDiscordId(discordId: string): Promise<ServerUser | null> {
+		return this.queryByFieldValue("discordId", discordId)
 	}
 
 	protected getTableName(): string {
@@ -53,7 +64,10 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 			avatarUrl: user.avatarUrl,
 			displayName: user.displayName,
 			creationTime: user.creationTime,
-			id: user.id
+			id: user.id,
+			isAdmin: user.isAdmin,
+			isAllowed: user.isAllowed,
+			discordId: user.discordId
 		}
 	}
 
@@ -61,6 +75,33 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 		user.discordAccessToken = null
 		user.discordRefreshToken = null
 		user.discordTokenExpiresAt = null
+	}
+
+	isAdmin(user: ServerUser): boolean {
+		return !cont().config.userControl || user.isAdmin
+	}
+
+	isAllowed(user: ServerUser): boolean {
+		return !cont().config.userControl || user.isAllowed
+	}
+
+	checkIsAdmin(user: ServerUser): void {
+		if(!this.isAdmin(user)){
+			throw new ApiError("permission", "User is not admin")
+		}
+	}
+
+	checkIsAllowed(user: ServerUser): void {
+		if(!this.isAdmin(user)){
+			throw new ApiError("permission", "User is not allowed")
+		}
+	}
+
+	async checkNoDuplicateDiscordId(discordId: string): Promise<void> {
+		const user = await this.queryByDiscordId(discordId)
+		if(user){
+			throw new ApiError("generic", `A user (${user.id}) is already present for this discord ID (${discordId})`)
+		}
 	}
 
 }
@@ -92,7 +133,7 @@ export class CompleteUserDAO extends UserlessUserDAO<RequestContext> {
 		this.setDiscordTokenProps(user, token)
 	}
 
-	async mbGetCurrent(): Promise<ServerUser | null> {
+	async queryCurrent(): Promise<ServerUser | null> {
 		if(this.currentUser || this.currentUser === null){
 			return this.currentUser
 		}
@@ -100,16 +141,17 @@ export class CompleteUserDAO extends UserlessUserDAO<RequestContext> {
 		if(!cookie){
 			this.currentUser = null
 		} else {
-			this.currentUser = await this.mbGetByFieldValue("discordAccessToken", cookie)
+			this.currentUser = await this.queryByFieldValue("discordAccessToken", cookie)
 		}
 		return this.currentUser
 	}
 
 	async getCurrent(): Promise<ServerUser> {
-		const user = await this.mbGetCurrent()
+		const user = await this.queryCurrent()
 		if(!user){
 			throw new ApiError("not_logged_in", "User is not logged in")
 		}
+		this.checkIsAllowed(user)
 		return user
 	}
 

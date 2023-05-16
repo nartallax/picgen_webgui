@@ -1,6 +1,6 @@
 import {ClientApi} from "client/app/client_api"
 import {WebsocketListener} from "client/app/websocket_listener"
-import {Feed} from "client/controls/feed/feed"
+import {Feed, makeSimpleFeedFetcher} from "client/controls/feed/feed"
 import {LoginBar} from "client/controls/login_bar/login_bar"
 import {ParamsBlock} from "client/controls/params_block/params_block"
 import {defaultValueOfParam} from "client/controls/param_line/param_line"
@@ -14,9 +14,9 @@ import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskArgument, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {BinaryQueryCondition} from "common/infra_entities/query"
 import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
+import {AdminButtons} from "client/controls/admin_buttons/admin_buttons"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -45,24 +45,6 @@ function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup
 	}
 }
 
-async function loadNextTaskPack(existingTasks: GenerationTaskWithPictures[]): Promise<GenerationTaskWithPictures[]> {
-	const lastTask = existingTasks[existingTasks.length - 1]
-	const filters: BinaryQueryCondition<GenerationTask>[] = []
-	if(lastTask){
-		filters.push({
-			a: {field: "id"},
-			op: "<",
-			b: {value: lastTask.id}
-		})
-	}
-	return ClientApi.listTasks({
-		sortBy: "creationTime",
-		desc: true,
-		limit: 10,
-		filters
-	})
-}
-
 export function MainPage(): HTMLElement {
 
 	const selectedParamSet = viewBox(() => {
@@ -88,7 +70,8 @@ export function MainPage(): HTMLElement {
 				selectedContentTags: currentContentTags,
 				contentTags: allKnownContentTags,
 				visibleTagLimit: 10
-			})
+			}),
+			AdminButtons()
 		]),
 		tag({class: css.generationColumn}, [
 			PromptInput({
@@ -125,7 +108,12 @@ export function MainPage(): HTMLElement {
 			}),
 			Feed({
 				getId: task => task.id,
-				loadNext: loadNextTaskPack,
+				loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
+					fetch: ClientApi.listTasks,
+					sortBy: "creationTime" as const,
+					desc: true,
+					packSize: 10
+				}),
 				values: knownTasks,
 				renderElement: taskBox => TaskPanel({task: taskBox}),
 				bottomLoadingPlaceholder: tag(["Loading..."])

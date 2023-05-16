@@ -14,6 +14,7 @@ interface AuxConfigFilesData {
 
 const ConfigFile = RC.struct(RC.structFields({
 	ro: {
+		userControl: RC.bool(),
 		pictureStorageDir: RC.string(),
 		runningGenerationPictureStorageDir: RC.string(),
 		haveHttps: RC.bool(),

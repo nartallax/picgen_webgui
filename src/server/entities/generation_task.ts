@@ -54,7 +54,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	}
 
 	getRunning(): Promise<GenerationTask | null> {
-		return this.mbGetByFieldValue("status", "running")
+		return this.queryByFieldValue("status", "running")
 	}
 
 	// you can't just pass to generator raw params you got from user

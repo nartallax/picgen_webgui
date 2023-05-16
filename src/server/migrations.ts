@@ -210,6 +210,18 @@ export const migrations: Migration[] = [
 		await db.run(`
 			update "pictures" set "salt"=abs(random() % 0xffffffff);
 		`)
+	}},
+
+	{name: "00012", handler: async db => {
+		await db.run(`
+			alter table "users" add "isAdmin" bool;
+		`)
+		await db.run(`
+			alter table "users" add "isAllowed" bool;
+		`)
+		await db.run(`
+			update "users" set "isAdmin" = false, "isAllowed" = false;
+		`)
 	}}
 
 ]

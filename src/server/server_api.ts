@@ -4,7 +4,7 @@ import {config} from "server/config"
 import {RC} from "@nartallax/ribcage"
 import {RCV} from "@nartallax/ribcage-validation"
 import {GenerationParameterSet} from "common/entities/parameter"
-import {User} from "common/entities/user"
+import {UnsavedUser, User} from "common/entities/user"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {Picture, PictureInfo} from "common/entities/picture"
@@ -50,7 +50,7 @@ export namespace ServerApi {
 
 			const token = await context.discordApi.getTokenByCode(code, redirectUrl + "")
 			const discordUser = await context.discordApi.getCurrentUser(token.access_token)
-			let user = await context.user.mbGetByDiscordId(discordUser.id)
+			let user = await context.user.queryByDiscordId(discordUser.id)
 			if(user){
 				context.user.setDiscordTokenProps(user, token)
 				context.user.setDiscordUserProps(user, discordUser)
@@ -205,6 +205,35 @@ export namespace ServerApi {
 			task.hidden = true
 			context.generationTask.update(task)
 		}
+	)
+
+	export const adminListUsers = RCV.validatedFunction(
+		[RC.struct({query: SimpleListQueryParams(User)})] as const,
+		async({query}): Promise<User[]> => {
+			const context = cont()
+			context.user.checkIsAdmin(await context.user.getCurrent())
+			const users = await context.user.list(query)
+			return users.map(user => context.user.stripUserForClient(user))
+		}
+	)
+
+	export const adminCreateUser = RCV.validatedFunction(
+		[RC.struct({user: UnsavedUser})] as const,
+		async({user}): Promise<User> => {
+			const context = cont()
+			context.user.checkIsAdmin(await context.user.getCurrent())
+			await context.user.checkNoDuplicateDiscordId(user.discordId)
+			const serverUser = await context.user.create({
+				...context.user.makeEmptyUser(),
+				...user
+			})
+			return context.user.stripUserForClient(serverUser)
+		}
+	)
+
+	export const getIsUserControlEnabled = RCV.validatedFunction(
+		[] as const,
+		() => cont().config.userControl
 	)
 
 }

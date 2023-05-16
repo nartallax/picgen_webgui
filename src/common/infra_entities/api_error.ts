@@ -1,4 +1,4 @@
-export type ApiErrorType = "generic" | "not_logged_in" | "misconfiguration" | "access_denied" | "validation_not_passed"
+export type ApiErrorType = "generic" | "not_logged_in" | "misconfiguration" | "access_denied" | "validation_not_passed" | "permission"
 
 export class ApiError extends Error {
 	readonly isApiError = true

@@ -142,7 +142,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		return result.map(x => this.fromDb(x))
 	}
 
-	protected async mbGetByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T | null> {
+	protected async queryByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T | null> {
 		this.validateFieldNames([fieldName])
 		const result: S[] = await this.getContext().db.query(`select * from "${this.getTableName()}" where "${fieldName}" = ?`, [
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,7 +153,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 
 	protected async getByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T> {
 		this.validateFieldNames([fieldName])
-		const result = await this.mbGetByFieldValue(fieldName, value)
+		const result = await this.queryByFieldValue(fieldName, value)
 		if(result === null){
 			throw new Error(`Cannot find entity in table ${this.getTableName()} by ${fieldName} = ${value}`)
 		}

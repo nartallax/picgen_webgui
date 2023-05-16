@@ -189,7 +189,7 @@ export class HttpServer {
 
 				if((req.method ?? "GET").toUpperCase() !== "GET"){
 					// if it goes through GET - it's not very important probably, no need to log
-					const user = await context.user.mbGetCurrent()
+					const user = await context.user.queryCurrent()
 					const userStr = !user ? "<anon>" : user.displayName
 					log(`${userStr}: ${methodName}(${argsToString(methodArgs)})`)
 				}

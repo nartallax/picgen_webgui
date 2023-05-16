@@ -6,6 +6,7 @@ import * as css from "./settings_subblock_header.module.scss"
 interface SettingsSubblockProps {
 	header: MRBox<string>
 	toggle?: WBox<boolean>
+	onClose?: () => void
 }
 
 export function SettingsSubblockHeader(props: SettingsSubblockProps): HTMLElement {
@@ -13,6 +14,11 @@ export function SettingsSubblockHeader(props: SettingsSubblockProps): HTMLElemen
 		tag({tag: "hr"}),
 		tag({class: css.text}, [props.header]),
 		!props.toggle ? null : BoolInput({value: props.toggle}),
-		tag({tag: "hr"})
+		tag({tag: "hr"}),
+		!props.onClose ? null : tag({
+			tag: "button",
+			class: [css.closeButton, "icon-cancel"],
+			onClick: props.onClose
+		})
 	])
 }

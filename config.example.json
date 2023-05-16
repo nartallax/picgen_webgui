@@ -1,4 +1,5 @@
 {
+	"userControl": false,
 	"deleteFilesReceivedFromGenerator": true,
 	"pictureStorageDir": "./pictures",
 	"runningGenerationPictureStorageDir": "./running_generation_pictures",

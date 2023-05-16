@@ -10,6 +10,7 @@ import {User} from "common/entities/user"
 
 export const currentUser = box<User | null>(null)
 export const currentPage = box<PageName>("loading")
+export const isUserControlEnabled = box(true)
 
 export const currentArgumentBoxes: {[key: string]: WBox<GenerationTaskArgument>} = {}
 export const currentParamSetName = localStorageBox("fixedGenArgument.selectedParamSetName", "")

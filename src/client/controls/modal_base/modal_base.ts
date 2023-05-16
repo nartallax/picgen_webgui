@@ -2,7 +2,7 @@ import {MRBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./modal_base.module.scss"
 
-interface ModalBaseProps {
+export interface ModalBaseProps {
 	closeByBackgroundClick?: boolean
 }
 

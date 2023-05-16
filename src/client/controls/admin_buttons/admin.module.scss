@@ -1,0 +1,23 @@
+.userLine {
+	display: grid;
+	grid-template-columns: 150px auto 100px;
+	color: #625e5e;
+	background-color: transparent;
+	border-bottom: 1px dotted #d5c6c2;
+	cursor: pointer;
+	text-align: left;
+
+	&:first-child {
+		border-top: 1px dotted #d5c6c2;
+	}
+
+	> * {
+		border-left: 1px dotted #d5c6c2;
+		padding: 0.5rem;
+		height: 100%;
+	}
+
+	> *:last-child {
+		border-right: 1px dotted #d5c6c2;
+	}
+}
