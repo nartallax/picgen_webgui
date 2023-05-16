@@ -19,7 +19,7 @@ export interface Migration {
 // Q: why this number?
 // A: because if we go higher than this count simultaneous writing queries to db, queries will start to die because of timeout
 // so we need to limit amount of simultaneously running connections
-const maxSimultaneouslyOpenConnections = 4
+const maxSimultaneouslyOpenConnections = 1
 
 export class DbController {
 	private connWaiters = [] as (() => void)[]
@@ -35,7 +35,12 @@ export class DbController {
 	}
 
 	async inTransaction<T>(action: (conn: DbConnectionImpl) => T | Promise<T>): Promise<T> {
-		const conn = new DbConnectionImpl(() => this.openConnectionLimited())
+		while(this.openConnectionsCount >= maxSimultaneouslyOpenConnections){
+			await this.waitConnectionClosed()
+		}
+		this.openConnectionsCount++
+
+		const conn = new DbConnectionImpl(() => this.openConnection())
 		try {
 			return await Promise.resolve(action(conn))
 		} catch(e){
@@ -47,15 +52,15 @@ export class DbController {
 			throw e
 		} finally {
 			await conn.close(false, true)
-			this.notifyConnectionClosed()
+			this.openConnectionsCount--
+			this.callConnectionCloseWaiters()
 		}
 	}
 
-	private notifyConnectionClosed(): void {
-		this.openConnectionsCount--
-		const waiter = this.connWaiters[0]
-		if(waiter){
-			this.connWaiters = this.connWaiters.splice(1)
+	private callConnectionCloseWaiters(): void {
+		const waiters = [...this.connWaiters]
+		this.connWaiters = []
+		for(const waiter of waiters){
 			waiter()
 		}
 	}
@@ -68,14 +73,6 @@ export class DbController {
 		while(this.openConnectionsCount > 0){
 			await this.waitConnectionClosed()
 		}
-	}
-
-	private async openConnectionLimited(): Promise<SqliteDatabase> {
-		while(this.openConnectionsCount >= maxSimultaneouslyOpenConnections){
-			await this.waitConnectionClosed()
-		}
-		this.openConnectionsCount++
-		return await this.openConnection()
 	}
 
 	private openConnection(): Promise<SqliteDatabase> {
