@@ -12,6 +12,12 @@
 	transition: 0.25s;
 	border: 0.1em solid #a0c2a5;
 
+	&.small {
+		font-size: 1rem;
+		padding: 0.05rem;
+		line-height: 1.25rem;
+	}
+
 	&.moreHPadding{
 		padding-left: 0.9em;
 		padding-right: 0.9em;

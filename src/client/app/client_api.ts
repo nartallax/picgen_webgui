@@ -58,7 +58,28 @@ export namespace ClientApi {
 	export const adminUpdateUser = (user: User) =>
 		client.call<void>("adminUpdateUser", {user})
 
+	export const adminListTasks = (query: SimpleListQueryParams<GenerationTask>) =>
+		client.call<GenerationTask[]>("adminListTasks", {query})
+
 	export const getIsUserControlEnabled = () =>
 		client.call<boolean>("getIsUserControlEnabled", {})
+
+	export const adminKillTask = (taskId: number) =>
+		client.call<void>("adminKillTask", {taskId})
+
+	export const adminKillAllQueuedTasks = () =>
+		client.call<void>("adminKillAllQueuedTasks", {})
+
+	export const adminKillAllQueuedAndRunningTasks = () =>
+		client.call<void>("adminKillAllQueuedAndRunningTasks", {})
+
+	export const adminPauseQueue = () =>
+		client.call<void>("adminPauseQueue", {})
+
+	export const adminUnpauseQueue = () =>
+		client.call<void>("adminUnpauseQueue", {})
+
+	export const getIsQueuePaused = () =>
+		client.call<boolean>("getIsQueuePaused", {})
 
 }

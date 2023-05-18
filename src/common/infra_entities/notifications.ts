@@ -12,6 +12,12 @@ export type ApiNotification = TaskMessageNotification
 | TaskFinishedNotification
 | TaskStartedNotification
 | TaskCreatedNotification
+| TaskAdminNotification
+
+export interface TaskAdminNotification {
+	type: "task_admin_notification"
+	task: GenerationTask
+}
 
 export interface TaskMessageNotification {
 	type: "task_message"

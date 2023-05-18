@@ -5,6 +5,8 @@ import {showUsersModal} from "client/components/admin_buttons/users_modal"
 import {Button} from "client/controls/button/button"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
+import {Col} from "client/controls/layout/row_col"
+import {showTasksModal} from "client/components/admin_buttons/tasks_modal"
 
 export const AdminButtons = defineControl(() => {
 	return tag({
@@ -13,9 +15,15 @@ export const AdminButtons = defineControl(() => {
 		}
 	}, [BlockPanel([
 		BlockPanelHeader({header: "Admin actions"}),
-		Button({
-			text: "Users",
-			onclick: showUsersModal
-		})
+		Col({align: "stretch", gap: true}, [
+			Button({
+				text: "Users",
+				onclick: showUsersModal
+			}),
+			Button({
+				text: "Tasks",
+				onclick: showTasksModal
+			})
+		])
 	])])
 })

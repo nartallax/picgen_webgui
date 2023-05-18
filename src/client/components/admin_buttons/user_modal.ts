@@ -15,7 +15,6 @@ type Props = {
 export function showUserModal(props: Props): Modal {
 	const modal = showModal({
 		title: props.value.map(user => user.id ? "User #" + user.id : "New user"),
-		// height: ["16rem", "30vh", "32rem"],
 		width: ["16rem", "50vw", "32rem"]
 	}, [
 		Form([

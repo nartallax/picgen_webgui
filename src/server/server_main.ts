@@ -10,6 +10,8 @@ import {TaskQueueController} from "server/task_queue_controller"
 import {ContextStaticProps, RequestContext} from "server/request_context"
 import {ServerApi} from "server/server_api"
 import {errToString} from "server/utils/err_to_string"
+import {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
+import {ServerUser} from "server/entities/user"
 
 export async function main() {
 	try {
@@ -60,10 +62,10 @@ async function mainInternal(): Promise<void> {
 		httpRootUrl: config.httpRootUrl ? config.httpRootUrl : undefined // don't pass empty str
 	})
 
-	const websocketServer = new WebsocketServer(server.server, req => contextFactory(req, async context => {
+	const websocketServer = new WebsocketServer<ApiNotification, ApiNotificationWrap, number, {user: ServerUser}>(server.server, req => contextFactory(req, async context => {
 		const user = await context.user.getCurrent()
-		return user.id
-	}))
+		return {id: user.id, data: {user}}
+	}), notification => ({notification}))
 
 	const taskQueue = new TaskQueueController(userlessContextFactory)
 

@@ -53,7 +53,28 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		return result[0]
 	}
 
-	getRunning(): Promise<GenerationTask | null> {
+	async getAllInQueue(): Promise<GenerationTask[]> {
+		return this.querySortedFiltered("status", "queued", "runOrder", false)
+	}
+
+	async killAllQueued(userId: number | null): Promise<void> {
+		const context = this.getContext()
+		const queuedTasks = await context.generationTask.getAllInQueue()
+		for(const task of queuedTasks){
+			await context.taskQueue.kill(task.id, userId)
+		}
+	}
+
+	async killAllQueuedAndRunning(userId: number | null): Promise<void> {
+		await this.killAllQueued(userId)
+		const context = this.getContext()
+		const runningTask = await context.generationTask.queryRunning()
+		if(runningTask){
+			await context.taskQueue.kill(runningTask.id, userId)
+		}
+	}
+
+	queryRunning(): Promise<GenerationTask | null> {
 		return this.queryByFieldValue("status", "running")
 	}
 

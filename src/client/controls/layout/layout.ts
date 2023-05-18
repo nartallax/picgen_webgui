@@ -1,7 +1,7 @@
 import {MRBox, RBox, isRBox} from "@nartallax/cardboard"
 import {BoxedProps, StyleValues} from "@nartallax/cardboard-dom"
 
-export type DefaultableSpacing = string | "vertical" | "horisontal" | "top" | "bottom" | "left" | "right" | boolean
+export type DefaultableSpacing = "vertical" | "horisontal" | "top" | "bottom" | "left" | "right" | boolean | string
 
 const defaultSpacing = "0.25rem"
 

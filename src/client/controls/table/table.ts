@@ -1,4 +1,4 @@
-import {WBox, box, unbox} from "@nartallax/cardboard"
+import {WBox, box, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {Feed, makeSimpleFeedFetcher} from "client/controls/feed/feed"
 import {SimpleListQueryParams} from "common/infra_entities/query"
@@ -23,7 +23,7 @@ export function Table<T extends Record<string, unknown> & IdentifiedEntity, O ex
 	const onRowClick = props.onRowClick
 	const templateCols = props.headers.map(header => header.width ?? "auto").join(" ")
 
-	return tag([
+	return tag({class: css.table}, [
 		tag({
 			class: css.tableHeaders,
 			style: {gridTemplateColumns: templateCols}
@@ -35,16 +35,19 @@ export function Table<T extends Record<string, unknown> & IdentifiedEntity, O ex
 				fetch: props.fetch,
 				packSize: 25
 			}),
-			renderElement: row => tag({
+			renderElement: rowBox => tag({
 				class: css.tableRow,
 				style: {
 					gridTemplateColumns: templateCols
 				},
 				tag: onRowClick ? "button" : "div",
-				onClick: !onRowClick ? undefined : () => onRowClick(row())
-			}, row.map(row => unbox(props.headers).map(header => {
-				return tag([header.getValue(row)])
-			})))
+				onClick: !onRowClick ? undefined : () => onRowClick(rowBox())
+			}, viewBox(() => { // viewBox here because getValue can refer to some external box
+				const row = rowBox()
+				return props.headers.map(header => {
+					return tag([header.getValue(row)])
+				})
+			}))
 		})
 	])
 }

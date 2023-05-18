@@ -1,4 +1,4 @@
-import {box} from "@nartallax/cardboard"
+import {box, viewBox} from "@nartallax/cardboard"
 import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./button.module.scss"
 
@@ -6,11 +6,15 @@ interface ButtonProps {
 	onclick(): void | Promise<void>
 	text?: string | null
 	iconClass?: string | null
+	variant?: "normal" | "small"
+	isDisabled?: boolean
 }
 
 const defaults = {
 	text: null,
-	iconClass: null
+	iconClass: null,
+	variant: "normal",
+	isDisabled: false
 } satisfies Partial<ButtonProps>
 
 export const Button = defineControl<ButtonProps, typeof defaults>(defaults, props => {
@@ -28,8 +32,8 @@ export const Button = defineControl<ButtonProps, typeof defaults>(defaults, prop
 
 	return tag({
 		tag: "button",
-		class: [css.button, props.iconClass, {
-			[css.disabled!]: clickIsActive,
+		class: [css.button, props.iconClass, css[props.variant()], {
+			[css.disabled!]: viewBox(() => clickIsActive() || props.isDisabled()),
 			[css.moreHPadding!]: props.text.map(text => !!text)
 		}],
 		onClick: wrappedOnclick

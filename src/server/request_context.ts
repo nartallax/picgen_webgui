@@ -1,7 +1,7 @@
 import {DbConnection, DbController} from "server/db/db_controller"
 import {DiscordApiClient} from "server/discord_api_client"
 import {GenerationTaskDAO} from "server/entities/generation_task"
-import {CompleteUserDAO, UserlessUserDAO} from "server/entities/user"
+import {CompleteUserDAO, ServerUser, UserlessUserDAO} from "server/entities/user"
 import {CookieController} from "server/http/cookie_controller"
 import * as Http from "http"
 import {WebsocketServer} from "server/http/websocket_server"
@@ -10,11 +10,12 @@ import {Config} from "server/config"
 import {TaskQueueController} from "server/task_queue_controller"
 import {CompletePictureDAO, UserlessPictureDAO} from "server/entities/picture"
 import {logError} from "server/log"
+import {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
 
 export interface ContextStaticProps {
 	config: Config
 	discordApi(): DiscordApiClient
-	websocketServer(): WebsocketServer
+	websocketServer(): WSServer
 	defaultToHttps: boolean
 	db(): DbController
 	taskQueue(): TaskQueueController
@@ -32,7 +33,7 @@ export class UserlessContext {
 	constructor(
 		readonly discordApi: DiscordApiClient,
 		readonly db: DbConnection,
-		readonly websockets: WebsocketServer,
+		readonly websockets: WSServer,
 		readonly config: Config,
 		readonly dbController: DbController,
 		readonly taskQueue: TaskQueueController
@@ -65,6 +66,7 @@ export class UserlessContext {
 
 export type UserlessContextFactory = <T>(runner: (context: UserlessContext) => T | Promise<T>) => Promise<T>
 export type RequestContextFactory = <T>(req: Http.IncomingMessage, runner: (context: RequestContext) => T | Promise<T>) => Promise<T>
+type WSServer = WebsocketServer<ApiNotification, ApiNotificationWrap, number, {user: ServerUser}>
 
 export class RequestContext extends UserlessContext {
 	readonly user: CompleteUserDAO = new CompleteUserDAO(() => this)
@@ -78,7 +80,7 @@ export class RequestContext extends UserlessContext {
 		readonly responseHeaders: Http.OutgoingHttpHeaders,
 		discordApi: DiscordApiClient,
 		db: DbConnection,
-		websockets: WebsocketServer,
+		websockets: WSServer,
 		config: Config,
 		dbController: DbController,
 		taskQueue: TaskQueueController

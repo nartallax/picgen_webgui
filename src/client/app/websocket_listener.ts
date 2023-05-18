@@ -1,6 +1,9 @@
 import {WBox} from "@nartallax/cardboard"
-import {GenerationTaskWithPictures} from "common/entities/generation_task"
+import {Event} from "client/base/event"
+import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {ApiNotification} from "common/infra_entities/notifications"
+
+export const onAdminTaskUpdate = new Event<GenerationTask>()
 
 export class WebsocketListener {
 	private socket: WebSocket | null = null
@@ -16,7 +19,7 @@ export class WebsocketListener {
 			this.socket = new WebSocket(wsUrl)
 			this.socket.onmessage = evt => {
 				if(typeof(evt.data) === "string"){
-					console.log("Websocket event: " + evt.data)
+					// console.log("Websocket event: " + evt.data)
 					this.applyNotification(JSON.parse(evt.data).notification)
 				} else {
 					console.error("Typeof of websocket event data is not string, don't know what to do: ", evt.data)
@@ -87,6 +90,9 @@ export class WebsocketListener {
 					notification.taskId,
 					task => ({...task, prompt: notification.prompt})
 				)
+				break
+			case "task_admin_notification":
+				onAdminTaskUpdate.fire(notification.task)
 				break
 			default:
 				console.log("Unrecognised websocket notification", notification)

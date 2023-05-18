@@ -5,7 +5,7 @@ import {RBox} from "@nartallax/cardboard"
 
 type Props = {
 	justify?: "start" | "center" | "space-between" | "end"
-	align?: "start" | "center" | "end"
+	align?: "start" | "center" | "end" | "stretch"
 	gap?: DefaultableSpacing
 	grow?: number
 } & LayoutCommonProps

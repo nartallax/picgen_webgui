@@ -31,11 +31,14 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 
 	async function loadNext(): Promise<void> {
 		let currentValues = props.values()
-		console.log("Loading next, starting with " + currentValues.length)
+		// console.log("Loading next, starting with " + currentValues.length)
 		const newValues = await Promise.resolve(props.loadNext(currentValues))
 		currentValues = [...currentValues, ...newValues]
 		props.values(currentValues)
 		reachedEndOfFeed(newValues.length === 0)
+		// if(reachedEndOfFeed()){
+		// 	console.log("Reached end of feed.")
+		// }
 
 		requestAnimationFrame(() => {
 			// for case when loading new values didn't hide the placeholder

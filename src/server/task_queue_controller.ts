@@ -23,7 +23,7 @@ export class TaskQueueController {
 		this.queueIsMoving = true
 		await this.contextFactory(async context => {
 			await context.picture.init()
-			const runningTask = await context.generationTask.getRunning()
+			const runningTask = await context.generationTask.queryRunning()
 			if(runningTask){
 				log(`Discovered that task #${runningTask} is running in DB, but we are just started and could not possibly start a task. Marking it as completed, because not much we can do at this point.`)
 				runningTask.status = "completed"
@@ -52,7 +52,7 @@ export class TaskQueueController {
 			log(`Removing task #${id} from queue.`)
 			task.status = "completed"
 			task.finishTime = unixtime()
-			context.websockets.sendNotificationToUser(task.userId, {
+			sendTaskUpdate(context, task, {
 				type: "task_finished",
 				taskId: task.id,
 				finishTime: task.finishTime
@@ -84,7 +84,7 @@ export class TaskQueueController {
 		const result = await context.generationTask.create(genTask)
 		log("Enqueued task #" + result.id)
 
-		context.websockets.sendNotificationToUser(result.userId, {
+		sendTaskUpdate(context, result, {
 			type: "task_created",
 			task: result
 		})
@@ -183,6 +183,19 @@ export class TaskQueueController {
 		}
 	}
 
+	pause(): void {
+		this.queueIsMoving = false
+	}
+
+	unpause(): void {
+		this.queueIsMoving = true
+		this.tryStartNextGeneration()
+	}
+
+	get isPaused(): boolean {
+		return !this.queueIsMoving
+	}
+
 	async stop(): Promise<void> {
 		this.queueIsMoving = false
 		if(this.runningGeneration){
@@ -219,7 +232,7 @@ export class TaskQueueController {
 
 		function sendTaskNotification(body: ApiNotification): void {
 			update((_, actions) => actions.push(context => {
-				context.websockets.sendNotificationToUser(task.userId, body)
+				sendTaskUpdate(context, task, body)
 			}))
 		}
 
@@ -289,4 +302,9 @@ export class TaskQueueController {
 		return result as GenRunnerCallbacks
 	}
 
+}
+
+function sendTaskUpdate(context: UserlessContext, task: GenerationTask, update: ApiNotification): void {
+	context.websockets.sendToUser(task.userId, update)
+	context.websockets.sendByCriteria(conn => conn.data.user.isAdmin, {type: "task_admin_notification", task})
 }

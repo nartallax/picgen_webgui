@@ -9,6 +9,13 @@ import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} fro
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {Picture, PictureInfo} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
+import {RequestContext} from "server/request_context"
+
+async function adminCont(): Promise<RequestContext> {
+	const context = cont()
+	context.user.checkIsAdmin(await context.user.getCurrent())
+	return context
+}
 
 export namespace ServerApi {
 
@@ -210,8 +217,7 @@ export namespace ServerApi {
 	export const adminListUsers = RCV.validatedFunction(
 		[RC.struct({query: SimpleListQueryParams(User)})] as const,
 		async({query}): Promise<User[]> => {
-			const context = cont()
-			context.user.checkIsAdmin(await context.user.getCurrent())
+			const context = await adminCont()
 			const users = await context.user.list(query)
 			return users.map(user => context.user.stripUserForClient(user))
 		}
@@ -220,8 +226,7 @@ export namespace ServerApi {
 	export const adminUpdateUser = RCV.validatedFunction(
 		[RC.struct({user: User})] as const,
 		async({user}): Promise<void> => {
-			const context = cont()
-			context.user.checkIsAdmin(await context.user.getCurrent())
+			const context = await adminCont()
 			await context.user.update({
 				...await context.user.getById(user.id),
 				...user
@@ -232,6 +237,62 @@ export namespace ServerApi {
 	export const getIsUserControlEnabled = RCV.validatedFunction(
 		[] as const,
 		() => cont().config.userControl
+	)
+
+	export const adminListTasks = RCV.validatedFunction(
+		[RC.struct({query: SimpleListQueryParams(GenerationTask)})] as const,
+		async({query}): Promise<GenerationTask[]> => {
+			const context = await adminCont()
+			return await context.generationTask.list(query)
+		}
+	)
+
+	export const adminKillTask = RCV.validatedFunction(
+		[RC.struct({taskId: RC.int()})] as const,
+		async({taskId}): Promise<void> => {
+			const context = await adminCont()
+			await context.taskQueue.kill(taskId, null)
+		}
+	)
+
+	export const adminKillAllQueuedTasks = RCV.validatedFunction(
+		[] as const,
+		async(): Promise<void> => {
+			const context = await adminCont()
+			await context.generationTask.killAllQueued(null)
+		}
+	)
+
+	export const adminKillAllQueuedAndRunningTasks = RCV.validatedFunction(
+		[] as const,
+		async(): Promise<void> => {
+			const context = await adminCont()
+			await context.generationTask.killAllQueuedAndRunning(null)
+		}
+	)
+
+	export const adminPauseQueue = RCV.validatedFunction(
+		[] as const,
+		async(): Promise<void> => {
+			const context = await adminCont()
+			context.taskQueue.pause()
+		}
+	)
+
+	export const adminUnpauseQueue = RCV.validatedFunction(
+		[] as const,
+		async(): Promise<void> => {
+			const context = await adminCont()
+			context.taskQueue.unpause()
+		}
+	)
+
+	export const getIsQueuePaused = RCV.validatedFunction(
+		[] as const,
+		async(): Promise<boolean> => {
+			const context = cont()
+			return context.taskQueue.isPaused
+		}
 	)
 
 }
