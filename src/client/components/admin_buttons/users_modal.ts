@@ -39,7 +39,7 @@ export function showUsersModal(): void {
 				getValue: user => user.displayName
 			}, {
 				label: "Caps",
-				width: "8rem",
+				width: "9rem",
 				getValue: user => {
 					return [
 						!user.isAdmin ? "" : "admin",
