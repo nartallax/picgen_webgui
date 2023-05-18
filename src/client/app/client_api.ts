@@ -3,7 +3,7 @@ import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenerationParameterSet} from "common/entities/parameter"
 import {Picture, PictureInfo} from "common/entities/picture"
-import {UnsavedUser, User} from "common/entities/user"
+import {User} from "common/entities/user"
 import {SimpleListQueryParams} from "common/infra_entities/query"
 
 export namespace ClientApi {
@@ -55,8 +55,8 @@ export namespace ClientApi {
 	export const adminListUsers = (query: SimpleListQueryParams<User>) =>
 		client.call<User[]>("adminListUsers", {query})
 
-	export const adminCreateUser = (user: UnsavedUser) =>
-		client.call<User>("adminCreateUser", {user})
+	export const adminUpdateUser = (user: User) =>
+		client.call<void>("adminUpdateUser", {user})
 
 	export const getIsUserControlEnabled = () =>
 		client.call<boolean>("getIsUserControlEnabled", {})

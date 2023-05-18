@@ -1,15 +1,15 @@
 import {MRBox, WBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {BoolInput} from "client/controls/bool_input/bool_input"
-import * as css from "./settings_subblock_header.module.scss"
+import * as css from "./block_panel_header.module.scss"
 
-interface SettingsSubblockProps {
+interface BlockPanelHeader {
 	header: MRBox<string>
 	toggle?: WBox<boolean>
 	onClose?: () => void
 }
 
-export function SettingsSubblockHeader(props: SettingsSubblockProps): HTMLElement {
+export function BlockPanelHeader(props: BlockPanelHeader): HTMLElement {
 	return tag({class: [css.settingsSubblockHeader, {[css.childrenVisible!]: !props.toggle ? true : props.toggle}]}, [
 		tag({tag: "hr"}),
 		tag({class: css.text}, [props.header]),

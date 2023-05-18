@@ -17,8 +17,7 @@ export interface Migration {
 }
 
 // Q: why this number?
-// A: because if we go higher than this count simultaneous writing queries to db, queries will start to die because of timeout
-// so we need to limit amount of simultaneously running connections
+// A: because sqlite sucks and will error out if we go higher than one connection at a time
 const maxSimultaneouslyOpenConnections = 1
 
 export class DbController {
@@ -188,6 +187,7 @@ class DbConnectionImpl implements DbConnection {
 		// console.log(queryStr, params)
 		return await new Promise((ok, bad) => {
 			conn.all(queryStr, params, (err, rows) => {
+				// console.log(rows)
 				err ? bad(new Error(`Failed to run query "${queryStr} because of ${err}`)) : ok(rows as T[])
 			})
 		})

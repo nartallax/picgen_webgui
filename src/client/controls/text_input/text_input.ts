@@ -8,20 +8,25 @@ interface TextInputProps {
 	updateAsUserType?: boolean
 	maxLength?: number
 	minLength?: number
+	disabled?: boolean
 }
 
 const defaults = {
 	iconClass: undefined,
 	updateAsUserType: false,
 	maxLength: undefined,
-	minLength: undefined
+	minLength: undefined,
+	disabled: false
 } satisfies Partial<TextInputProps>
 
 export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults, props => {
 	const input: HTMLInputElement = tag({
 		tag: "input",
 		class: css.textInput,
-		onBlur: () => props.value(input.value)
+		onBlur: () => props.value(input.value),
+		attrs: {
+			disabled: props.disabled
+		}
 	})
 
 	function clamp(x: string): string {

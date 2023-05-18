@@ -4,7 +4,7 @@ import {config} from "server/config"
 import {RC} from "@nartallax/ribcage"
 import {RCV} from "@nartallax/ribcage-validation"
 import {GenerationParameterSet} from "common/entities/parameter"
-import {UnsavedUser, User} from "common/entities/user"
+import {User} from "common/entities/user"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {Picture, PictureInfo} from "common/entities/picture"
@@ -217,17 +217,15 @@ export namespace ServerApi {
 		}
 	)
 
-	export const adminCreateUser = RCV.validatedFunction(
-		[RC.struct({user: UnsavedUser})] as const,
-		async({user}): Promise<User> => {
+	export const adminUpdateUser = RCV.validatedFunction(
+		[RC.struct({user: User})] as const,
+		async({user}): Promise<void> => {
 			const context = cont()
 			context.user.checkIsAdmin(await context.user.getCurrent())
-			await context.user.checkNoDuplicateDiscordId(user.discordId)
-			const serverUser = await context.user.create({
-				...context.user.makeEmptyUser(),
+			await context.user.update({
+				...await context.user.getById(user.id),
 				...user
 			})
-			return context.user.stripUserForClient(serverUser)
 		}
 	)
 

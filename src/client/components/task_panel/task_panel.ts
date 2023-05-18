@@ -1,6 +1,6 @@
 import {formatTimeSpan} from "client/client_common/format"
 import {getNowBox} from "client/base/now_box"
-import {TaskPicture} from "client/controls/task_picture/task_picture"
+import {TaskPicture} from "client/components/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
 import {RBox, WBox, box, viewBox} from "@nartallax/cardboard"

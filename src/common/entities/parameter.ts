@@ -130,3 +130,23 @@ export const GenerationParameterSet = RC.roStruct({
 	parameterGroups: RC.roArray(GenParameterGroup),
 	commandTemplate: RC.string()
 })
+
+export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle): GenerationTaskArgument {
+	if(!("type" in def)){
+		return def.default
+	}
+
+	switch(def.type){
+		case "picture":
+			return {id: 0, salt: 0}
+		case "enum": {
+			const opt = def.options[0]!
+			if(typeof(opt) === "object"){
+				return opt.value
+			} else {
+				return opt
+			}
+		}
+		default: return def.default
+	}
+}

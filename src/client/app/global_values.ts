@@ -1,8 +1,9 @@
 import {WBox, box} from "@nartallax/cardboard"
 import {localStorageBox} from "@nartallax/cardboard-dom"
-import {LoadingPage} from "client/controls/loading_page/loading_page"
-import {LoginPage} from "client/controls/login_page/login_page"
-import {MainPage} from "client/controls/main_page/main_page"
+import {LoadingPage} from "client/pages/loading_page/loading_page"
+import {LoginPage} from "client/pages/login_page/login_page"
+import {MainPage} from "client/pages/main_page/main_page"
+import {NotAllowedPage} from "client/pages/not_allowed_page/not_allowed_page"
 import {GenerationTaskArgument} from "common/entities/generation_task"
 import {GenerationParameterSet} from "common/entities/parameter"
 import {User} from "common/entities/user"
@@ -27,7 +28,8 @@ export type PageName = keyof typeof _pages
 const _pages = {
 	login: LoginPage,
 	main: MainPage,
-	loading: LoadingPage
+	loading: LoadingPage,
+	not_allowed: NotAllowedPage
 }
 
 export const pages = _pages as {readonly [key in PageName]: () => HTMLElement}

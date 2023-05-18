@@ -39,15 +39,11 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 
 	makeEmptyUser(): Omit<ServerUser, "id"> {
 		return {
+			...User.getValue(),
 			discordAccessToken: null,
 			discordRefreshToken: null,
-			discordId: "",
 			discordTokenExpiresAt: null,
-			creationTime: unixtime(),
-			displayName: "",
-			avatarUrl: "",
-			isAdmin: false,
-			isAllowed: false
+			creationTime: unixtime()
 		}
 	}
 
@@ -92,7 +88,7 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 	}
 
 	checkIsAllowed(user: ServerUser): void {
-		if(!this.isAdmin(user)){
+		if(!this.isAllowed(user)){
 			throw new ApiError("permission", "User is not allowed")
 		}
 	}

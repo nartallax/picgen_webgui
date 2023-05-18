@@ -20,21 +20,17 @@ function getToastContainer(): HTMLElement {
 
 function incrementToastCount(): void {
 	activeToasts++
-	console.log(`Active toasts count: ${activeToasts}`)
 	if(activeToasts === 1){
 		toastContainer = tag({class: css.toastContainer})
 		document.body.appendChild(toastContainer)
-		console.log("Toast container added.")
 	}
 }
 
 function decrementToastCount(): void {
 	activeToasts--
-	console.log(`Active toasts count: ${activeToasts}`)
 	if(activeToasts === 0){
 		getToastContainer().remove()
 		toastContainer = null
-		console.log("Toast container removed.")
 	}
 }
 

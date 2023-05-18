@@ -1,18 +1,18 @@
 import {viewBox} from "@nartallax/cardboard"
 import {defineControl, tag} from "@nartallax/cardboard-dom"
 import {currentUser, isUserControlEnabled} from "client/app/global_values"
-import {showUsersModal} from "client/controls/admin_buttons/users_modal"
+import {showUsersModal} from "client/components/admin_buttons/users_modal"
 import {Button} from "client/controls/button/button"
-import {SettingsBlock} from "client/controls/settings_block/settings_block"
-import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
+import {BlockPanel} from "client/components/block_panel/block_panel"
+import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 
 export const AdminButtons = defineControl(() => {
 	return tag({
 		style: {
 			display: viewBox(() => !isUserControlEnabled() || currentUser()?.isAdmin ? "" : "none")
 		}
-	}, [SettingsBlock([
-		SettingsSubblockHeader({header: "Admin actions"}),
+	}, [BlockPanel([
+		BlockPanelHeader({header: "Admin actions"}),
 		Button({
 			text: "Users",
 			onclick: showUsersModal

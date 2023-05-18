@@ -1,12 +1,22 @@
-.userLine {
+.tableRow {
 	display: grid;
-	grid-template-columns: 150px auto 100px;
 	color: #625e5e;
 	background-color: transparent;
 	border-bottom: 1px dotted #d5c6c2;
-	cursor: pointer;
 	text-align: left;
+}
 
+button.tableRow {
+	cursor: pointer;
+}
+
+.tableHeaders {
+	display: grid;
+	color: #d5c6c2;
+	font-weight: bold;
+}
+
+.tableRow, .tableHeaders {
 	&:first-child {
 		border-top: 1px dotted #d5c6c2;
 	}

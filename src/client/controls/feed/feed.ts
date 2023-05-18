@@ -30,33 +30,35 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	])
 
 	async function loadNext(): Promise<void> {
-		isLoadingNow = true
 		let currentValues = props.values()
 		console.log("Loading next, starting with " + currentValues.length)
 		const newValues = await Promise.resolve(props.loadNext(currentValues))
-		reachedEndOfFeed(newValues.length === 0)
 		currentValues = [...currentValues, ...newValues]
 		props.values(currentValues)
+		reachedEndOfFeed(newValues.length === 0)
 
 		requestAnimationFrame(() => {
 			// for case when loading new values didn't hide the placeholder
 			// in that case isBottomVisible() will stay true without change
-			if(isBottomVisible() && !isLoadingNow){
-				loadNext()
-			}
+			tryLoadNext()
 		})
 	}
 
-	whileMounted(result, isBottomVisible, async visible => {
-		if(!visible || isLoadingNow){
+	async function tryLoadNext() {
+		if(!isBottomVisible() || isLoadingNow || reachedEndOfFeed()){
 			return
 		}
+		isLoadingNow = true
 		try {
 			await loadNext()
 		} finally {
 			isLoadingNow = false
 		}
-	})
+	}
+
+	whileMounted(result, isBottomVisible, tryLoadNext)
+	whileMounted(result, reachedEndOfFeed, tryLoadNext)
+	whileMounted(result, props.values, () => reachedEndOfFeed(false))
 
 	return result
 }

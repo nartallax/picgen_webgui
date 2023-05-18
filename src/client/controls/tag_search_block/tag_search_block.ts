@@ -1,7 +1,7 @@
 import {RBox, WBox, box, unbox, viewBox} from "@nartallax/cardboard"
 import {whileMounted} from "@nartallax/cardboard-dom"
-import {SettingsBlock} from "client/controls/settings_block/settings_block"
-import {SettingsSubblockHeader} from "client/controls/settings_subblock_header/settings_subblock_header"
+import {BlockPanel} from "client/components/block_panel/block_panel"
+import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {TagList} from "client/controls/tag_list/tag_list"
 import {TextInput} from "client/controls/text_input/text_input"
 import {PrefixTree} from "client/data_structure/prefix_tree"
@@ -41,11 +41,11 @@ export function TagSearchBlock(props: TagSearchBlockProps): HTMLElement {
 	function renderItems(): HTMLElement[] {
 		const tags = unbox(props.contentTags)
 		if(!tags){
-			return [SettingsSubblockHeader({header: "Loading..."})]
+			return [BlockPanelHeader({header: "Loading..."})]
 		}
 
 		return [
-			SettingsSubblockHeader({header: "Tags"}),
+			BlockPanelHeader({header: "Tags"}),
 			TextInput({
 				value: prompt,
 				iconClass: "icon-search-1",
@@ -60,7 +60,7 @@ export function TagSearchBlock(props: TagSearchBlockProps): HTMLElement {
 		]
 	}
 
-	const result = SettingsBlock(contentItems)
+	const result = BlockPanel(contentItems)
 
 	whileMounted(result, props.contentTags, () => contentItems(renderItems()))
 

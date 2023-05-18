@@ -32,6 +32,11 @@
 .textInput {
 	@extend .input;
 
+	&:disabled {
+		color: #d5c6c2;
+		cursor: default;
+	}
+
 	width: 100%;
 	padding: 0 2em 0 0.5em;
 }

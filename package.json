@@ -17,7 +17,7 @@
     "dev:client": "./node_modules/.bin/parcel serve --target client_dev --no-cache --no-hmr --port 24658",
     "dev:server": "npm run dev:server:watch & npm run dev:server:run & wait",
     "dev:server:watch": "./node_modules/.bin/parcel watch --target server_dev --no-cache --no-hmr",
-    "dev:server:run": "./node_modules/.bin/nodemon ./dist/server_dev/server_main.js -- --http-root ./target/ --config config.example.json --http-root-url 'http://localhost:24658'",
+    "dev:server:run": "./node_modules/.bin/nodemon ./dist/server_dev/server_main.js -- --config config.example.json --http-root-url 'http://localhost:24658'",
     "typecheck": "cd src && ../node_modules/typescript/bin/tsc --noEmit && cd - > /dev/null"
   },
   "devDependencies": {

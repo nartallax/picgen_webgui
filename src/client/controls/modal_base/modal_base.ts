@@ -7,11 +7,11 @@ export interface ModalBaseProps {
 }
 
 export interface ModalCloseEvent {
-	reason: "background_click" | "close_method"
+	reason: "background_click" | "close_method" | "confirm"
 }
 
 export interface Modal {
-	close(): void
+	close(reason?: ModalCloseEvent["reason"]): void
 	waitClose(): Promise<ModalCloseEvent>
 }
 
@@ -55,5 +55,8 @@ export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement
 	}
 
 
-	return {close: () => close("close_method"), waitClose}
+	return {
+		close: (reason?: ModalCloseEvent["reason"]) => close(reason ?? "close_method"),
+		waitClose
+	}
 }

@@ -21,11 +21,18 @@ export async function main() {
 		currentUser(user)
 		currentPage("main")
 	} catch(e){
-		if(ApiError.isApiError(e) && e.errorType === "not_logged_in"){
-			currentPage("login")
-		} else {
-			throw e
+		if(ApiError.isApiError(e)){
+			switch(e.errorType){
+				case "not_logged_in":
+					currentPage("login")
+					return
+				case "permission":
+					currentPage("not_allowed")
+					return
+			}
 		}
+
+		throw e
 	}
 }
 
