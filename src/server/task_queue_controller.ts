@@ -14,6 +14,7 @@ import {unixtime} from "server/utils/unixtime"
 export class TaskQueueController {
 
 	private runningGeneration: {gen: GenRunner, input: ServerGenerationTaskInputData} | null = null
+	private generationIsStarting = false
 	private queueIsMoving = false
 
 	constructor(private readonly contextFactory: UserlessContextFactory) {}
@@ -128,53 +129,58 @@ export class TaskQueueController {
 	}
 
 	private shouldTryRunGeneration(): boolean {
-		return !this.runningGeneration && this.queueIsMoving
+		return !this.runningGeneration && !this.generationIsStarting && this.queueIsMoving
 	}
 
 	private async tryStartGeneration(config: Config, task: GenerationTask): Promise<void> {
 		if(!this.shouldTryRunGeneration()){
 			return
 		}
-		log(`Starting generation for task #${task.id}`)
+		this.generationIsStarting = true
+		try {
+			log(`Starting generation for task #${task.id}`)
 
-		const [update, sendTaskNotification, callbacks] = this.makeTaskCallbacks(task)
+			const [update, sendTaskNotification, callbacks] = this.makeTaskCallbacks(task)
 
-		const preparedInputData = await this.contextFactory(async context => {
-			return await context.generationTask.prepareInputData(task)
-		})
-		const gen = new GenRunner(config, callbacks, preparedInputData, task)
-		this.runningGeneration = {gen, input: preparedInputData}
+			const preparedInputData = await this.contextFactory(async context => {
+				return await context.generationTask.prepareInputData(task)
+			})
+			const gen = new GenRunner(config, callbacks, preparedInputData, task)
+			this.runningGeneration = {gen, input: preparedInputData}
 
-		const startTime = unixtime()
-		update(() => {
-			task.status = "running"
-			task.startTime = startTime
-		})
-		sendTaskNotification({
-			type: "task_started",
-			taskId: task.id,
-			startTime: startTime
-		})
+			const startTime = unixtime()
+			update(() => {
+				task.status = "running"
+				task.startTime = startTime
+			})
+			sendTaskNotification({
+				type: "task_started",
+				taskId: task.id,
+				startTime: startTime
+			})
 
-		await gen.waitCompletion()
+			await gen.waitCompletion()
 
-		log(`Task #${task.id} completed`)
-		const finishTime = unixtime()
-		update(() => {
-			task.status = "completed"
-			task.finishTime = finishTime
-		})
-		sendTaskNotification({
-			type: "task_finished",
-			taskId: task.id,
-			finishTime: finishTime
-		})
+			log(`Task #${task.id} completed`)
+			const finishTime = unixtime()
+			update(() => {
+				task.status = "completed"
+				task.finishTime = finishTime
+			})
+			sendTaskNotification({
+				type: "task_finished",
+				taskId: task.id,
+				finishTime: finishTime
+			})
 
-		this.contextFactory(context => {
-			context.generationTask.cleanupInputData(preparedInputData)
-		})
-		await update.waitInvocationsOver()
-		this.runningGeneration = null
+			this.contextFactory(context => {
+				context.generationTask.cleanupInputData(preparedInputData)
+			})
+			await update.waitInvocationsOver()
+		} finally {
+			this.generationIsStarting = false
+			this.runningGeneration = null
+		}
 	}
 
 	async stop(): Promise<void> {
