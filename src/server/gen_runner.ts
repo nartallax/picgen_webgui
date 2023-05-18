@@ -1,9 +1,7 @@
 import * as ChildProcess from "child_process"
 import * as ReadLine from "readline"
-import * as Path from "path"
 import * as Stream from "stream"
 import * as ShellQuote from "shell-quote"
-import {promises as Fs} from "fs"
 import {Config} from "server/config"
 import {log} from "server/log"
 import {ApiError} from "common/infra_entities/api_error"
@@ -49,7 +47,7 @@ function isUpdatedPromptLine(line: OutputLine): line is UpdatedPromptLine {
 
 export interface GenRunnerCallbacks {
 	onPromptUpdated(newPrompt: string): void
-	onFileProduced(data: Buffer, ext: string): void
+	onFileProduced(path: string): void
 	onExpectedPictureCountKnown(expectedPictureCount: number): void
 	onMessage(message: string): void
 	onErrorMessage(message: string): void
@@ -92,13 +90,7 @@ export class GenRunner {
 	}
 
 	private async onFileProduced(line: GeneratedFileLine): Promise<void> {
-		const content = await Fs.readFile(line.generatedPicture)
-		const ext = Path.extname(line.generatedPicture).substring(1).toLowerCase()
-		this.callbacks.onFileProduced(content, ext)
-
-		if(this.config.deleteFilesReceivedFromGenerator){
-			await Fs.rm(line.generatedPicture)
-		}
+		this.callbacks.onFileProduced(line.generatedPicture)
 	}
 
 	private addStdoutParser(): void {

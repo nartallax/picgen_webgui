@@ -94,8 +94,22 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 		return Math.floor(Math.random() * 0xffffffff)
 	}
 
-	async storeGeneratedPicture(data: Buffer, genTask: GenerationTask, index: number, ext: PictureType): Promise<ServerPicture> {
+	async storeGeneratedPictureByContent(data: Buffer, genTask: GenerationTask, index: number, ext: PictureType): Promise<ServerPicture> {
 		return await this.storePicture(data, {
+			generationTaskId: genTask.id,
+			ownerUserId: genTask.userId,
+			ext: ext,
+			name: (index + 1) + "",
+			salt: this.getSalt()
+		})
+	}
+
+	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, ext: PictureType): Promise<ServerPicture> {
+		const relPath = Path.relative(this.getContext().config.pictureStorageDir, path)
+		return await this.create({
+			creationTime: unixtime(),
+			directLink: null,
+			fileName: relPath,
 			generationTaskId: genTask.id,
 			ownerUserId: genTask.userId,
 			ext: ext,

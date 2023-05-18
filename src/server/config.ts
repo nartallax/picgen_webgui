@@ -21,7 +21,11 @@ const ConfigFile = RC.struct(RC.structFields({
 		httpPort: RC.int(),
 		discordClientId: RC.string(),
 		discordClientSecretFile: RC.string(),
-		deleteFilesReceivedFromGenerator: RC.bool(),
+		resultingPictureReceivingStrategy: RC.constUnion([
+			"move",
+			"copy",
+			"refer"
+		] as const),
 		dbFilePath: RC.string(),
 		parameterSets: RC.roArray(GenerationParameterSet),
 		tags: RC.struct(RC.structFields({ro: {

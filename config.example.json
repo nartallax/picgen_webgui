@@ -1,6 +1,6 @@
 {
 	"userControl": true,
-	"deleteFilesReceivedFromGenerator": true,
+	"resultingPictureReceivingStrategy": "move",
 	"pictureStorageDir": "./pictures",
 	"runningGenerationPictureStorageDir": "./running_generation_pictures",
 	"discordClientId": "469771750285115392",

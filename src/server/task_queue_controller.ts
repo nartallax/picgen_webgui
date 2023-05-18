@@ -10,6 +10,9 @@ import {log, runInCatchLog, wrapInCatchLog} from "server/log"
 import {UserlessContext, UserlessContextFactory} from "server/request_context"
 import {DebouncedCollector, makeDebounceCollector} from "server/utils/debounce_collect"
 import {unixtime} from "server/utils/unixtime"
+import * as Path from "path"
+import {promises as Fs} from "fs"
+import {ServerPicture} from "server/entities/picture"
 
 export class TaskQueueController {
 
@@ -267,10 +270,28 @@ export class TaskQueueController {
 				})
 			},
 
-			onFileProduced: (data, ext) => update(async context => {
+			onFileProduced: path => update(async context => {
+				const ext = Path.extname(path).substring(1).toLowerCase()
 				assertIsPictureType(ext)
+				let serverPic: ServerPicture
+				switch(context.config.resultingPictureReceivingStrategy){
+					case "copy": {
+						const content = await Fs.readFile(path)
+						serverPic = await context.picture.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext)
+						break
+					}
+					case "move": {
+						const content = await Fs.readFile(path)
+						serverPic = await context.picture.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext)
+						await Fs.rm(path)
+						break
+					}
+					case "refer": {
+						serverPic = await context.picture.storeGeneratedPictureByPathReference(path, task, task.generatedPictures, ext)
+						break
+					}
+				}
 				task.generatedPictures++
-				const serverPic = await context.picture.storeGeneratedPicture(data, task, task.generatedPictures, ext)
 				sendTaskNotification({
 					type: "task_generated_picture",
 					taskId: task.id,
