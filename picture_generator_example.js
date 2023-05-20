@@ -27,7 +27,7 @@ async function main() {
 	// 	Process.stdout.write(JSON.stringify({updatedPrompt: parameters.prompt + ", nya!"}) + "\n")
 	// }
 
-	const willGenerateFilesCount = 2
+	const willGenerateFilesCount = 10
 
 	// let's tell the bot how many pictures to expect
 	// if you don't, or tell incorrect number of pictures - it won't break anything
@@ -38,7 +38,7 @@ async function main() {
 	for(let i = 0; i < willGenerateFilesCount; i++){
 		// sleep for 5 seconds
 		// implying some generation is going on, it's a slow process, give it some time
-		await new Promise(ok => setTimeout(ok, 5000))
+		await new Promise(ok => setTimeout(ok, 1000))
 
 		// now let's generate a file!
 		// it will actually be the same file every time

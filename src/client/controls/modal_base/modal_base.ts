@@ -1,4 +1,4 @@
-import {MRBox} from "@nartallax/cardboard"
+import {MRBox, box} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./modal_base.module.scss"
 
@@ -16,19 +16,24 @@ export interface Modal {
 }
 
 export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement[]>): Modal {
+	const isClosed = box(true)
+
 	const result = tag({
 		class: [css.modalBase, {
-			[css.closeableByClick!]: props.closeByBackgroundClick
+			[css.closeableByClick!]: props.closeByBackgroundClick,
+			[css.hidden!]: isClosed
 		}]
 	}, children)
 
 	document.body.appendChild(result)
+	requestAnimationFrame(() => isClosed(false))
 
 	let closeReason: ModalCloseEvent["reason"] | null = null
 	const closeWaiters = [] as ((evt: ModalCloseEvent) => void)[]
 	function close(reason: ModalCloseEvent["reason"]): void {
 		closeReason = reason
-		result.remove()
+		isClosed(true)
+		setTimeout(() => result.remove(), 1000)
 		const waiters = [...closeWaiters]
 		closeWaiters.length = 0
 		for(const waiter of waiters){

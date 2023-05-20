@@ -11,8 +11,15 @@
 	justify-content: center;
 
 	background-color: rgba(128, 128, 128, 0.5);
+	transition: opacity 0.25s;
+	opacity: 1;
 
 	&.closeableByClick {
 		cursor: pointer;
+	}
+
+	&.hidden {
+		opacity: 0;
+		pointer-events: none;
 	}
 }

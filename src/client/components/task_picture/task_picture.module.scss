@@ -11,8 +11,82 @@
 	justify-content: center;
 	align-items: center;
 
+	position: relative;
+
 	> img {
 		height: 100%;
 		width: auto;
+	}
+
+	.overlay {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		
+		cursor: pointer;
+		background-color: rgba(0, 0, 0, 0.5);
+		opacity: 0;
+		transition: opacity 0.2s;
+
+		> * {
+			flex-grow: 1;
+			flex-shrink: 1;
+			flex-basis: 0;
+			min-width: 0;
+		}
+
+		&:hover {
+			opacity: 1;
+		}
+
+		.iconOpen {
+			color: #ddd;
+			font-size: 4rem;
+			text-align: center;
+		}
+
+		.iconLinkWrap {
+			align-self: flex-end;
+			text-align: right;
+
+			.iconLink {
+				padding: 1rem;
+				font-size: 2rem;
+				cursor: pointer;
+				color: #ddd;
+
+				opacity: 0.25;
+				transition: opacity 0.25s;
+
+				&:hover {
+					opacity: 1;
+				}
+			}
+		}
+	}
+}
+
+.pictureModalWrap {
+
+	img {
+		cursor: grab;
+		object-fit: contain;
+	}
+
+	overflow: hidden;
+	max-width: 100vw;
+	max-height: 100vh;
+
+	&.grabbed {
+		img {
+			cursor: grabbing;
+		}
 	}
 }
