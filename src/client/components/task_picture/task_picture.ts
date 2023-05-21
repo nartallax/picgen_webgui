@@ -1,4 +1,4 @@
-import {RBox} from "@nartallax/cardboard"
+import {RBox, box} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
@@ -8,6 +8,8 @@ interface TaskPictureProps {
 	picture: RBox<Picture>
 	openViewer?: (args: OpenTaskPictureViewerArgs) => void
 	isDisabled?: RBox<boolean>
+	onLoad?: () => void
+	loadAnimation?: boolean
 }
 
 export type OpenTaskPictureViewerArgs = {picture: Picture, el: HTMLElement, url: string}
@@ -24,18 +26,23 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		window.open(url(), "_blank")
 	})
 
+	const img = tag({
+		tag: "img",
+		attrs: {
+			alt: "Generated picture",
+			src: url
+		}
+	})
+
+	const isLoaded = box(props.loadAnimation ? false : true)
+
 	const result: HTMLElement = tag({
 		class: [css.taskPicture, {
-			[css.disabled!]: props.isDisabled
+			[css.disabled!]: props.isDisabled,
+			[css.loaded!]: isLoaded
 		}]
 	}, [
-		tag({
-			tag: "img",
-			attrs: {
-				alt: "Generated picture",
-				src: url
-			}
-		}),
+		img,
 		tag({
 			class: css.overlay,
 			onClick: () => props.openViewer && props.openViewer({url: url(), el: result, picture: props.picture()})
@@ -45,6 +52,23 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			tag({class: css.iconLinkWrap}, [linkButton])
 		])
 	])
+
+	const onLoad = () => {
+		img.removeEventListener("load", onLoad)
+		if(!props.loadAnimation){
+			if(props.onLoad){
+				props.onLoad()
+			}
+		} else {
+			isLoaded(true)
+			if(props.onLoad){
+				setTimeout(() => {
+					props.onLoad!()
+				}, 200) // to synchronise with animation
+			}
+		}
+	}
+	img.addEventListener("load", onLoad)
 
 	return result
 }

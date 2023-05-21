@@ -1,7 +1,6 @@
 .taskPicture {
 	flex-shrink: 0;
 	height: 20em;
-	max-width: 20em;
 	overflow: hidden;
 	margin: 0 0.5em;
 	border-radius: 0.5em;
@@ -12,6 +11,13 @@
 	align-items: center;
 
 	position: relative;
+
+	max-width: 0;
+	transition: max-width 0.2s;
+
+	&.loaded {
+		max-width: 20em;
+	}
 
 	> img {
 		height: 100%;

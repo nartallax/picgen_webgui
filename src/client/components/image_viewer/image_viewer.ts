@@ -28,7 +28,7 @@ type Props = {
 
 export async function showImageViewer(props: Props): Promise<void> {
 	// url = "https://dummyimage.com/5120x5120"
-	props.urls = props.urls.map(urls => urls.map((_, i) => `https://dummyimage.com/2560x${i + 1}00`))
+	// props.urls = props.urls.map(urls => urls.map((_, i) => `https://dummyimage.com/2560x${i + 1}00`))
 
 	const isGrabbed = box(false)
 
@@ -50,6 +50,28 @@ export async function showImageViewer(props: Props): Promise<void> {
 		rel: {x: number, y: number}
 	} | null = null
 
+	function scrollToNextImage(direction: -1 | 1): void {
+		const targetIndex = getCentralImageIndex() + direction
+		const imgArr = imgs()
+		if(targetIndex >= imgArr.length || targetIndex < 0){
+			return
+		}
+		centerOn(imgArr[targetIndex]!)
+	}
+
+	function getCentralImageIndex(): number {
+		const windowCenter = window.innerWidth / 2
+		const imgArr = imgs()
+		for(let i = 0; i < imgArr.length; i++){
+			const img = imgArr[i]!
+			const rect = img.getBoundingClientRect()
+			if(rect.left > windowCenter){
+				return Math.max(0, i - 1)
+			}
+		}
+		return imgArr.length - 1
+	}
+
 	function centerOn(targetImg: HTMLImageElement): void {
 		const hRatio = window.innerHeight / targetImg.naturalHeight
 		const wRatio = window.innerWidth / targetImg.naturalWidth
@@ -58,8 +80,8 @@ export async function showImageViewer(props: Props): Promise<void> {
 		zoomChanger.reset()
 
 		const imgRect = targetImg.getBoundingClientRect()
-		const containerOffsetTop = imgRect.top
-		const containerOffsetLeft = imgRect.left
+		const containerOffsetTop = imgRect.top - parseFloat(wrap.style.top || "0")
+		const containerOffsetLeft = imgRect.left - parseFloat(wrap.style.left || "0")
 		const windowOffsetTop = (window.innerHeight - imgRect.height) / 2
 		const windowOffsetLeft = (window.innerWidth - imgRect.width) / 2
 
@@ -120,6 +142,18 @@ export async function showImageViewer(props: Props): Promise<void> {
 		e.preventDefault()
 		const speed = props.zoomSpeed ?? 0.2
 		setZoom(e, zoomChanger.currentTargetValue * (1 + (e.deltaY > 0 ? -speed : speed)))
+	})
+
+	onMount(wrap, () => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if(e.key === "ArrowRight"){
+				scrollToNextImage(1)
+			} else if(e.key === "ArrowLeft"){
+				scrollToNextImage(-1)
+			}
+		}
+		window.addEventListener("keydown", onKeyDown)
+		return () => window.removeEventListener("keydown", onKeyDown)
 	})
 
 	addDragScroll({

@@ -6,6 +6,7 @@ export class SoftScroller {
 	private readonly atFinish = box(false)
 	private readonly limit = box(0)
 	private readonly position = box(0)
+	private readonly contentSize = box(0)
 
 	get isAtStart(): RBox<boolean> {
 		return this.atStart
@@ -15,6 +16,9 @@ export class SoftScroller {
 	}
 	get scrollLimit(): RBox<number> {
 		return this.limit
+	}
+	get scrollableContentSize(): RBox<number> {
+		return this.contentSize
 	}
 	get scrollPosition(): RBox<number> {
 		return this.position
@@ -146,6 +150,7 @@ export class SoftScroller {
 		this.atFinish(pos >= limit)
 		this.limit(limit)
 		this.position(pos)
+		this.contentSize(this.getScrollSize())
 	}
 
 }

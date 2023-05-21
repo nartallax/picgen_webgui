@@ -13,6 +13,7 @@ import {showToast} from "client/controls/toast/toast"
 import {SoftScroller} from "client/base/soft_scroller"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {showImageViewer} from "client/components/image_viewer/image_viewer"
+import {debounce} from "client/client_common/debounce"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>
@@ -22,6 +23,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
 	const taskHidden = box(false)
 	const pictures = props.task.prop("pictures")
+	let isInDOM = false
 
 	function detectCurrentScrollPictureIndex(): number | null {
 		const parentRect = picturesWrap.getBoundingClientRect()
@@ -68,6 +70,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		}
 	}
 
+	const debouncedUpdateDisabledState = debounce(100, updateDisabledState)
+
 	const picturesWithDisableBoxes: {el: HTMLElement, isDisabled: WBox<boolean>}[] = []
 
 	function openViewer(args: OpenTaskPictureViewerArgs): void {
@@ -84,7 +88,13 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			picture => picture.id,
 			picture => {
 				const isDisabled = box(true)
-				const el = TaskPicture({picture, isDisabled, openViewer})
+				const el = TaskPicture({
+					picture,
+					isDisabled,
+					openViewer,
+					onLoad: debouncedUpdateDisabledState,
+					loadAnimation: isInDOM
+				})
 				picturesWithDisableBoxes.push({el, isDisabled})
 				return el
 			}
@@ -99,8 +109,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const scroller = new SoftScroller(picturesWrap, "x", 200)
 
 	whileMounted(pictureContainer, scroller.scrollPosition, updateDisabledState)
-	whileMounted(pictureContainer, scroller.scrollLimit, updateDisabledState)
-	onMount(pictureContainer, updateDisabledState)
+	whileMounted(pictureContainer, scroller.scrollableContentSize, updateDisabledState)
+	onMount(pictureContainer, () => {
+		updateDisabledState()
+		isInDOM = true
+		return () => isInDOM = false
+	})
 
 	const result = tag({class: [css.taskPanel, {[css.hidden!]: taskHidden}]}, [
 		tag({class: css.body}, [
