@@ -22,7 +22,10 @@ export function addDragScroll(props: DragScrollProps): void {
 	addMouseDragHandler({
 		element: props.element,
 		start: evt => {
-			evt.preventDefault()
+			if(evt.cancelable !== false){
+				evt.preventDefault()
+			}
+			evt.stopPropagation()
 			props.isDragging && props.isDragging(true)
 			distanceApprox = 0
 			return true

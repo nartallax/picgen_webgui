@@ -30,10 +30,10 @@ export function isTouchEvent(e: MouseEvent | TouchEvent): e is TouchEvent {
 }
 
 type MouseDragHandlerParams = {
-	readonly element: HTMLElement
+	readonly element: HTMLElement | Window
 	/** start() is called before first onMove
 	 * it can return false; it means that the move will not start */
-	start?: (this: HTMLElement, e: MouseEvent | TouchEvent) => boolean | undefined
+	start?: (e: MouseEvent | TouchEvent) => boolean | undefined
 	stop?: (e: MouseEvent | TouchEvent) => void
 	onMove(e: MouseEvent | TouchEvent): void
 	/** If true, onMove will be invoked when down event happen */
@@ -45,7 +45,7 @@ type MouseDragHandlerParams = {
 }
 
 /** This is a good way to add a mousemove handler to an element */
-export function addMouseDragHandler(params: MouseDragHandlerParams): void {
+export function addMouseDragHandler(params: MouseDragHandlerParams): () => void {
 
 	let startCoords = {x: 0, y: 0}
 	const distanceBeforeMove2 = (params.distanceBeforeMove ?? 0) ** 2
@@ -54,7 +54,7 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): void {
 	function startMoving(e: MouseEvent | TouchEvent, isDown: boolean): boolean {
 		isMoving = true
 		if(params.start){
-			if(params.start.call(params.element, e) === false){
+			if(params.start(e) === false){
 				stopMoving(e, false)
 				return false
 			}
@@ -109,6 +109,23 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): void {
 		stopMoving(e, true)
 	}
 
-	params.element.addEventListener("mousedown", onDown)
-	params.element.addEventListener("touchstart", onDown)
+	// oh my fucking god.
+	// this is needed because typescript cannot figure out .addEventListener on union type
+	if(params.element instanceof HTMLElement){
+		params.element.addEventListener("mousedown", onDown)
+		params.element.addEventListener("touchstart", onDown)
+	} else {
+		params.element.addEventListener("mousedown", onDown)
+		params.element.addEventListener("touchstart", onDown)
+	}
+
+	return () => {
+		if(params.element instanceof HTMLElement){
+			params.element.removeEventListener("mousedown", onDown)
+			params.element.removeEventListener("touchstart", onDown)
+		} else {
+			params.element.removeEventListener("mousedown", onDown)
+			params.element.removeEventListener("touchstart", onDown)
+		}
+	}
 }

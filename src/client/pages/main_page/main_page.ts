@@ -16,6 +16,7 @@ import {flatten} from "common/utils/flatten"
 import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
+import {Sidebar} from "client/controls/sidebar/sidebar"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -58,20 +59,6 @@ export function MainPage(): HTMLElement {
 	let websocket: WebsocketListener | null = null
 
 	const result = tag({class: css.pageRoot}, [
-		tag({class: css.settingsColumn}, [
-			LoginBar(),
-			Select({
-				options: allKnownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
-				value: currentParamSetName
-			}),
-			ParamsBlock({paramGroups}),
-			TagSearchBlock({
-				selectedContentTags: currentContentTags,
-				contentTags: allKnownContentTags,
-				visibleTagLimit: 10
-			}),
-			AdminButtons()
-		]),
 		tag({class: css.generationColumn}, [
 			PromptInput({
 				promptValue: currentPrompt,
@@ -117,6 +104,22 @@ export function MainPage(): HTMLElement {
 				renderElement: taskBox => TaskPanel({task: taskBox}),
 				bottomLoadingPlaceholder: tag(["Loading..."])
 			})
+		]),
+		Sidebar([
+			tag({class: css.settingsColumn}, [
+				LoginBar(),
+				Select({
+					options: allKnownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
+					value: currentParamSetName
+				}),
+				ParamsBlock({paramGroups}),
+				TagSearchBlock({
+					selectedContentTags: currentContentTags,
+					contentTags: allKnownContentTags,
+					visibleTagLimit: 10
+				}),
+				AdminButtons()
+			])
 		])
 	])
 
