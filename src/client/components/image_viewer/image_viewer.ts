@@ -1,7 +1,7 @@
 import {onMount, tag} from "@nartallax/cardboard-dom"
 import {showModalBase} from "client/controls/modal_base/modal_base"
 import * as css from "./image_viewer.module.scss"
-import {RBox, box} from "@nartallax/cardboard"
+import {RBox, box, viewBox} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {SoftValueChanger} from "client/base/soft_value_changer"
@@ -16,15 +16,23 @@ function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	})
 }
 
+function natHeightBox(getImg: () => HTMLImageElement): RBox<number> {
+	const result = box(0)
+	requestAnimationFrame(() => {
+		const img = getImg()
+		waitLoadEvent(img).then(() => result(img.naturalHeight))
+	})
+	return result
+}
+
 const zoomSpeed = 0.2
 
 export async function showImageViewer(urls: RBox<readonly string[]>): Promise<void> {
 	// url = "https://dummyimage.com/5120x5120"
-	urls = box(new Array(10).fill(null).map((_, i) => `https://dummyimage.com/25${i}x256`))
+	urls = box(new Array(10).fill(null).map((_, i) => `https://dummyimage.com/256x${i + 1}00`))
 
 	const isGrabbed = box(false)
-	let natWidth = 1
-	let natHeight = 1
+
 	let defaultZoom = 0.0001
 	const zoom = box(defaultZoom)
 	const zoomChanger = new SoftValueChanger({
@@ -71,22 +79,24 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 
 	const imgs = urls.mapArray(
 		url => url,
-		url => tag({
-			tag: "img",
-			attrs: {src: url, alt: ""},
-			style: {
-				// width: zoom.map(zoom => Math.max(10, natWidth * zoom) + "px"),
-				height: zoom.map(zoom => Math.max(10, natHeight * zoom) + "px"),
-				margin: zoom.map(zoom => (zoom * 1) + "rem")
-			}
-		})
+		url => {
+			const natHeight = natHeightBox(() => result)
+			const result: HTMLImageElement = tag({
+				tag: "img",
+				attrs: {src: url, alt: ""},
+				style: {
+					height: viewBox(() => Math.max(10, natHeight() * zoom()) + "px"),
+					margin: zoom.map(zoom => (zoom * 1) + "rem")
+				}
+			})
+			return result
+		}
 	)
 
 	const wrap = tag({
 		class: [css.imageViewer, {
 			[css.grabbed!]: isGrabbed
 		}],
-		attrs: {tabindex: 0},
 		onClick: e => {
 			if(e.target === wrap){
 				modal.close()
@@ -111,11 +121,11 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 	onMount(wrap, async() => {
 		const imgArr = imgs()
 		await Promise.any(imgArr.map(img => waitLoadEvent(img)))
-		natWidth = imgArr.map(img => img.naturalWidth).reduce((a, b) => a + b, 0)
-		natHeight = imgArr.map(img => img.naturalHeight).reduce((a, b) => Math.max(a, b), 0)
+		const maxNatWidth = imgArr.map(img => img.naturalWidth).reduce((a, b) => Math.max(a, b), 0)
+		const maxNatHeight = imgArr.map(img => img.naturalHeight).reduce((a, b) => Math.max(a, b), 0)
 
-		const hRatio = window.innerHeight / natHeight
-		const wRatio = window.innerWidth / natWidth
+		const hRatio = window.innerHeight / maxNatHeight
+		const wRatio = window.innerWidth / maxNatWidth
 		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * 0.9)
 		zoom(defaultZoom)
 		zoomChanger.reset()
