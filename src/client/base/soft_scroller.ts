@@ -21,7 +21,15 @@ export class SoftScroller {
 		this.desiredPosition = this.getPosition()
 		this.startPosition = this.desiredPosition
 
-		onMount(el, () => requestAnimationFrame(() => this.updateBoxes()))
+		onMount(el, () => {
+			requestAnimationFrame(() => {
+				this.updateBoxes()
+			})
+
+			const observer = new ResizeObserver(() => this.updateBoxes())
+			observer.observe(el)
+			return () => observer.disconnect()
+		})
 	}
 
 	scroll(diff: number) {

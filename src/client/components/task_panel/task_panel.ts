@@ -35,7 +35,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const scroller = new SoftScroller(picturesWrap, "x", 200)
 
-	return tag({class: [css.taskPanel, {[css.hidden!]: taskHidden}]}, [
+	const result = tag({class: [css.taskPanel, {[css.hidden!]: taskHidden}]}, [
 		tag({class: css.body}, [
 			tag({class: css.header}, [
 				tag({class: css.id}, [props.task.map(task => "#" + task.id)]),
@@ -131,6 +131,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			onClick: () => scrollPictures(1)
 		})
 	])
+
+	return result
 }
 
 function loadArguments(task: GenerationTaskInputData): void {

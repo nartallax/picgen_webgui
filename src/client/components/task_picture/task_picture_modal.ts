@@ -18,8 +18,6 @@ const dragSpeed = 3
 const zoomSpeed = 0.2
 
 export async function showPictureModal(url: string): Promise<void> {
-	url = "https://dummyimage.com/5120x5120"
-
 	const isGrabbed = box(false)
 	let natWidth = 1
 	let natHeight = 1
