@@ -23,6 +23,7 @@ export const Sidebar = defineControl((_, children) => {
 
 	onMount(result, () => addMouseDragHandler({
 		element: window,
+		distanceBeforeMove: 25,
 		start: e => {
 			if(getComputedStyle(result).position !== "absolute"){
 				return false

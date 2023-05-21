@@ -40,6 +40,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	}
 
 	function scrollToNextPicture(direction: -1 | 1): void {
+		console.log({direction})
 		const currentPicIndex = detectCurrentScrollPictureIndex()
 		if(currentPicIndex === null){
 			return
