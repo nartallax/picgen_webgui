@@ -8,6 +8,10 @@ import {SoftValueChanger} from "client/base/soft_value_changer"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
+		if(img.complete){
+			ok()
+			return
+		}
 		function onImageLoad(): void {
 			img.removeEventListener("load", onImageLoad)
 			ok()
@@ -54,20 +58,22 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 	// scroll view in a way that point of the picture is present at the coords of the screen
 	// relPoint is normalized
 	function scrollCoordsToPoint(absCoords: {x: number, y: number}, relPoint: {x: number, y: number}): void {
-		// console.log(absCoords, relPoint)
 		const width = wrap.scrollWidth
 		const height = wrap.scrollHeight
-		wrap.scrollLeft = (relPoint.x * width) - absCoords.x
-		wrap.scrollTop = (relPoint.y * height) - absCoords.y
+		const left = -((relPoint.x * width) - absCoords.x)
+		const top = -((relPoint.y * height) - absCoords.y)
+		wrap.style.left = left + "px"
+		wrap.style.top = top + "px"
 	}
 
 	function setZoom(e: MouseEvent | TouchEvent, value: number): void {
 		const absCoords = pointerEventsToClientCoords(e)
 		const relOffsetCoords = {
-			x: (absCoords.x + wrap.scrollLeft) / wrap.scrollWidth,
-			y: (absCoords.y + wrap.scrollTop) / wrap.scrollHeight
+			x: (absCoords.x - parseFloat(wrap.style.left || "0")) / wrap.scrollWidth,
+			y: (absCoords.y - parseFloat(wrap.style.top || "0")) / wrap.scrollHeight
 		}
 		lastScrollActionCoords = {abs: absCoords, rel: relOffsetCoords}
+		// console.log(absCoords, relOffsetCoords)
 
 		zoomChanger.set(value)
 	}
@@ -112,10 +118,12 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 	})
 
 	addDragScroll({
-		element: wrap,
+		element: modal.overlay,
+		draggedElement: wrap,
 		isDragging: isGrabbed,
 		dragSpeed: 3,
-		onClick: toggleZoom
+		onClick: toggleZoom,
+		absPosScroll: true
 	})
 
 	onMount(wrap, async() => {

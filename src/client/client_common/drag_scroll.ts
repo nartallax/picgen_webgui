@@ -3,6 +3,8 @@ import {addMouseDragHandler, pointerEventsToClientCoords} from "client/client_co
 
 type DragScrollProps = {
 	element: HTMLElement
+	draggedElement?: HTMLElement
+	absPosScroll?: boolean
 	dragSpeed?: number
 	isDragging?: WBox<boolean>
 	onClick?: (e: MouseEvent | TouchEvent) => void
@@ -31,8 +33,14 @@ export function addDragScroll(props: DragScrollProps): void {
 			if(prevCoords){
 				const dx = prevCoords.x - coords.x
 				const dy = prevCoords.y - coords.y
-				props.element.scrollLeft += dx * dragSpeed
-				props.element.scrollTop += dy * dragSpeed
+				const el = props.draggedElement ?? props.element
+				if(props.absPosScroll){
+					el.style.left = (parseFloat(el.style.left || "0") - (dx * dragSpeed)) + "px"
+					el.style.top = (parseFloat(el.style.top || "0") - (dy * dragSpeed)) + "px"
+				} else {
+					el.scrollLeft += dx * dragSpeed
+					el.scrollTop += dy * dragSpeed
+				}
 				distanceApprox += Math.abs(dx) + Math.abs(dy)
 			}
 			prevCoords = coords

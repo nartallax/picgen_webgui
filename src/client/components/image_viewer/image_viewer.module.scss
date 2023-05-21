@@ -1,8 +1,8 @@
 .imageViewer {
 
-	overflow: hidden;
-	max-width: 100vw;
-	max-height: 100vh;
+	position: absolute;
+	left: 0;
+	top: 0;
 
 	white-space: nowrap;
 
