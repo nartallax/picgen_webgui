@@ -76,21 +76,3 @@
 		}
 	}
 }
-
-.pictureModalWrap {
-
-	img {
-		cursor: grab;
-		object-fit: contain;
-	}
-
-	overflow: hidden;
-	max-width: 100vw;
-	max-height: 100vh;
-
-	&.grabbed {
-		img {
-			cursor: grabbing;
-		}
-	}
-}

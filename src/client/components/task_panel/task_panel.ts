@@ -12,7 +12,7 @@ import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
 import {SoftScroller} from "client/base/soft_scroller"
 import {addDragScroll} from "client/client_common/drag_scroll"
-import {showPictureModal} from "client/components/task_picture/task_picture_modal"
+import {showImageViewer} from "client/components/image_viewer/image_viewer"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>
@@ -69,12 +69,20 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const picturesWithDisableBoxes: {el: HTMLElement, isDisabled: WBox<boolean>}[] = []
 
+	function openViewer(): void {
+		const urls = props.task.prop("pictures").mapArray(
+			picture => picture.id,
+			picture => ClientApi.getPictureUrl(picture().id, picture().salt)
+		)
+		showImageViewer(urls)
+	}
+
 	const pictureContainer = tag({class: css.pictures},
 		props.task.prop("pictures").map(pics => pics.reverse()).mapArray(
 			picture => picture.id,
 			picture => {
 				const isDisabled = box(true)
-				const el = TaskPicture({picture, isDisabled, openViewer: args => showPictureModal(args.url)})
+				const el = TaskPicture({picture, isDisabled, openViewer})
 				picturesWithDisableBoxes.push({el, isDisabled})
 				return el
 			}

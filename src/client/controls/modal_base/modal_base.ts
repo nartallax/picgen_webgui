@@ -13,6 +13,7 @@ export interface ModalCloseEvent {
 export interface Modal {
 	close(reason?: ModalCloseEvent["reason"]): void
 	waitClose(): Promise<ModalCloseEvent>
+	overlay: HTMLElement
 }
 
 export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement[]>): Modal {
@@ -59,9 +60,9 @@ export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement
 		}, {passive: true})
 	}
 
-
 	return {
 		close: (reason?: ModalCloseEvent["reason"]) => close(reason ?? "close_method"),
-		waitClose
+		waitClose,
+		overlay: result
 	}
 }

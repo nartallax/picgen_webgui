@@ -1,0 +1,19 @@
+.imageViewer {
+
+	overflow: hidden;
+	max-width: 100vw;
+	max-height: 100vh;
+
+	white-space: nowrap;
+
+	img {
+		cursor: grab;
+		object-fit: contain;
+	}
+
+	&.grabbed {
+		img {
+			cursor: grabbing;
+		}
+	}
+}
