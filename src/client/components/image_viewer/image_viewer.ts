@@ -1,7 +1,7 @@
 import {onMount, tag} from "@nartallax/cardboard-dom"
 import {showModalBase} from "client/controls/modal_base/modal_base"
 import * as css from "./image_viewer.module.scss"
-import {RBox, box, viewBox} from "@nartallax/cardboard"
+import {RBox, box} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {SoftValueChanger} from "client/base/soft_value_changer"
@@ -20,15 +20,6 @@ function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	})
 }
 
-function natHeightBox(getImg: () => HTMLImageElement): RBox<number> {
-	const result = box(0)
-	requestAnimationFrame(() => {
-		const img = getImg()
-		waitLoadEvent(img).then(() => result(img.naturalHeight))
-	})
-	return result
-}
-
 type Props = {
 	urls: RBox<readonly string[]>
 	zoomSpeed?: number
@@ -37,7 +28,7 @@ type Props = {
 
 export async function showImageViewer(props: Props): Promise<void> {
 	// url = "https://dummyimage.com/5120x5120"
-	props.urls = box(new Array(10).fill(null).map((_, i) => `https://dummyimage.com/256x${i + 1}00`))
+	props.urls = props.urls.map(urls => urls.map((_, i) => `https://dummyimage.com/2560x${i + 1}00`))
 
 	const isGrabbed = box(false)
 
@@ -59,7 +50,7 @@ export async function showImageViewer(props: Props): Promise<void> {
 		rel: {x: number, y: number}
 	} | null = null
 
-	function centerAt(targetImg: HTMLImageElement): void {
+	function centerOn(targetImg: HTMLImageElement): void {
 		const hRatio = window.innerHeight / targetImg.naturalHeight
 		const wRatio = window.innerWidth / targetImg.naturalWidth
 		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * 0.9)
@@ -67,25 +58,20 @@ export async function showImageViewer(props: Props): Promise<void> {
 		zoomChanger.reset()
 
 		const imgRect = targetImg.getBoundingClientRect()
-		const wrapRect = wrap.getBoundingClientRect()
-		const containerOffsetTop = imgRect.top - wrapRect.top
-		const containerOffsetLeft = imgRect.left - wrapRect.left
+		const containerOffsetTop = imgRect.top
+		const containerOffsetLeft = imgRect.left
 		const windowOffsetTop = (window.innerHeight - imgRect.height) / 2
 		const windowOffsetLeft = (window.innerWidth - imgRect.width) / 2
-		console.log({windowOffsetLeft, containerOffsetLeft, imgRect})
 
 		wrap.style.top = (windowOffsetTop - containerOffsetTop) + "px"
 		wrap.style.left = (windowOffsetLeft - containerOffsetLeft) + "px"
-
-		// if(hRatio < wRatio){ // height constrained
-		// }
 	}
 
 	// scroll view in a way that point of the picture is present at the coords of the screen
 	// relPoint is normalized
 	function scrollCoordsToPoint(absCoords: {x: number, y: number}, relPoint: {x: number, y: number}): void {
-		const width = wrap.scrollWidth
-		const height = wrap.scrollHeight
+		const width = wrap.scrollWidth * zoom()
+		const height = wrap.scrollHeight * zoom()
 		const left = -((relPoint.x * width) - absCoords.x)
 		const top = -((relPoint.y * height) - absCoords.y)
 		wrap.style.left = left + "px"
@@ -95,11 +81,10 @@ export async function showImageViewer(props: Props): Promise<void> {
 	function setZoom(e: MouseEvent | TouchEvent, value: number): void {
 		const absCoords = pointerEventsToClientCoords(e)
 		const relOffsetCoords = {
-			x: (absCoords.x - parseFloat(wrap.style.left || "0")) / wrap.scrollWidth,
-			y: (absCoords.y - parseFloat(wrap.style.top || "0")) / wrap.scrollHeight
+			x: (absCoords.x - parseFloat(wrap.style.left || "0")) / (wrap.scrollWidth * zoom()),
+			y: (absCoords.y - parseFloat(wrap.style.top || "0")) / (wrap.scrollHeight * zoom())
 		}
 		lastScrollActionCoords = {abs: absCoords, rel: relOffsetCoords}
-		// console.log(absCoords, relOffsetCoords)
 
 		zoomChanger.set(value)
 	}
@@ -112,14 +97,9 @@ export async function showImageViewer(props: Props): Promise<void> {
 	const imgs = props.urls.mapArray(
 		url => url,
 		url => {
-			const natHeight = natHeightBox(() => result)
 			const result: HTMLImageElement = tag({
 				tag: "img",
-				attrs: {src: url, alt: ""},
-				style: {
-					height: viewBox(() => Math.max(10, natHeight() * zoom()) + "px"),
-					margin: zoom.map(zoom => (zoom * 1) + "rem")
-				}
+				attrs: {src: url, alt: ""}
 			})
 			return result
 		}
@@ -129,10 +109,8 @@ export async function showImageViewer(props: Props): Promise<void> {
 		class: [css.imageViewer, {
 			[css.grabbed!]: isGrabbed
 		}],
-		onClick: e => {
-			if(e.target === wrap){
-				modal.close()
-			}
+		style: {
+			transform: zoom.map(zoom => `scale(${zoom})`)
 		}
 	}, imgs)
 
@@ -148,7 +126,7 @@ export async function showImageViewer(props: Props): Promise<void> {
 		element: modal.overlay,
 		draggedElement: wrap,
 		isDragging: isGrabbed,
-		dragSpeed: 3,
+		dragSpeed: 2,
 		onClick: toggleZoom,
 		absPosScroll: true
 	})
@@ -161,6 +139,6 @@ export async function showImageViewer(props: Props): Promise<void> {
 		await Promise.all(imgsBeforeTarget.map(img => waitLoadEvent(img)))
 		const targetImg = imgArr[targetIndex]!
 
-		centerAt(targetImg)
+		centerOn(targetImg)
 	})
 }

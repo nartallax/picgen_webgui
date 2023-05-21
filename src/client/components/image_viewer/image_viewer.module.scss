@@ -12,7 +12,10 @@
 	img {
 		cursor: grab;
 		object-fit: contain;
-		vertical-align: middle;
+		margin: 0 1rem;
+		vertical-align: text-top;
+
+		transform: translateY(-50%);
 	}
 
 	&.grabbed {
