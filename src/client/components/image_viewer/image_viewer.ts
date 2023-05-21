@@ -29,11 +29,15 @@ function natHeightBox(getImg: () => HTMLImageElement): RBox<number> {
 	return result
 }
 
-const zoomSpeed = 0.2
+type Props = {
+	urls: RBox<readonly string[]>
+	zoomSpeed?: number
+	centerOn?: number
+}
 
-export async function showImageViewer(urls: RBox<readonly string[]>): Promise<void> {
+export async function showImageViewer(props: Props): Promise<void> {
 	// url = "https://dummyimage.com/5120x5120"
-	urls = box(new Array(10).fill(null).map((_, i) => `https://dummyimage.com/256x${i + 1}00`))
+	props.urls = box(new Array(10).fill(null).map((_, i) => `https://dummyimage.com/256x${i + 1}00`))
 
 	const isGrabbed = box(false)
 
@@ -54,6 +58,28 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 		abs: {x: number, y: number}
 		rel: {x: number, y: number}
 	} | null = null
+
+	function centerAt(targetImg: HTMLImageElement): void {
+		const hRatio = window.innerHeight / targetImg.naturalHeight
+		const wRatio = window.innerWidth / targetImg.naturalWidth
+		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * 0.9)
+		zoom(defaultZoom)
+		zoomChanger.reset()
+
+		const imgRect = targetImg.getBoundingClientRect()
+		const wrapRect = wrap.getBoundingClientRect()
+		const containerOffsetTop = imgRect.top - wrapRect.top
+		const containerOffsetLeft = imgRect.left - wrapRect.left
+		const windowOffsetTop = (window.innerHeight - imgRect.height) / 2
+		const windowOffsetLeft = (window.innerWidth - imgRect.width) / 2
+		console.log({windowOffsetLeft, containerOffsetLeft, imgRect})
+
+		wrap.style.top = (windowOffsetTop - containerOffsetTop) + "px"
+		wrap.style.left = (windowOffsetLeft - containerOffsetLeft) + "px"
+
+		// if(hRatio < wRatio){ // height constrained
+		// }
+	}
 
 	// scroll view in a way that point of the picture is present at the coords of the screen
 	// relPoint is normalized
@@ -83,7 +109,7 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 		setZoom(e, z < defaultZoom ? defaultZoom : z === 1 ? defaultZoom : 1)
 	}
 
-	const imgs = urls.mapArray(
+	const imgs = props.urls.mapArray(
 		url => url,
 		url => {
 			const natHeight = natHeightBox(() => result)
@@ -114,7 +140,8 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 
 	modal.overlay.addEventListener("wheel", e => {
 		e.preventDefault()
-		setZoom(e, zoomChanger.currentTargetValue * (1 + (e.deltaY > 0 ? -zoomSpeed : zoomSpeed)))
+		const speed = props.zoomSpeed ?? 0.2
+		setZoom(e, zoomChanger.currentTargetValue * (1 + (e.deltaY > 0 ? -speed : speed)))
 	})
 
 	addDragScroll({
@@ -127,15 +154,13 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 	})
 
 	onMount(wrap, async() => {
-		const imgArr = imgs()
-		await Promise.any(imgArr.map(img => waitLoadEvent(img)))
-		const maxNatWidth = imgArr.map(img => img.naturalWidth).reduce((a, b) => Math.max(a, b), 0)
-		const maxNatHeight = imgArr.map(img => img.naturalHeight).reduce((a, b) => Math.max(a, b), 0)
+		const targetIndex = props.centerOn ?? 0
 
-		const hRatio = window.innerHeight / maxNatHeight
-		const wRatio = window.innerWidth / maxNatWidth
-		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * 0.9)
-		zoom(defaultZoom)
-		zoomChanger.reset()
+		const imgArr = imgs()
+		const imgsBeforeTarget = imgArr.slice(0, targetIndex + 1)
+		await Promise.all(imgsBeforeTarget.map(img => waitLoadEvent(img)))
+		const targetImg = imgArr[targetIndex]!
+
+		centerAt(targetImg)
 	})
 }

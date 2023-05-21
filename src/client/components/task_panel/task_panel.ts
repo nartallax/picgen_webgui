@@ -1,6 +1,6 @@
 import {formatTimeSpan} from "client/client_common/format"
 import {getNowBox} from "client/base/now_box"
-import {TaskPicture} from "client/components/task_picture/task_picture"
+import {OpenTaskPictureViewerArgs, TaskPicture} from "client/components/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
 import {RBox, WBox, box, viewBox} from "@nartallax/cardboard"
@@ -21,6 +21,7 @@ interface TaskPanelProps {
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
 	const taskHidden = box(false)
+	const pictures = props.task.prop("pictures")
 
 	function detectCurrentScrollPictureIndex(): number | null {
 		const parentRect = picturesWrap.getBoundingClientRect()
@@ -69,16 +70,17 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const picturesWithDisableBoxes: {el: HTMLElement, isDisabled: WBox<boolean>}[] = []
 
-	function openViewer(): void {
-		const urls = props.task.prop("pictures").mapArray(
+	function openViewer(args: OpenTaskPictureViewerArgs): void {
+		const pictureIndex = pictures().indexOf(args.picture)
+		const urls = pictures.mapArray(
 			picture => picture.id,
 			picture => ClientApi.getPictureUrl(picture().id, picture().salt)
 		)
-		showImageViewer(urls)
+		showImageViewer({urls, centerOn: pictureIndex < 0 ? undefined : pictureIndex})
 	}
 
 	const pictureContainer = tag({class: css.pictures},
-		props.task.prop("pictures").map(pics => pics.reverse()).mapArray(
+		pictures.map(pics => pics.reverse()).mapArray(
 			picture => picture.id,
 			picture => {
 				const isDisabled = box(true)
@@ -92,7 +94,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	addDragScroll({element: picturesWrap})
 
-	const haveNotEnoughPictures = props.task.prop("pictures").map(pics => pics.length < 2)
+	const haveNotEnoughPictures = pictures.map(pics => pics.length < 2)
 
 	const scroller = new SoftScroller(picturesWrap, "x", 200)
 

@@ -6,9 +6,11 @@ import {Picture} from "common/entities/picture"
 
 interface TaskPictureProps {
 	picture: RBox<Picture>
-	openViewer?: (args: {picture: Picture, el: HTMLElement, url: string}) => void
+	openViewer?: (args: OpenTaskPictureViewerArgs) => void
 	isDisabled?: RBox<boolean>
 }
+
+export type OpenTaskPictureViewerArgs = {picture: Picture, el: HTMLElement, url: string}
 
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))

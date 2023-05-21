@@ -1,8 +1,11 @@
 .imageViewer {
 
 	position: absolute;
-	left: 0;
-	top: 0;
+	width: 0px;
+	height: 0px;
+	overflow: visible;
+	left: 0px;
+	top: 0px;
 
 	white-space: nowrap;
 
