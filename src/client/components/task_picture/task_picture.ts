@@ -3,10 +3,11 @@ import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
 import {Picture} from "common/entities/picture"
-import {showPictureModal} from "client/components/task_picture/task_picture_modal"
 
 interface TaskPictureProps {
 	picture: RBox<Picture>
+	openViewer?: (args: {picture: Picture, el: HTMLElement, url: string}) => void
+	isDisabled?: RBox<boolean>
 }
 
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
@@ -21,8 +22,10 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		window.open(url(), "_blank")
 	})
 
-	return tag({
-		class: css.taskPicture
+	const result: HTMLElement = tag({
+		class: [css.taskPicture, {
+			[css.disabled!]: props.isDisabled
+		}]
 	}, [
 		tag({
 			tag: "img",
@@ -33,11 +36,13 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		}),
 		tag({
 			class: css.overlay,
-			onClick: () => showPictureModal(url())
+			onClick: () => props.openViewer && props.openViewer({url: url(), el: result, picture: props.picture()})
 		}, [
 			tag([]), // tbd
-			tag({class: [css.iconOpen, "icon-resize-full-alt"]}),
+			!props.openViewer ? null : tag({class: [css.iconOpen, "icon-resize-full-alt"]}),
 			tag({class: css.iconLinkWrap}, [linkButton])
 		])
 	])
+
+	return result
 }

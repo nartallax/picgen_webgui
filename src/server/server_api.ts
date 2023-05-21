@@ -128,7 +128,7 @@ export namespace ServerApi {
 			}
 			const result = [...taskMap.values()]
 			for(const task of result){
-				task.pictures.sort((a, b) => a.creationTime - b.creationTime)
+				task.pictures.sort((a, b) => a.id - b.id)
 			}
 			return result
 		})

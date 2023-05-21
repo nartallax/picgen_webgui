@@ -18,6 +18,10 @@
 		width: auto;
 	}
 
+	&.disabled {
+		pointer-events: none;
+	}
+
 	.overlay {
 		position: absolute;
 		top: 0;

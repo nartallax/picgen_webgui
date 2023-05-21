@@ -2,7 +2,8 @@ import {tag} from "@nartallax/cardboard-dom"
 import {showModalBase} from "client/controls/modal_base/modal_base"
 import * as css from "./task_picture.module.scss"
 import {box} from "@nartallax/cardboard"
-import {addMouseDragHandler, pointerEventsToClientCoords, pointerEventsToOffsetCoords} from "client/client_common/mouse_drag"
+import {pointerEventsToClientCoords, pointerEventsToOffsetCoords} from "client/client_common/mouse_drag"
+import {addDragScroll} from "client/client_common/drag_scroll"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
@@ -14,10 +15,11 @@ function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	})
 }
 
-const dragSpeed = 3
 const zoomSpeed = 0.2
 
 export async function showPictureModal(url: string): Promise<void> {
+	// url = "https://dummyimage.com/5120x5120"
+
 	const isGrabbed = box(false)
 	let natWidth = 1
 	let natHeight = 1
@@ -48,7 +50,8 @@ export async function showPictureModal(url: string): Promise<void> {
 	}
 
 	function toggleZoom(e: MouseEvent | TouchEvent): void {
-		setZoom(e, zoom() === 1 ? defaultZoom : 1)
+		const z = zoom()
+		setZoom(e, z < defaultZoom ? defaultZoom : z === 1 ? defaultZoom : 1)
 	}
 
 	const img = tag({
@@ -79,36 +82,11 @@ export async function showPictureModal(url: string): Promise<void> {
 
 	const modal = showModalBase({closeByBackgroundClick: true}, [wrap])
 
-	let prevCoords: {x: number, y: number} | null = null
-	let distanceApprox = 0
-	addMouseDragHandler({
-		element: img,
-		start: evt => {
-			evt.preventDefault()
-			isGrabbed(true)
-			distanceApprox = 0
-			return true
-		},
-		downIsMove: true,
-		onMove: evt => {
-			const coords = pointerEventsToClientCoords(evt)
-			if(prevCoords){
-				const dx = prevCoords.x - coords.x
-				const dy = prevCoords.y - coords.y
-				wrap.scrollLeft += dx * dragSpeed
-				wrap.scrollTop += dy * dragSpeed
-				distanceApprox += Math.abs(dx) + Math.abs(dy)
-			}
-			prevCoords = coords
-		},
-		stop: e => {
-			prevCoords = null
-			if(e instanceof TouchEvent && distanceApprox < 10){
-				toggleZoom(e)
-			}
-			distanceApprox = 0
-			isGrabbed(false)
-		}
+	addDragScroll({
+		element: wrap,
+		isDragging: isGrabbed,
+		dragSpeed: 3,
+		onClick: toggleZoom
 	})
 
 	await waitLoadEvent(img)

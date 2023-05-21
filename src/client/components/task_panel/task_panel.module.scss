@@ -90,7 +90,6 @@ $arrowButtonSize: 3rem;
 	}
 	
 	.picturesWrapWrap {
-		// -webkit-mask-image: -webkit-linear-gradient(right, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
 		mask-image: linear-gradient(to right, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
 		margin-left: -$arrowButtonSize;
 		margin-right: -$arrowButtonSize;
@@ -99,7 +98,6 @@ $arrowButtonSize: 3rem;
 	.picturesWrap {
 		overflow: hidden;
 
-		// -webkit-mask-image: -webkit-linear-gradient(left, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
 		mask-image: linear-gradient(to left, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
 		padding-left: $arrowButtonSize;
 

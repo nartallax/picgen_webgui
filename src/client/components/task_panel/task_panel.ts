@@ -4,13 +4,15 @@ import {TaskPicture} from "client/components/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
 import {RBox, WBox, box, viewBox} from "@nartallax/cardboard"
-import {tag} from "@nartallax/cardboard-dom"
+import {onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
 import {GenerationTaskArgument, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
 import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
 import {SoftScroller} from "client/base/soft_scroller"
+import {addDragScroll} from "client/client_common/drag_scroll"
+import {showPictureModal} from "client/components/task_picture/task_picture_modal"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>
@@ -20,20 +22,75 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
 	const taskHidden = box(false)
 
-	function scrollPictures(direction: -1 | 1): void {
-		scroller.scroll(picturesWrap.clientHeight * direction)
+	function detectCurrentScrollPictureIndex(): number | null {
+		const parentRect = picturesWrap.getBoundingClientRect()
+		const centerX = (parentRect.right + parentRect.left) / 2
+		for(let i = 0; i < pictureContainer.children.length; i++){
+			const pic = pictureContainer.children[i]!
+			const childRect = pic.getBoundingClientRect()
+			if(childRect.left > centerX){
+				return Math.max(0, i - 1)
+			}
+		}
+		// can happen if there's not enough pictures
+		return null
 	}
 
-	const picturesWrap = tag({class: css.picturesWrap}, [
-		tag({class: css.pictures}, props.task.prop("pictures").map(pics => pics.reverse()).mapArray(
+	function scrollToNextPicture(direction: -1 | 1): void {
+		const currentPicIndex = detectCurrentScrollPictureIndex()
+		if(currentPicIndex === null){
+			return
+		}
+		const nextPicIndex = currentPicIndex + direction
+		const pic = pictureContainer.children[nextPicIndex]
+		if(!(pic instanceof HTMLElement)){
+			return
+		}
+		const picRect = pic.getBoundingClientRect()
+		const picCenter = (picRect.right + picRect.left) / 2
+		const parentRect = picturesWrap.getBoundingClientRect()
+		const parentCenter = (parentRect.right + parentRect.left) / 2
+		const diff = picCenter - parentCenter
+		scroller.scroll(diff)
+	}
+
+	function updateDisabledState(): void {
+		const parentRect = picturesWrap.getBoundingClientRect()
+		for(const {el, isDisabled} of picturesWithDisableBoxes){
+			const rect = el.getBoundingClientRect()
+			const left = Math.max(parentRect.left, rect.left)
+			const right = Math.min(parentRect.right, rect.right)
+			const visibleWidth = Math.max(0, right - left)
+			const width = rect.right - rect.left
+			const visibleRatio = visibleWidth / width
+			isDisabled(visibleRatio < 0.5)
+		}
+	}
+
+	const picturesWithDisableBoxes: {el: HTMLElement, isDisabled: WBox<boolean>}[] = []
+
+	const pictureContainer = tag({class: css.pictures},
+		props.task.prop("pictures").map(pics => pics.reverse()).mapArray(
 			picture => picture.id,
-			picture => TaskPicture({picture})
+			picture => {
+				const isDisabled = box(true)
+				const el = TaskPicture({picture, isDisabled, openViewer: args => showPictureModal(args.url)})
+				picturesWithDisableBoxes.push({el, isDisabled})
+				return el
+			}
 		))
-	])
+
+	const picturesWrap = tag({class: css.picturesWrap}, [pictureContainer])
+
+	addDragScroll({element: picturesWrap})
 
 	const haveNotEnoughPictures = props.task.prop("pictures").map(pics => pics.length < 2)
 
 	const scroller = new SoftScroller(picturesWrap, "x", 200)
+
+	whileMounted(pictureContainer, scroller.scrollPosition, updateDisabledState)
+	whileMounted(pictureContainer, scroller.scrollLimit, updateDisabledState)
+	onMount(pictureContainer, updateDisabledState)
 
 	const result = tag({class: [css.taskPanel, {[css.hidden!]: taskHidden}]}, [
 		tag({class: css.body}, [
@@ -119,7 +176,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				[css.hidden!]: haveNotEnoughPictures
 			}],
 			style: {left: "0px"},
-			onClick: () => scrollPictures(-1)
+			onClick: () => scrollToNextPicture(-1)
 		}),
 		tag({
 			tag: "button",
@@ -128,7 +185,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				[css.hidden!]: haveNotEnoughPictures
 			}],
 			style: {right: "0px"},
-			onClick: () => scrollPictures(1)
+			onClick: () => scrollToNextPicture(1)
 		})
 	])
 

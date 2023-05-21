@@ -4,11 +4,20 @@ import {onMount} from "@nartallax/cardboard-dom"
 export class SoftScroller {
 	private readonly atStart = box(false)
 	private readonly atFinish = box(false)
+	private readonly limit = box(0)
+	private readonly position = box(0)
+
 	get isAtStart(): RBox<boolean> {
 		return this.atStart
 	}
 	get isAtFinish(): RBox<boolean> {
 		return this.atFinish
+	}
+	get scrollLimit(): RBox<number> {
+		return this.limit
+	}
+	get scrollPosition(): RBox<number> {
+		return this.position
 	}
 
 	private desiredPosition: number
@@ -17,24 +26,65 @@ export class SoftScroller {
 	private startTime = 0
 
 	constructor(readonly el: HTMLElement, readonly axis: "x" | "y", readonly timeMs: number) {
-		this.updateBoxes()
+		this.refresh()
 		this.desiredPosition = this.getPosition()
 		this.startPosition = this.desiredPosition
 
 		onMount(el, () => {
-			requestAnimationFrame(() => {
-				this.updateBoxes()
-			})
+			const refresh = this.refresh.bind(this)
+			requestAnimationFrame(refresh)
 
-			const observer = new ResizeObserver(() => this.updateBoxes())
-			observer.observe(el)
-			return () => observer.disconnect()
+			el.addEventListener("scroll", refresh)
+
+			const resizeObserver = new ResizeObserver(refresh)
+			resizeObserver.observe(el)
+
+			const mutObserver = new MutationObserver(() => {
+				this.refresh()
+				this.tryWaitLoadAll()
+			})
+			mutObserver.observe(el, {subtree: true, childList: true})
+			this.tryWaitLoadAll()
+
+			return () => {
+				el.removeEventListener("scroll", refresh)
+				resizeObserver.disconnect()
+				mutObserver.disconnect()
+			}
 		})
 	}
 
-	scroll(diff: number) {
-		this.desiredPosition = Math.min(this.getLimit(), Math.max(0, this.desiredPosition + diff))
+	scrollTo(position: number): void {
+		this.desiredPosition = Math.min(this.getLimit(), Math.max(0, position))
 		this.tryRestartScroll()
+	}
+
+	scroll(diff: number): void {
+		const startPosition = this.scrollIsRunning ? this.desiredPosition : this.getPosition()
+		this.scrollTo(startPosition + diff)
+	}
+
+	// this is a bit of a hack
+	// problem is that it's hard to properly track change in scrollable amount
+	// so we go by this weird particular means of "let's wait until image is loaded and assume that scroll amount changed"
+	private tryWaitLoadAll(): void {
+		const imgs = this.el.querySelectorAll("img")
+		for(let i = 0; i < imgs.length; i++){
+			this.tryWaitLoad(imgs[i]!)
+		}
+	}
+
+	private tryWaitLoad(el: HTMLElement): void {
+		if(!(el instanceof HTMLImageElement) || el.complete || el.getAttribute("data-scroller-processed") === "true"){
+			return
+		}
+		el.setAttribute("data-scroller-processed", "true")
+
+		const waiter = () => {
+			el.removeEventListener("load", waiter)
+			this.refresh()
+		}
+		el.addEventListener("load", waiter)
 	}
 
 	private tryRestartScroll(): void {
@@ -74,7 +124,7 @@ export class SoftScroller {
 		} else {
 			this.el.scrollTop = value
 		}
-		this.updateBoxes()
+		this.refresh()
 	}
 
 	private getViewportSize(): number {
@@ -89,10 +139,13 @@ export class SoftScroller {
 		return this.getScrollSize() - this.getViewportSize()
 	}
 
-	private updateBoxes(): void {
+	refresh(): void {
 		const pos = this.getPosition()
+		const limit = this.getLimit()
 		this.atStart(pos <= 0)
-		this.atFinish(pos >= this.getLimit())
+		this.atFinish(pos >= limit)
+		this.limit(limit)
+		this.position(pos)
 	}
 
 }
