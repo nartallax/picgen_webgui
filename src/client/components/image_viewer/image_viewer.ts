@@ -4,6 +4,7 @@ import * as css from "./image_viewer.module.scss"
 import {RBox, box} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
+import {SoftValueChanger} from "client/base/soft_value_changer"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
@@ -26,11 +27,26 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 	let natHeight = 1
 	let defaultZoom = 0.0001
 	const zoom = box(defaultZoom)
+	const zoomChanger = new SoftValueChanger({
+		getValue: zoom,
+		setValue: zoom,
+		timeMs: 50,
+		onChange: () => {
+			if(lastScrollActionCoords){
+				scrollCoordsToPoint(lastScrollActionCoords.abs, lastScrollActionCoords.rel)
+			}
+		}
+	})
+
+	let lastScrollActionCoords: {
+		abs: {x: number, y: number}
+		rel: {x: number, y: number}
+	} | null = null
 
 	// scroll view in a way that point of the picture is present at the coords of the screen
 	// relPoint is normalized
 	function scrollCoordsToPoint(absCoords: {x: number, y: number}, relPoint: {x: number, y: number}): void {
-		console.log(absCoords, relPoint)
+		// console.log(absCoords, relPoint)
 		const width = wrap.scrollWidth
 		const height = wrap.scrollHeight
 		wrap.scrollLeft = (relPoint.x * width) - absCoords.x
@@ -43,17 +59,13 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 			x: (absCoords.x + wrap.scrollLeft) / wrap.scrollWidth,
 			y: (absCoords.y + wrap.scrollTop) / wrap.scrollHeight
 		}
-		console.log({absY: absCoords.y, top: wrap.scrollTop, height: wrap.scrollHeight})
+		lastScrollActionCoords = {abs: absCoords, rel: relOffsetCoords}
 
-		zoom(value)
-
-		if(relOffsetCoords){
-			scrollCoordsToPoint(absCoords, relOffsetCoords)
-		}
+		zoomChanger.set(value)
 	}
 
 	function toggleZoom(e: MouseEvent | TouchEvent): void {
-		const z = zoom()
+		const z = zoomChanger.currentTargetValue
 		setZoom(e, z < defaultZoom ? defaultZoom : z === 1 ? defaultZoom : 1)
 	}
 
@@ -86,7 +98,7 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 
 	modal.overlay.addEventListener("wheel", e => {
 		e.preventDefault()
-		setZoom(e, zoom() * (1 + (e.deltaY > 0 ? -zoomSpeed : zoomSpeed)))
+		setZoom(e, zoomChanger.currentTargetValue * (1 + (e.deltaY > 0 ? -zoomSpeed : zoomSpeed)))
 	})
 
 	addDragScroll({
@@ -106,5 +118,6 @@ export async function showImageViewer(urls: RBox<readonly string[]>): Promise<vo
 		const wRatio = window.innerWidth / natWidth
 		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * 0.9)
 		zoom(defaultZoom)
+		zoomChanger.reset()
 	})
 }

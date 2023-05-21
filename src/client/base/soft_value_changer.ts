@@ -1,4 +1,9 @@
-import {WBox} from "@nartallax/cardboard"
+type Options = {
+	readonly getValue: () => number
+	readonly setValue: (value: number) => void
+	readonly timeMs: number
+	readonly onChange?: (value: number) => void
+}
 
 export class SoftValueChanger {
 	private desiredValue: number
@@ -6,9 +11,18 @@ export class SoftValueChanger {
 	private isRunning = false
 	private startTime = 0
 
-	constructor(readonly value: WBox<number>, readonly timeMs: number) {
-		this.startValue = value()
-		this.desiredValue = value()
+	get currentTargetValue(): number {
+		return this.desiredValue
+	}
+
+	constructor(readonly opts: Options) {
+		this.startValue = opts.getValue()
+		this.desiredValue = opts.getValue()
+	}
+
+	reset(): void {
+		this.desiredValue = this.opts.getValue()
+		this.isRunning = false
 	}
 
 	set(newValue: number): void {
@@ -16,20 +30,37 @@ export class SoftValueChanger {
 		this.tryRestartUpdates()
 	}
 
+	change(diff: number): void {
+		this.desiredValue += diff
+		this.tryRestartUpdates()
+	}
+
 	private tryRestartUpdates(): void {
+		if(this.opts.getValue() === this.desiredValue){
+			this.isRunning = false
+			return
+		}
+
 		this.startTime = Date.now()
-		this.startValue = this.value()
+		this.startValue = this.opts.getValue()
 
 		const update = () => {
+			if(!this.isRunning){
+				return
+			}
+
 			const now = Date.now()
-			const progress = (now - this.startTime) / this.timeMs
+			const progress = (now - this.startTime) / this.opts.timeMs
 			if(progress >= 1){
-				this.value(this.desiredValue)
+				this.opts.setValue(this.desiredValue)
+				this.opts.onChange && this.opts.onChange(this.desiredValue)
 				this.isRunning = false
 				return
 			}
 
-			this.value(this.startValue + ((this.desiredValue - this.startValue) * progress))
+			const value = this.startValue + ((this.desiredValue - this.startValue) * progress)
+			this.opts.setValue(value)
+			this.opts.onChange && this.opts.onChange(value)
 			requestAnimationFrame(update)
 		}
 
