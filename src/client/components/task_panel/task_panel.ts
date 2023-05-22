@@ -22,7 +22,7 @@ interface TaskPanelProps {
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
 	const taskHidden = box(false)
-	const pictures = props.task.prop("pictures")
+	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse())
 	let isInDOM = false
 
 	function detectCurrentScrollPictureIndex(): number | null {
@@ -84,7 +84,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	}
 
 	const pictureContainer = tag({class: css.pictures},
-		pictures.map(pics => [...pics].reverse()).mapArray(
+		pictures.mapArray(
 			picture => picture.id,
 			picture => {
 				const isDisabled = box(true)

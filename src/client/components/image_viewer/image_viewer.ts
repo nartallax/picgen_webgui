@@ -150,6 +150,8 @@ export async function showImageViewer(props: Props): Promise<void> {
 				scrollToNextImage(1)
 			} else if(e.key === "ArrowLeft"){
 				scrollToNextImage(-1)
+			} else if(e.key === "Escape"){
+				modal.close()
 			}
 		}
 		window.addEventListener("keydown", onKeyDown)
