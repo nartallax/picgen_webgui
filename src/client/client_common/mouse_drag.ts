@@ -57,7 +57,7 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 	const distanceBeforeMove2 = (params.distanceBeforeMove ?? 0) ** 2
 	let isMoving = false
 	let isClickingNow = false
-	const isClickPreventionEnabled = params.element !== window
+	const isClickPreventionEnabled = true // params.element !== window
 
 	function startMoving(e: MouseEvent | TouchEvent, isDown: boolean): boolean {
 		isMoving = true
@@ -82,7 +82,7 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 		window.removeEventListener("touchmove", onMove)
 		window.removeEventListener("mouseup", onUp)
 		window.removeEventListener("touchend", onUp)
-		if(!isMoving && !isClickingNow){
+		if(!isMoving){
 			try {
 				isClickingNow = true
 				if(e.target instanceof HTMLElement && isClickPreventionEnabled){
@@ -144,8 +144,8 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 		}
 		window.addEventListener("mousemove", onMove, {passive: true})
 		window.addEventListener("touchmove", onMove, {passive: true})
-		window.addEventListener("mouseup", onUp, {passive: true})
-		window.addEventListener("touchend", onUp, {passive: true})
+		window.addEventListener("mouseup", onUp)
+		window.addEventListener("touchend", onUp)
 		startCoords = pointerEventsToClientCoords(e)
 		if(distanceBeforeMove2 <= 0){
 			startMoving(e, true)
@@ -153,6 +153,11 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 	}
 
 	const onUp = (e: MouseEvent | TouchEvent): void => {
+		if(e.type === "touchend" && e.cancelable){
+			// touchend is not passive, so we can do that
+			// this is needed to prevent `mouseup` from also firing
+			e.preventDefault()
+		}
 		stopMoving(e, true)
 	}
 
