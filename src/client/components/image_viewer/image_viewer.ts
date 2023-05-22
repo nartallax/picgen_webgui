@@ -5,6 +5,7 @@ import {RBox, box} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {SoftValueChanger} from "client/base/soft_value_changer"
+import {addTouchZoom} from "client/client_common/touch_zoom"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
@@ -100,15 +101,23 @@ export async function showImageViewer(props: Props): Promise<void> {
 		wrap.style.top = top + "px"
 	}
 
-	function setZoom(e: MouseEvent | TouchEvent, value: number): void {
-		const absCoords = pointerEventsToClientCoords(e)
+	function setZoomByCoords(absCoords: {x: number, y: number}, value: number, instant?: boolean): void {
 		const relOffsetCoords = {
 			x: (absCoords.x - parseFloat(wrap.style.left || "0")) / (wrap.scrollWidth * zoom()),
 			y: (absCoords.y - parseFloat(wrap.style.top || "0")) / (wrap.scrollHeight * zoom())
 		}
 		lastScrollActionCoords = {abs: absCoords, rel: relOffsetCoords}
 
-		zoomChanger.set(value)
+		if(instant){
+			zoom(value)
+			scrollCoordsToPoint(lastScrollActionCoords.abs, lastScrollActionCoords.rel)
+		} else {
+			zoomChanger.set(value)
+		}
+	}
+
+	function setZoom(e: MouseEvent | TouchEvent, value: number): void {
+		setZoomByCoords(pointerEventsToClientCoords(e), value)
 	}
 
 	function toggleZoom(e: MouseEvent | TouchEvent): void {
@@ -165,6 +174,13 @@ export async function showImageViewer(props: Props): Promise<void> {
 		dragSpeed: 2,
 		onClick: toggleZoom,
 		absPosScroll: true
+	})
+
+	addTouchZoom({
+		target: modal.overlay,
+		multiplier: 1.5,
+		getZoom: zoom,
+		setZoom: (zoomValue, centerCoords) => setZoomByCoords(centerCoords, zoomValue, true)
 	})
 
 	onMount(wrap, async() => {

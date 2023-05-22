@@ -1,4 +1,4 @@
-type XY = {x: number, y: number}
+export type XY = {x: number, y: number}
 
 export function pointerEventsToClientCoords(e: MouseEvent | TouchEvent): XY {
 	if(isTouchEvent(e)){
@@ -77,15 +77,16 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 		return true
 	}
 
-	function stopMoving(e: MouseEvent | TouchEvent, isUp: boolean): void {
+	function stopMoving(e: MouseEvent | TouchEvent, isUp: boolean, canTriggerClick = true): void {
 		window.removeEventListener("mousemove", onMove)
 		window.removeEventListener("touchmove", onMove)
 		window.removeEventListener("mouseup", onUp)
 		window.removeEventListener("touchend", onUp)
-		if(!isMoving){
+		if(!isMoving && canTriggerClick){
 			try {
 				isClickingNow = true
 				if(e.target instanceof HTMLElement && isClickPreventionEnabled){
+					console.log("click")
 					e.target.click()
 				}
 				if(params.onClick){
@@ -120,6 +121,10 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 	}
 
 	const onMove = (e: MouseEvent | TouchEvent): void => {
+		if(isMultiTouchEvent(e)){
+			stopMoving(e, false, false)
+			return
+		}
 		if(!isMoving){
 			const coords = pointerEventsToClientCoords(e)
 			const distance2 = ((startCoords.x - coords.x) ** 2) + ((startCoords.y - coords.y) ** 2)
@@ -135,11 +140,14 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 	}
 
 	const onDown = (e: MouseEvent | TouchEvent): void => {
-		if(!targetIsRight(e)){
-			// handled by another mouse drag handler
-			// in theory we could just mouseEvent.stopPropagation()
+		if(!targetIsRight(e) || isMultiTouchEvent(e)){
+			// if target check is true - this event is handled by another mouse drag handler
+			// in basic cases we could just mouseEvent.stopPropagation()
 			// but that breaks when logic about "let's wait for some distance before start" is introduced
 			// because when you decide to stop - it's already too late to prevent propagation
+			if(isMoving){
+				stopMoving(e, false)
+			}
 			return
 		}
 		window.addEventListener("mousemove", onMove, {passive: true})
@@ -177,7 +185,6 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 			if(!targetIsRight(e)){
 				return
 			}
-			// console.log({isClickingNow}, e.target)
 			if(!isClickingNow){
 				e.stopPropagation()
 			}
@@ -204,6 +211,10 @@ function setDragTargetState(el: HTMLElement, isDragTarget: boolean): void {
 	} else {
 		el.setAttribute(dataAttrName, "true")
 	}
+}
+
+function isMultiTouchEvent(e: MouseEvent | TouchEvent): boolean {
+	return (e instanceof TouchEvent) && e.touches.length > 1
 }
 
 function findDragTarget(e: Event): HTMLElement | Window {
