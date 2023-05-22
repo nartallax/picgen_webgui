@@ -120,11 +120,6 @@ export async function showImageViewer(props: Props): Promise<void> {
 		setZoomByCoords(pointerEventsToClientCoords(e), value)
 	}
 
-	function toggleZoom(e: MouseEvent | TouchEvent): void {
-		const z = zoomChanger.currentTargetValue
-		setZoom(e, z < defaultZoom ? defaultZoom : z === 1 ? defaultZoom : 1)
-	}
-
 	const imgs = props.urls.mapArray(
 		url => url,
 		url => {
@@ -142,7 +137,8 @@ export async function showImageViewer(props: Props): Promise<void> {
 		}],
 		style: {
 			transform: zoom.map(zoom => `scale(${zoom})`)
-		}
+		},
+		onClick: () => modal.close()
 	}, imgs)
 
 	const modal = showModalBase({closeByBackgroundClick: true}, [wrap])
@@ -172,7 +168,6 @@ export async function showImageViewer(props: Props): Promise<void> {
 		draggedElement: wrap,
 		isDragging: isGrabbed,
 		dragSpeed: 2,
-		onClick: toggleZoom,
 		absPosScroll: true
 	})
 
