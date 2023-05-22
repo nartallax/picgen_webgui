@@ -40,7 +40,6 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	}
 
 	function scrollToNextPicture(direction: -1 | 1): void {
-		console.log({direction})
 		const currentPicIndex = detectCurrentScrollPictureIndex()
 		if(currentPicIndex === null){
 			return
@@ -85,7 +84,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	}
 
 	const pictureContainer = tag({class: css.pictures},
-		pictures.map(pics => pics.reverse()).mapArray(
+		pictures.map(pics => [...pics].reverse()).mapArray(
 			picture => picture.id,
 			picture => {
 				const isDisabled = box(true)
