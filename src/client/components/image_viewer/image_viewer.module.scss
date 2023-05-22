@@ -8,6 +8,7 @@
 	top: 0px;
 
 	white-space: nowrap;
+	user-select: none;
 
 	img {
 		cursor: grab;
@@ -16,6 +17,9 @@
 		vertical-align: text-top;
 
 		transform: translateY(-50%);
+
+		-webkit-user-drag: none;
+		user-drag: none;
 	}
 
 	&.grabbed {

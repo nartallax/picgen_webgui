@@ -14,16 +14,20 @@ export const Sidebar = defineControl((_, children) => {
 	function calcRate(e: MouseEvent | TouchEvent): number {
 		const curX = pointerEventsToClientCoords(e).x
 		const diff = curX - startX
-		let result = Math.max(-1, Math.min(1, diff / width))
+		let rate = diff / width
+
 		if(isOpen){
-			result = 1 + result
+			rate = 1 + Math.max(-1, Math.min(0, rate))
+		} else {
+			rate = Math.max(0, Math.min(1, rate))
 		}
-		return result
+		return rate
 	}
 
 	onMount(result, () => addMouseDragHandler({
 		element: window,
 		distanceBeforeMove: 25,
+		constraintDirection: "horisontal",
 		start: e => {
 			if(getComputedStyle(result).position !== "absolute"){
 				return false

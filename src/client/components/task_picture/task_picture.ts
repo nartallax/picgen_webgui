@@ -45,7 +45,16 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		img,
 		tag({
 			class: css.overlay,
-			onClick: () => props.openViewer && props.openViewer({url: url(), el: result, picture: props.picture()})
+			onClick: () => {
+				const openViewer = props.openViewer
+				if(openViewer){
+					requestAnimationFrame(() => {
+						// raf is here to prevent opening and then immediately closing the viewer
+						// it's some weird interference in events and closing-modal-by-background-click
+						openViewer({url: url(), el: result, picture: props.picture()})
+					})
+				}
+			}
 		}, [
 			tag([]), // tbd
 			!props.openViewer ? null : tag({class: [css.iconOpen, "icon-resize-full-alt"]}),

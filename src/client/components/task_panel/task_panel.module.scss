@@ -27,10 +27,6 @@ $arrowButtonSize: 3rem;
 		border-radius: 0.5rem;
 		font-size: 2rem;
 
-		&:hover {
-			background-color: rgba(128,128,128,0.5);
-		}
-
 		&.disabled {
 			pointer-events: none;
 			opacity: 0.25;
@@ -102,6 +98,8 @@ $arrowButtonSize: 3rem;
 		padding-left: $arrowButtonSize;
 
 		.pictures {
+			user-select: none;
+			
 			display: flex;
 			flex-direction: row;
 			align-items: stretch;
@@ -154,4 +152,10 @@ $arrowButtonSize: 3rem;
 
 	}
 
+}
+
+@media (hover: hover) {
+    .arrow:hover {
+		background-color: rgba(128,128,128,0.5);
+	}
 }

@@ -52,10 +52,6 @@
 			min-width: 0;
 		}
 
-		&:hover {
-			opacity: 1;
-		}
-
 		.iconOpen {
 			color: #ddd;
 			font-size: 4rem;
@@ -80,5 +76,11 @@
 				}
 			}
 		}
+	}
+}
+
+@media (hover: hover) {
+    .overlay:hover {
+		opacity: 1;
 	}
 }

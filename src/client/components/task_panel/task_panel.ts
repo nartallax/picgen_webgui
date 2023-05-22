@@ -35,12 +35,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				return Math.max(0, i - 1)
 			}
 		}
-		// can happen if there's not enough pictures
-		return null
+		return Math.max(0, pictureContainer.children.length - 1)
 	}
 
 	function scrollToNextPicture(direction: -1 | 1): void {
 		const currentPicIndex = detectCurrentScrollPictureIndex()
+		// console.log({currentPicIndex})
 		if(currentPicIndex === null){
 			return
 		}
@@ -54,7 +54,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		const parentRect = picturesWrap.getBoundingClientRect()
 		const parentCenter = (parentRect.right + parentRect.left) / 2
 		const diff = picCenter - parentCenter
-		scroller.scroll(diff)
+		scroller.setScrollAmountToDo(diff)
 	}
 
 	function updateDisabledState(): void {
@@ -102,7 +102,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const picturesWrap = tag({class: css.picturesWrap}, [pictureContainer])
 
-	addDragScroll({element: picturesWrap})
+	addDragScroll({
+		element: picturesWrap,
+		constraintDirection: "horisontal",
+		distanceBeforeMove: 10,
+		dragSpeed: 2
+	})
 
 	const haveNotEnoughPictures = pictures.map(pics => pics.length < 2)
 

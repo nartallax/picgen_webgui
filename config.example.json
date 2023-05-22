@@ -6,7 +6,7 @@
 	"discordClientId": "469771750285115392",
 	"discordClientSecretFile": "./discord_client_secret.txt",
 	"httpPort": 22650,
-	"httpHost": "localhost",
+	"httpHost": "192.168.1.108",
 	"haveHttps": false,	
 	"dbFilePath": "./db.sqlite",
 	"tags": {

@@ -4,6 +4,11 @@
 	bottom: 0;
 	left: 0;
 	right: 0;
+	// width and height here despite position because of weird bugs on mobiles
+	// there are retractable address line in mobile browsers
+	// which sometimes lead to overlay not being able to reach the bottom
+	width: 100vw;
+	height: 100vh;
 
 	display: flex;
 	flex-direction: row;

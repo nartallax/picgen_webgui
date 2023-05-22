@@ -63,6 +63,10 @@ export class SoftScroller {
 		this.tryRestartScroll()
 	}
 
+	setScrollAmountToDo(diff: number): void {
+		this.scrollTo(this.getPosition() + diff)
+	}
+
 	scroll(diff: number): void {
 		const startPosition = this.scrollIsRunning ? this.desiredPosition : this.getPosition()
 		this.scrollTo(startPosition + diff)
