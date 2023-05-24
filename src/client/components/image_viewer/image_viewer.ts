@@ -1,7 +1,7 @@
 import {onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import {showModalBase} from "client/controls/modal_base/modal_base"
 import * as css from "./image_viewer.module.scss"
-import {RBox, box} from "@nartallax/cardboard"
+import {RBox, box, viewBox} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {SoftValueChanger} from "client/base/soft_value_changer"
@@ -26,6 +26,7 @@ type Props = {
 	urls: RBox<readonly string[]>
 	zoomSpeed?: number
 	centerOn?: number
+	equalizeByHeight?: boolean
 }
 
 export async function showImageViewer(props: Props): Promise<void> {
@@ -37,9 +38,11 @@ export async function showImageViewer(props: Props): Promise<void> {
 	const xPos = box(0)
 	const yPos = box(0)
 
+	const maxNatHeight = box(0)
+
 	let bounds: {top: number, bottom: number, left: number, right: number} | null = null
 
-	const updateBounds = debounce(1, () => {
+	const updateBounds = debounce(0, () => {
 		if(!bounds){
 			bounds = {
 				top: Number.MAX_SAFE_INTEGER,
@@ -48,6 +51,13 @@ export async function showImageViewer(props: Props): Promise<void> {
 				right: Number.MIN_SAFE_INTEGER
 			}
 		}
+
+		let natHeight = maxNatHeight()
+		for(const img of imgs()){
+			natHeight = Math.max(img.naturalHeight, natHeight)
+		}
+		maxNatHeight(natHeight)
+
 		for(const img of imgs()){
 			const rect = img.getBoundingClientRect()
 			bounds.top = Math.min(bounds.top, -rect.height / 2)
@@ -108,14 +118,16 @@ export async function showImageViewer(props: Props): Promise<void> {
 	}})
 	document.body.appendChild(center)
 
-	function centerOn(targetImg: HTMLImageElement): void {
-		const hRatio = window.innerHeight / targetImg.naturalHeight
-		const wRatio = window.innerWidth / targetImg.naturalWidth
+	function centerOn(img: HTMLImageElement): void {
+		const natHeight = props.equalizeByHeight ? maxNatHeight() : img.naturalHeight
+		const natWidth = props.equalizeByHeight ? (img.naturalWidth / img.naturalHeight) * maxNatHeight() : img.naturalWidth
+		const hRatio = window.innerHeight / natHeight
+		const wRatio = window.innerWidth / natWidth
 		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * 0.9)
 		zoom(defaultZoom)
 		zoomChanger.reset()
 
-		const imgRect = targetImg.getBoundingClientRect()
+		const imgRect = img.getBoundingClientRect()
 		const imgLeft = imgRect.left - (window.innerWidth / 2)
 
 		yPos(0)
@@ -158,17 +170,35 @@ export async function showImageViewer(props: Props): Promise<void> {
 	const imgs = props.urls.mapArray(
 		url => url,
 		url => {
-			const result: HTMLImageElement = tag({
+			const natSideRatio = box(1)
+			const img: HTMLImageElement = tag({
 				tag: "img",
 				attrs: {src: url, alt: ""},
+				style: {
+					width: !props.equalizeByHeight ? undefined : viewBox(() => (natSideRatio() * maxNatHeight()) + "px"),
+					height: !props.equalizeByHeight ? undefined : maxNatHeight.map(height => height + "px")
+				},
 				onMousedown: e => {
 					if(e.button === 1){
 						window.open(url(), "_blank")
 					}
-				},
-				onLoad: updateBounds
+				}
 			})
-			return result
+
+			const onLoad = () => {
+				natSideRatio(img.naturalWidth / img.naturalHeight)
+				updateBounds()
+			}
+			if(img.complete){
+				onLoad()
+			} else {
+				// this event listener must not be passive
+				// because passive = async call
+				// and this could introduce race condition between updateBounds() and centerOn()
+				img.addEventListener("load", onLoad, {capture: true, once: true})
+			}
+
+			return img
 		}
 	)
 

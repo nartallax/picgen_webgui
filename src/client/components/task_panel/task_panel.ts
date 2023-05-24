@@ -79,7 +79,11 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			picture => picture.id,
 			picture => ClientApi.getPictureUrl(picture().id, picture().salt)
 		)
-		showImageViewer({urls, centerOn: pictureIndex < 0 ? undefined : pictureIndex})
+		showImageViewer({
+			urls,
+			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
+			equalizeByHeight: true
+		})
 	}
 
 	const pictureContainer = tag({class: css.pictures},
