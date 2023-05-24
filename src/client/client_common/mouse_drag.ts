@@ -86,11 +86,8 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 			try {
 				isClickingNow = true
 				if(e.target instanceof HTMLElement && isClickPreventionEnabled){
-					// console.log("click", e.target)
+					e.target.focus() // click does not focus inputs o_O
 					e.target.click()
-					if(e.target instanceof HTMLInputElement){
-						e.target.focus()
-					}
 				}
 				if(params.onClick){
 					params.onClick(e)

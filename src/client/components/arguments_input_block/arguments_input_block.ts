@@ -107,7 +107,7 @@ function ArgumentInput(def: GenParameter, value: WBox<GenerationTaskArgument>): 
 		case "enum":
 			return Select({
 				value: value as WBox<string | number>,
-				isParam: true,
+				isArgumentInput: true,
 				options: def.options.map(opt => {
 					if(typeof(opt) === "string" || typeof(opt) === "number"){
 						return {label: opt + "", value: opt}

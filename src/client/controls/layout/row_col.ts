@@ -8,6 +8,7 @@ type Props = {
 	align?: "start" | "center" | "end" | "stretch"
 	gap?: DefaultableSpacing
 	grow?: number
+	class?: string
 } & LayoutCommonProps
 
 const defaults = {
@@ -20,7 +21,7 @@ function resolveFlexAlign(align: RBox<string>): RBox<string> {
 }
 
 export const Row = defineControl<Props, typeof defaults>(defaults, (props, children) => {
-	return tag({class: css.row, style: {
+	return tag({class: [css.row, props.class], style: {
 		justifyContent: resolveFlexAlign(props.justify),
 		alignItems: resolveFlexAlign(props.align),
 		gap: resolveSpacing(props.gap),
@@ -29,7 +30,7 @@ export const Row = defineControl<Props, typeof defaults>(defaults, (props, child
 })
 
 export const Col = defineControl<Props, typeof defaults>(defaults, (props, children) => {
-	return tag({class: css.col, style: {
+	return tag({class: [css.col, props.class], style: {
 		justifyContent: resolveFlexAlign(props.justify),
 		alignItems: resolveFlexAlign(props.align),
 		gap: resolveSpacing(props.gap),

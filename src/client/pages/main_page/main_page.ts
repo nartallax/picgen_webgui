@@ -17,7 +17,7 @@ import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentP
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
-import {Row} from "client/controls/layout/row_col"
+import {Col, Row} from "client/controls/layout/row_col"
 import {IconButton} from "client/controls/icon_button/icon_button"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
@@ -128,10 +128,12 @@ export function MainPage(): HTMLElement {
 					}),
 					LoginBar()
 				]),
-				Select({
-					options: allKnownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
-					value: currentParamSetName
-				}),
+				Col({class: css.propSetSelector, align: "stretch"}, [
+					Select({
+						options: allKnownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
+						value: currentParamSetName
+					})
+				]),
 				ParamsBlock({paramGroups}),
 				TagSearchBlock({
 					selectedContentTags: currentContentTags,

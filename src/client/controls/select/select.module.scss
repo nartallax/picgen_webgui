@@ -1,20 +1,73 @@
 @use "../input_styles.scss";
 
-.select { 
-    font-size: 1.25rem;
-    width: 100%;
-    padding: 0.25rem 1rem;
-    border-radius: 1rem;
-    margin-bottom: 1rem;
-    color: #706d6c;
+.select {
+	position: relative;
 
-    &.param {
-        @extend .input;
+    .dropdownIcon {
+        color: #c2bcba;
+		font-size: 1.25rem;
+		line-height: 1em;
+		position: absolute;
+		pointer-events: none;
+        right: 0.2em;
+		top: 0.325em;
+		transition: transform 0.25s, top 0.25s;
 
-        padding-top: 0;
+        &.open {
+            transform: rotate(180deg);
+			top: 0.45em;
+        }
     }
 
-    &:not(.param) {
+    .selectInput { 
+        font-size: 1.25rem;
+        width: 100%;
+        padding: 0.25rem 1rem;
+        border-radius: 1rem;
+        color: #706d6c;
+    }
+
+    &.argumentInput .selectInput {
+        @extend .input;
+    }
+
+    &:not(.argumentInput) .selectInput {
         background: #faf4f2;
+    }
+
+}
+
+.dropdown {
+    pointer-events: all;
+    opacity: 1;
+    z-index: 100;
+
+    transition: opacity 0.15s;
+    position: absolute;
+    top: 100%;
+    left: 1em;
+    right: 1em;
+    background-color: #f5edeb;
+    border-radius: 0 0 1em 1em;
+    overflow-y: auto;
+
+    &.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+.option {
+    cursor: pointer;
+    transition: 0.25s;
+    font-size: 1.1rem;
+    line-height: 1.3em;
+    padding: 0.25em 0.5em;
+
+    background-color: #f5edeb;
+
+    &.selectedItem,
+    &:hover {
+        background-color: #fff;
     }
 }
