@@ -40,7 +40,6 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	function scrollToNextPicture(direction: -1 | 1): void {
 		const currentPicIndex = detectCurrentScrollPictureIndex()
-		// console.log({currentPicIndex})
 		if(currentPicIndex === null){
 			return
 		}
@@ -103,6 +102,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const picturesWrap = tag({class: css.picturesWrap}, [pictureContainer])
 
 	addDragScroll({
+		type: "element",
 		element: picturesWrap,
 		constraintDirection: "horisontal",
 		distanceBeforeMove: 10,

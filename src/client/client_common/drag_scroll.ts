@@ -1,10 +1,19 @@
 import {WBox} from "@nartallax/cardboard"
 import {MouseDragHandlerParams, addMouseDragHandler, pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 
-type DragScrollProps = {
-	element: HTMLElement
+type ElementDragScrollProps = {
+	type: "element"
 	draggedElement?: HTMLElement
-	absPosScroll?: boolean
+}
+
+type BoxDragScrollProps = {
+	type: "box"
+	x?: WBox<number>
+	y?: WBox<number>
+}
+
+type DragScrollProps = (ElementDragScrollProps | BoxDragScrollProps) & {
+	element: HTMLElement
 	dragSpeed?: number
 	isDragging?: WBox<boolean>
 	onClick?: MouseDragHandlerParams["onClick"]
@@ -15,6 +24,17 @@ type DragScrollProps = {
 export function addDragScroll(props: DragScrollProps): void {
 	let prevCoords: {x: number, y: number} | null = null
 	const dragSpeed = props.dragSpeed ?? 1
+
+	const changePosition = (dx: number, dy: number) => {
+		if(props.type === "box"){
+			props.x && props.x(props.x() + dx)
+			props.y && props.y(props.y() + dy)
+		} else {
+			const el = props.draggedElement ?? props.element
+			el.scrollLeft += dx
+			el.scrollTop += dy
+		}
+	}
 
 	addMouseDragHandler({
 		element: props.element,
@@ -29,16 +49,9 @@ export function addDragScroll(props: DragScrollProps): void {
 		onMove: evt => {
 			const coords = pointerEventsToClientCoords(evt)
 			if(prevCoords){
-				const dx = prevCoords.x - coords.x
-				const dy = prevCoords.y - coords.y
-				const el = props.draggedElement ?? props.element
-				if(props.absPosScroll){
-					el.style.left = (parseFloat(el.style.left || "0") - (dx * dragSpeed)) + "px"
-					el.style.top = (parseFloat(el.style.top || "0") - (dy * dragSpeed)) + "px"
-				} else {
-					el.scrollLeft += dx * dragSpeed
-					el.scrollTop += dy * dragSpeed
-				}
+				const dx = (prevCoords.x - coords.x) * dragSpeed
+				const dy = (prevCoords.y - coords.y) * dragSpeed
+				changePosition(dx, dy)
 			}
 			prevCoords = coords
 		},

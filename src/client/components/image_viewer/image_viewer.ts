@@ -32,6 +32,8 @@ export async function showImageViewer(props: Props): Promise<void> {
 	// props.urls = props.urls.map(urls => urls.map((_, i) => `https://dummyimage.com/2560x${i + 1}00`))
 
 	const isGrabbed = box(false)
+	const xPos = box(0)
+	const yPos = box(0)
 
 	let defaultZoom = 0.0001
 	const zoom = box(defaultZoom)
@@ -81,13 +83,13 @@ export async function showImageViewer(props: Props): Promise<void> {
 		zoomChanger.reset()
 
 		const imgRect = targetImg.getBoundingClientRect()
-		const containerOffsetTop = imgRect.top - parseFloat(wrap.style.top || "0")
-		const containerOffsetLeft = imgRect.left - parseFloat(wrap.style.left || "0")
+		const containerOffsetTop = imgRect.top - yPos()
+		const containerOffsetLeft = imgRect.left - xPos()
 		const windowOffsetTop = (window.innerHeight - imgRect.height) / 2
 		const windowOffsetLeft = (window.innerWidth - imgRect.width) / 2
 
-		wrap.style.top = (windowOffsetTop - containerOffsetTop) + "px"
-		wrap.style.left = (windowOffsetLeft - containerOffsetLeft) + "px"
+		yPos(windowOffsetTop - containerOffsetTop)
+		xPos(windowOffsetLeft - containerOffsetLeft)
 	}
 
 	// scroll view in a way that point of the picture is present at the coords of the screen
@@ -97,14 +99,14 @@ export async function showImageViewer(props: Props): Promise<void> {
 		const height = wrap.scrollHeight * zoom()
 		const left = -((relPoint.x * width) - absCoords.x)
 		const top = -((relPoint.y * height) - absCoords.y)
-		wrap.style.left = left + "px"
-		wrap.style.top = top + "px"
+		xPos(left)
+		yPos(top)
 	}
 
 	function setZoomByCoords(absCoords: {x: number, y: number}, value: number, instant?: boolean): void {
 		const relOffsetCoords = {
-			x: (absCoords.x - parseFloat(wrap.style.left || "0")) / (wrap.scrollWidth * zoom()),
-			y: (absCoords.y - parseFloat(wrap.style.top || "0")) / (wrap.scrollHeight * zoom())
+			x: (absCoords.x - xPos()) / (wrap.scrollWidth * zoom()),
+			y: (absCoords.y - yPos()) / (wrap.scrollHeight * zoom())
 		}
 		lastScrollActionCoords = {abs: absCoords, rel: relOffsetCoords}
 
@@ -141,7 +143,9 @@ export async function showImageViewer(props: Props): Promise<void> {
 			[css.grabbed!]: isGrabbed
 		}],
 		style: {
-			transform: zoom.map(zoom => `scale(${zoom})`)
+			transform: zoom.map(zoom => `scale(${zoom})`),
+			top: yPos.map(pos => pos + "px"),
+			left: xPos.map(pos => pos + "px")
 		},
 		onClick: () => modal.close()
 	}, imgs)
@@ -169,11 +173,12 @@ export async function showImageViewer(props: Props): Promise<void> {
 	})
 
 	addDragScroll({
+		type: "box",
+		x: xPos,
+		y: yPos,
 		element: modal.overlay,
-		draggedElement: wrap,
 		isDragging: isGrabbed,
-		dragSpeed: 2,
-		absPosScroll: true
+		dragSpeed: -2
 	})
 
 	addTouchZoom({
