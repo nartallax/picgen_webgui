@@ -54,6 +54,11 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 						openViewer({url: url(), el: result, picture: props.picture()})
 					})
 				}
+			},
+			onMousedown: e => {
+				if(e.button === 1){
+					window.open(url(), "_blank")
+				}
 			}
 		}, [
 			tag([]), // tbd

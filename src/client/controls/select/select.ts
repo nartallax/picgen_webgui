@@ -17,6 +17,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		if(e.target === wrap || ((e.target instanceof Node) && wrap.contains(e.target))){
 			return
 		}
+		// blur doesn't happen on mobile tap on empty space
 		input.blur()
 	}
 

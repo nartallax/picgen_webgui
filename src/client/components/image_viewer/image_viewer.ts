@@ -125,7 +125,12 @@ export async function showImageViewer(props: Props): Promise<void> {
 		url => {
 			const result: HTMLImageElement = tag({
 				tag: "img",
-				attrs: {src: url, alt: ""}
+				attrs: {src: url, alt: ""},
+				onMousedown: e => {
+					if(e.button === 1){
+						window.open(url(), "_blank")
+					}
+				}
 			})
 			return result
 		}
