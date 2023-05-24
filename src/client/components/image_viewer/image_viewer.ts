@@ -22,17 +22,16 @@ function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	})
 }
 
-type Props = {
-	urls: RBox<readonly string[]>
-	zoomSpeed?: number
-	centerOn?: number
-	equalizeByHeight?: boolean
+type Props<T> = {
+	readonly imageDescriptions: RBox<readonly T[]>
+	readonly makeUrl: (imageDescription: T) => string
+	readonly zoomSpeed?: number
+	readonly centerOn?: number
+	readonly equalizeByHeight?: boolean
+	readonly formatLabel?: (img: HTMLImageElement, imageDescription: T) => string
 }
 
-export async function showImageViewer(props: Props): Promise<void> {
-	// url = "https://dummyimage.com/5120x5120"
-	props.urls = props.urls.map(urls => urls.map((_, i) => `https://dummyimage.com/256x${i + 1}00`))
-
+export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 	const isGrabbed = box(false)
 	// coords of center of the screen in "image space"
 	const xPos = box(0)
@@ -52,13 +51,15 @@ export async function showImageViewer(props: Props): Promise<void> {
 			}
 		}
 
+		const imgArr = imgs().map(([img]) => img)
+
 		let natHeight = maxNatHeight()
-		for(const img of imgs()){
+		for(const img of imgArr){
 			natHeight = Math.max(img.naturalHeight, natHeight)
 		}
 		maxNatHeight(natHeight)
 
-		for(const img of imgs()){
+		for(const img of imgArr){
 			const rect = img.getBoundingClientRect()
 			bounds.top = Math.min(bounds.top, -rect.height / 2)
 			bounds.bottom = Math.max(bounds.bottom, rect.height / 2)
@@ -87,7 +88,7 @@ export async function showImageViewer(props: Props): Promise<void> {
 
 	function scrollToNextImage(direction: -1 | 1): void {
 		const targetIndex = getCentralImageIndex() + direction
-		const imgArr = imgs()
+		const imgArr = imgs().map(([img]) => img)
 		if(targetIndex >= imgArr.length || targetIndex < 0){
 			return
 		}
@@ -96,7 +97,7 @@ export async function showImageViewer(props: Props): Promise<void> {
 
 	function getCentralImageIndex(): number {
 		const windowCenter = window.innerWidth / 2
-		const imgArr = imgs()
+		const imgArr = imgs().map(([img]) => img)
 		for(let i = 0; i < imgArr.length; i++){
 			const img = imgArr[i]!
 			const rect = img.getBoundingClientRect()
@@ -106,17 +107,6 @@ export async function showImageViewer(props: Props): Promise<void> {
 		}
 		return imgArr.length - 1
 	}
-
-	// FIXME
-	const center = tag({style: {
-		width: "10px",
-		height: "10px",
-		backgroundColor: "red",
-		position: "absolute",
-		left: ((window.innerWidth / 2) - 5) + "px",
-		top: ((window.innerHeight / 2) - 5) + "px"
-	}})
-	document.body.appendChild(center)
 
 	function centerOn(img: HTMLImageElement): void {
 		const natHeight = props.equalizeByHeight ? maxNatHeight() : img.naturalHeight
@@ -167,20 +157,20 @@ export async function showImageViewer(props: Props): Promise<void> {
 		setZoomByCoords(pointerEventsToClientCoords(e), value)
 	}
 
-	const imgs = props.urls.mapArray(
-		url => url,
-		url => {
+	const imgs = props.imageDescriptions.mapArray(
+		desc => props.makeUrl(desc),
+		desc => {
 			const natSideRatio = box(1)
 			const img: HTMLImageElement = tag({
 				tag: "img",
-				attrs: {src: url, alt: ""},
+				attrs: {src: desc.map(desc => props.makeUrl(desc)), alt: ""},
 				style: {
 					width: !props.equalizeByHeight ? undefined : viewBox(() => (natSideRatio() * maxNatHeight()) + "px"),
 					height: !props.equalizeByHeight ? undefined : maxNatHeight.map(height => height + "px")
 				},
 				onMousedown: e => {
 					if(e.button === 1){
-						window.open(url(), "_blank")
+						window.open(props.makeUrl(desc()), "_blank")
 					}
 				}
 			})
@@ -198,8 +188,23 @@ export async function showImageViewer(props: Props): Promise<void> {
 				img.addEventListener("load", onLoad, {capture: true, once: true})
 			}
 
-			return img
+			return [img, desc] as const
 		}
+	)
+
+	const imgsWithLabels = !props.formatLabel ? imgs : imgs.mapArray(
+		([img]) => img,
+		imgAndDesc => [tag({class: css.imgWrap}, imgAndDesc.map(([img, descBox]) => {
+			const label = tag({
+				class: css.imgLabel,
+				style: {
+					fontSize: maxNatHeight.map(height => (height / 400) + "rem")
+				}
+			}, [])
+			waitLoadEvent(img).then(() => label.textContent = props.formatLabel!(img, descBox()))
+			whileMounted(label, descBox, desc => label.textContent = props.formatLabel!(img, desc))
+			return [img, label]
+		})), imgAndDesc()[1]] as const
 	)
 
 	const wrap = tag({
@@ -210,7 +215,7 @@ export async function showImageViewer(props: Props): Promise<void> {
 			transform: zoom.map(zoom => `scale(${zoom})`)
 		},
 		onClick: () => modal.close()
-	}, imgs)
+	}, imgsWithLabels.mapArray(([img]) => img, imgAndDesc => imgAndDesc()[0]))
 
 	// those handlers are only to have better control over updates
 	// (i.e. to impose boundaries)
@@ -277,7 +282,7 @@ export async function showImageViewer(props: Props): Promise<void> {
 	onMount(wrap, async() => {
 		const targetIndex = props.centerOn ?? 0
 
-		const imgArr = imgs()
+		const imgArr = imgs().map(([img]) => img)
 		const imgsBeforeTarget = imgArr.slice(0, targetIndex + 1)
 		await Promise.all(imgsBeforeTarget.map(img => waitLoadEvent(img)))
 		const targetImg = imgArr[targetIndex]!

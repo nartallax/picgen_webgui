@@ -75,14 +75,13 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	function openViewer(args: OpenTaskPictureViewerArgs): void {
 		const pictureIndex = pictures().indexOf(args.picture)
-		const urls = pictures.mapArray(
-			picture => picture.id,
-			picture => ClientApi.getPictureUrl(picture().id, picture().salt)
-		)
 		showImageViewer({
-			urls,
+			imageDescriptions: pictures,
+			// makeUrl: picture => `https://dummyimage.com/256x${(picture.id % pictures().length) + 1}00`,
+			makeUrl: picture => ClientApi.getPictureUrl(picture.id, picture.salt),
 			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
-			equalizeByHeight: true
+			equalizeByHeight: true,
+			formatLabel: img => `${img.naturalWidth} x ${img.naturalHeight}`
 		})
 	}
 

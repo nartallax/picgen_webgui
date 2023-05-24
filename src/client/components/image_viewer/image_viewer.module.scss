@@ -28,3 +28,26 @@
 		}
 	}
 }
+
+.imgWrap {
+	position: relative;
+	display: inline-block;
+	transform: translateY(-50%);
+	margin: 0 1rem;
+
+	img {
+		transform: none;
+		margin: 0;
+	}
+}
+
+.imgLabel {
+	position: absolute;
+	bottom: 100%;
+
+	color: #fff;
+	font-weight: bold;
+	background-color: rgba(0, 0, 0, 0.5);
+	padding: 0.25em 0.5em 0.1em 0.5em;
+	line-height: 1.2em;
+}
