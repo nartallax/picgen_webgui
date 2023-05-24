@@ -30,7 +30,7 @@ type Props = {
 
 export async function showImageViewer(props: Props): Promise<void> {
 	// url = "https://dummyimage.com/5120x5120"
-	// props.urls = props.urls.map(urls => urls.map((_, i) => `https://dummyimage.com/2560x${i + 1}00`))
+	props.urls = props.urls.map(urls => urls.map((_, i) => `https://dummyimage.com/256x${i + 1}00`))
 
 	const isGrabbed = box(false)
 	// coords of center of the screen in "image space"
@@ -52,12 +52,12 @@ export async function showImageViewer(props: Props): Promise<void> {
 			const rect = img.getBoundingClientRect()
 			bounds.top = Math.min(bounds.top, -rect.height / 2)
 			bounds.bottom = Math.max(bounds.bottom, rect.height / 2)
-			bounds.left = Math.min(bounds.left, rect.left - (window.innerWidth / 2) + xPos())
-			bounds.right = Math.max(bounds.right, rect.right - (window.innerWidth / 2) + xPos())
+			bounds.left = Math.min(bounds.left, (rect.left / zoom()) - (window.innerWidth / 2) + xPos())
+			bounds.right = Math.max(bounds.right, (rect.right / zoom()) - (window.innerWidth / 2) + xPos())
 		}
 	})
 
-	let defaultZoom = 0.0001
+	let defaultZoom = 1
 	const zoom = box(defaultZoom)
 	const zoomChanger = new SoftValueChanger({
 		getValue: zoom,
@@ -252,6 +252,7 @@ export async function showImageViewer(props: Props): Promise<void> {
 		await Promise.all(imgsBeforeTarget.map(img => waitLoadEvent(img)))
 		const targetImg = imgArr[targetIndex]!
 
+		await updateBounds.waitForScheduledRun()
 		centerOn(targetImg)
 	})
 }
