@@ -58,6 +58,33 @@ export function MainPage(): HTMLElement {
 	const knownTasks = box([] as GenerationTaskWithPictures[])
 	let websocket: WebsocketListener | null = null
 
+	const startGeneration = async() => {
+		const fullPrompt = composePrompt({
+			shape: currentShapeTag(),
+			body: currentPrompt(),
+			content: currentContentTags()
+		})
+		const paramValuesForApi = {} as Record<string, GenerationTaskArgument>
+		const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
+		if(!paramDefs){
+			return
+		}
+		const paramDefsByName = new Map(paramDefs.map(def => [def.jsonName, def]))
+		for(const paramName in currentArgumentBoxes){
+			const paramValue = unbox(currentArgumentBoxes[paramName])!
+			const def = paramDefsByName.get(paramName)
+			if(def && def.type === "picture" && typeof(paramValue) === "object" && paramValue.id === 0){
+				continue // not passed
+			}
+			paramValuesForApi[paramName] = paramValue
+		}
+		await ClientApi.createGenerationTask({
+			prompt: fullPrompt,
+			paramSetName: currentParamSetName(),
+			params: paramValuesForApi
+		})
+	}
+
 	const result = tag({class: css.pageRoot}, [
 		tag({class: css.generationColumn}, [
 			PromptInput({
@@ -65,32 +92,7 @@ export function MainPage(): HTMLElement {
 				selectedContentTags: currentContentTags,
 				shapeValue: currentShapeTag,
 				shapeValues: allKnownShapeTags,
-				startGeneration: async() => {
-					const fullPrompt = composePrompt({
-						shape: currentShapeTag(),
-						body: currentPrompt(),
-						content: currentContentTags()
-					})
-					const paramValuesForApi = {} as Record<string, GenerationTaskArgument>
-					const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
-					if(!paramDefs){
-						return
-					}
-					const paramDefsByName = new Map(paramDefs.map(def => [def.jsonName, def]))
-					for(const paramName in currentArgumentBoxes){
-						const paramValue = unbox(currentArgumentBoxes[paramName])!
-						const def = paramDefsByName.get(paramName)
-						if(def && def.type === "picture" && typeof(paramValue) === "object" && paramValue.id === 0){
-							continue // not passed
-						}
-						paramValuesForApi[paramName] = paramValue
-					}
-					await ClientApi.createGenerationTask({
-						prompt: fullPrompt,
-						paramSetName: currentParamSetName(),
-						params: paramValuesForApi
-					})
-				}
+				startGeneration: startGeneration
 			}),
 			Feed({
 				getId: task => task.id,

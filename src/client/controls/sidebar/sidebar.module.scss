@@ -35,3 +35,13 @@
 		right: 0;
 	}
 }
+
+@media screen and (min-width: $mobile-breakpoint) {
+	.sidebar {
+		transform: none!important; // to override style
+	}
+
+	.sidebarOverlay {
+		display: none;
+	}
+}
