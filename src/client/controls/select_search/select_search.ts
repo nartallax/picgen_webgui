@@ -74,8 +74,7 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 		return new PrefixTree<string>(processedData)
 	})
 
-	function onItemClick(this: HTMLElement, e: MouseEvent): void {
-		console.log("click")
+	function onItemClick(this: HTMLElement, e: MouseEvent | TouchEvent): void {
 		e.preventDefault()
 		e.stopPropagation()
 		props.value(this.textContent + "")
@@ -99,6 +98,7 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 		}
 		for(const item of selectedItems){
 			const itemEl = tag({class: css.item}, [item])
+			itemEl.addEventListener("touchstart", onItemClick, {capture: true})
 			itemEl.addEventListener("mousedown", onItemClick, {capture: true})
 			listWrap.appendChild(itemEl)
 		}

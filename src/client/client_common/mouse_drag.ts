@@ -86,8 +86,11 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 			try {
 				isClickingNow = true
 				if(e.target instanceof HTMLElement && isClickPreventionEnabled){
-					console.log("click")
+					// console.log("click", e.target)
 					e.target.click()
+					if(e.target instanceof HTMLInputElement){
+						e.target.focus()
+					}
 				}
 				if(params.onClick){
 					params.onClick(e)
@@ -140,6 +143,9 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 	}
 
 	const onDown = (e: MouseEvent | TouchEvent): void => {
+		if(e instanceof MouseEvent && e.buttons !== 1){
+			return
+		}
 		if(!targetIsRight(e) || isMultiTouchEvent(e)){
 			// if target check is true - this event is handled by another mouse drag handler
 			// in basic cases we could just mouseEvent.stopPropagation()
@@ -162,7 +168,6 @@ export function addMouseDragHandler(params: MouseDragHandlerParams): () => void 
 
 	const onUp = (e: MouseEvent | TouchEvent): void => {
 		if(e.type === "touchend" && e.cancelable){
-			// touchend is not passive, so we can do that
 			// this is needed to prevent `mouseup` from also firing
 			e.preventDefault()
 		}
