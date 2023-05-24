@@ -1,4 +1,4 @@
-import {onMount, tag} from "@nartallax/cardboard-dom"
+import {onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import {showModalBase} from "client/controls/modal_base/modal_base"
 import * as css from "./image_viewer.module.scss"
 import {RBox, box} from "@nartallax/cardboard"
@@ -6,6 +6,7 @@ import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {SoftValueChanger} from "client/base/soft_value_changer"
 import {addTouchZoom} from "client/client_common/touch_zoom"
+import {debounce} from "client/client_common/debounce"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
@@ -32,8 +33,29 @@ export async function showImageViewer(props: Props): Promise<void> {
 	// props.urls = props.urls.map(urls => urls.map((_, i) => `https://dummyimage.com/2560x${i + 1}00`))
 
 	const isGrabbed = box(false)
+	// coords of center of the screen in "image space"
 	const xPos = box(0)
 	const yPos = box(0)
+
+	let bounds: {top: number, bottom: number, left: number, right: number} | null = null
+
+	const updateBounds = debounce(1, () => {
+		if(!bounds){
+			bounds = {
+				top: Number.MAX_SAFE_INTEGER,
+				bottom: Number.MIN_SAFE_INTEGER,
+				left: Number.MAX_SAFE_INTEGER,
+				right: Number.MIN_SAFE_INTEGER
+			}
+		}
+		for(const img of imgs()){
+			const rect = img.getBoundingClientRect()
+			bounds.top = Math.min(bounds.top, -rect.height / 2)
+			bounds.bottom = Math.max(bounds.bottom, rect.height / 2)
+			bounds.left = Math.min(bounds.left, rect.left - (window.innerWidth / 2) + xPos())
+			bounds.right = Math.max(bounds.right, rect.right - (window.innerWidth / 2) + xPos())
+		}
+	})
 
 	let defaultZoom = 0.0001
 	const zoom = box(defaultZoom)
@@ -75,6 +97,17 @@ export async function showImageViewer(props: Props): Promise<void> {
 		return imgArr.length - 1
 	}
 
+	// FIXME
+	const center = tag({style: {
+		width: "10px",
+		height: "10px",
+		backgroundColor: "red",
+		position: "absolute",
+		left: ((window.innerWidth / 2) - 5) + "px",
+		top: ((window.innerHeight / 2) - 5) + "px"
+	}})
+	document.body.appendChild(center)
+
 	function centerOn(targetImg: HTMLImageElement): void {
 		const hRatio = window.innerHeight / targetImg.naturalHeight
 		const wRatio = window.innerWidth / targetImg.naturalWidth
@@ -83,13 +116,10 @@ export async function showImageViewer(props: Props): Promise<void> {
 		zoomChanger.reset()
 
 		const imgRect = targetImg.getBoundingClientRect()
-		const containerOffsetTop = imgRect.top - yPos()
-		const containerOffsetLeft = imgRect.left - xPos()
-		const windowOffsetTop = (window.innerHeight - imgRect.height) / 2
-		const windowOffsetLeft = (window.innerWidth - imgRect.width) / 2
+		const imgLeft = imgRect.left - (window.innerWidth / 2)
 
-		yPos(windowOffsetTop - containerOffsetTop)
-		xPos(windowOffsetLeft - containerOffsetLeft)
+		yPos(0)
+		xPos(xPos() + imgLeft + (imgRect.width / 2))
 	}
 
 	// scroll view in a way that point of the picture is present at the coords of the screen
@@ -104,6 +134,9 @@ export async function showImageViewer(props: Props): Promise<void> {
 	}
 
 	function setZoomByCoords(absCoords: {x: number, y: number}, value: number, instant?: boolean): void {
+		absCoords = {...absCoords}
+		absCoords.x = (-absCoords.x + (window.innerWidth / 2))
+		absCoords.y = (-absCoords.y + (window.innerHeight / 2))
 		const relOffsetCoords = {
 			x: (absCoords.x - xPos()) / (wrap.scrollWidth * zoom()),
 			y: (absCoords.y - yPos()) / (wrap.scrollHeight * zoom())
@@ -132,7 +165,8 @@ export async function showImageViewer(props: Props): Promise<void> {
 					if(e.button === 1){
 						window.open(url(), "_blank")
 					}
-				}
+				},
+				onLoad: updateBounds
 			})
 			return result
 		}
@@ -143,12 +177,34 @@ export async function showImageViewer(props: Props): Promise<void> {
 			[css.grabbed!]: isGrabbed
 		}],
 		style: {
-			transform: zoom.map(zoom => `scale(${zoom})`),
-			top: yPos.map(pos => pos + "px"),
-			left: xPos.map(pos => pos + "px")
+			transform: zoom.map(zoom => `scale(${zoom})`)
 		},
 		onClick: () => modal.close()
 	}, imgs)
+
+	// those handlers are only to have better control over updates
+	// (i.e. to impose boundaries)
+	whileMounted(wrap, xPos, x => {
+		if(bounds){
+			const fx = Math.max(bounds.left * zoom(), Math.min(bounds.right * zoom(), x))
+			if(fx !== x){
+				xPos(fx)
+				return
+			}
+		}
+		wrap.style.left = (-x + (window.innerWidth / 2)) + "px"
+	})
+
+	whileMounted(wrap, yPos, y => {
+		if(bounds){
+			const fy = Math.max(bounds.top * zoom(), Math.min(bounds.bottom * zoom(), y))
+			if(fy !== y){
+				yPos(fy)
+				return
+			}
+		}
+		wrap.style.top = (-y + (window.innerHeight / 2)) + "px"
+	})
 
 	const modal = showModalBase({closeByBackgroundClick: true}, [wrap])
 
@@ -178,7 +234,7 @@ export async function showImageViewer(props: Props): Promise<void> {
 		y: yPos,
 		element: modal.overlay,
 		isDragging: isGrabbed,
-		dragSpeed: -2
+		dragSpeed: 2
 	})
 
 	addTouchZoom({
