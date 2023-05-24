@@ -14,6 +14,7 @@ interface NumberInputProps {
 const zeroCode = "0".charCodeAt(0)
 const nineCode = "9".charCodeAt(0)
 const dotCode = ".".charCodeAt(0)
+const commaCode = ",".charCodeAt(0)
 const minusCode = "-".charCodeAt(0)
 
 function formatToPrecision(value: number, precision?: number): string {
@@ -45,7 +46,7 @@ export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defa
 		if(typeof(min) === "number" && min < 0 && code === minusCode){
 			return
 		}
-		if(!unbox(props.int) && code === dotCode){
+		if(!unbox(props.int) && (code === dotCode || code === commaCode)){
 			return
 		}
 		e.preventDefault()
@@ -53,7 +54,7 @@ export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defa
 
 	input.addEventListener("blur", () => {
 		const valueStr = input.value
-		let valueNum = parseFloat(valueStr)
+		let valueNum = parseFloat(valueStr.replace(/,/g, "."))
 		if(Number.isNaN(valueNum)){
 			valueNum = dflt
 		}
