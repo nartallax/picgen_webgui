@@ -11,12 +11,14 @@ interface Props<T> {
 
 export function Select<T>(props: Props<T>): HTMLElement {
 
-	const options = constBoxWrap(props.options).map(arr => [...arr, ...arr, ...arr, ...arr, ...arr, ...arr, ...arr, ...arr, ...arr, ...arr, ...arr].map((el, i) => {
-		return i === 0 ? el : {
-			value: el.value + "" + i,
-			label: el.label + i
+	const options = constBoxWrap(props.options)
+
+	function handleWindowClick(e: MouseEvent): void {
+		if(e.target === wrap || ((e.target instanceof Node) && wrap.contains(e.target))){
+			return
 		}
-	}))
+		input.blur()
+	}
 
 	const input: HTMLInputElement = tag({
 		tag: "input",
@@ -24,8 +26,14 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		attrs: {
 			readonly: true
 		},
-		onFocus: () => listHidden(false),
-		onBlur: () => listHidden(true)
+		onFocus: () => {
+			listHidden(false)
+			window.addEventListener("click", handleWindowClick)
+		},
+		onBlur: () => {
+			window.removeEventListener("click", handleWindowClick)
+			listHidden(true)
+		}
 	})
 
 	input.addEventListener("keydown", e => {
@@ -45,7 +53,8 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			if(selectedItem() >= 0){
 				const item = listWrap.children[selectedItem()]
 				if(item instanceof HTMLElement){
-					item.dispatchEvent(new Event("mousedown"))
+					// a bit of a hack, but whatever
+					item.onclick!(new MouseEvent(""))
 				}
 			}
 		}
@@ -55,29 +64,21 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	const selectedItem = box(-1)
 
 	const listWrap = tag({
-		class: [css.dropdown, {
-			[css.hidden!]: listHidden
-		}],
+		class: [css.dropdown],
 		style: {
 			maxHeight: (props.listSizeLimit ?? 10) + "em"
 		}
 	}, options.mapArray(
 		value => value,
 		value => {
-			const option = tag({class: css.option}, [value.prop("label")])
-
-			const onItemClick = (e: MouseEvent | TouchEvent) => {
-				e.preventDefault()
-				e.stopPropagation()
+			const option = tag({
+				class: css.option
+			}, [value.prop("label")])
+			option.onclick = () => {
 				props.value(value().value)
 				selectedItem(-1)
 				input.blur()
 			}
-
-			// it's not "click", and is capture, because mousedown/touchstart will remove focus from the input
-			// and so we need to capture an event before it happens
-			option.addEventListener("mousedown", onItemClick, {capture: true})
-			option.addEventListener("touchstart", onItemClick, {capture: true})
 			return option
 		}
 	))
@@ -94,8 +95,15 @@ export function Select<T>(props: Props<T>): HTMLElement {
 
 	function updateValue(): void {
 		const value = props.value()
+		const opts = options()
 		const valuePair = options().find(x => x.value === value)
 		if(!valuePair){
+			if(opts.length > 0){
+				props.value(opts[0]!.value)
+			}
+			// there are some semi-legitimate cases when this could happen
+			// for example, when stuff is just being loaded and no value is present yet
+			// so, whatever, let's not pollute logs with warnings
 			// console.warn("There's no value " + JSON.stringify(value) + " in the list")
 			return
 		}
@@ -116,6 +124,23 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			} else if(hasClass){
 				child.classList.remove(css.selectedItem!)
 			}
+		}
+	})
+
+	const hideTimeoutHandle: ReturnType<typeof setTimeout> | null = null
+	whileMounted(wrap, listHidden, isHidden => {
+		if(isHidden){
+			listWrap.style.opacity = "0"
+			setTimeout(() => {
+				listWrap.style.display = "none"
+			}, 150)
+		} else {
+			if(hideTimeoutHandle !== null){
+				clearTimeout(hideTimeoutHandle)
+			}
+			listWrap.style.opacity = "0"
+			listWrap.style.display = ""
+			requestAnimationFrame(() => listWrap.style.opacity = "1")
 		}
 	})
 
