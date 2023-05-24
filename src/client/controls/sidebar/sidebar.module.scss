@@ -6,8 +6,6 @@
 	flex-grow: 0;
 	flex-shrink: 0;
 	position: relative;
-
-	transition: transform 0.1s linear;
 }
 
 .sidebarOverlay {
@@ -24,6 +22,10 @@
 	height: 100vh;
 }
 
+.positioningWrap {
+	transition: transform 0.1s linear;
+}
+
 @media screen and (max-width: $mobile-breakpoint) {
 	.sidebar {
 		position: absolute;
@@ -37,11 +39,11 @@
 }
 
 @media screen and (min-width: $mobile-breakpoint) {
-	.sidebar {
+	.positioningWrap {
 		transform: none!important; // to override style
 	}
 
 	.sidebarOverlay {
-		display: none;
+		display: none!important;
 	}
 }

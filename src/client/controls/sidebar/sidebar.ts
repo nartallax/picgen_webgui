@@ -11,28 +11,30 @@ export const Sidebar = defineControl<Props>((props, children) => {
 	const isOpen = props.isOpen ?? box(false)
 	const isDragging = box(false)
 	const dragProgress = box(0)
-	const width = box(0)
 
 	const overlay = tag({
 		class: css.sidebarOverlay,
 		style: {
-			opacity: viewBox(() => isDragging() ? dragProgress() : isOpen() ? 1 : 0)
+			opacity: viewBox(() => isDragging() ? dragProgress() : isOpen() ? 1 : 0),
+			display: viewBox(() => isDragging() || isOpen() ? "" : "none")
 		}
 	})
-	const wrap = tag({class: css.positioningWrap}, children)
-	const result = tag({
-		class: [css.sidebar],
+	const wrap = tag({
+		class: css.positioningWrap,
 		style: {
-			transform: viewBox(() => `translateX(${(isDragging() ? dragProgress() : isOpen() ? 1 : 0) * width()}px)`)
+			transform: viewBox(() => `translateX(${(isDragging() ? dragProgress() : isOpen() ? 1 : 0) * 100}%)`)
 		}
-	}, [wrap])
+	}, children)
+	const result = tag({
+		class: [css.sidebar]
+	}, [overlay, wrap])
 
 	let startX = 0
 
 	function calcDragProgress(e: MouseEvent | TouchEvent): number {
 		const curX = pointerEventsToClientCoords(e).x
 		const diff = curX - startX
-		let rate = diff / width()
+		let rate = diff / window.innerWidth
 
 		if(isOpen()){
 			rate = 1 + Math.max(-1, Math.min(0, rate))
@@ -47,13 +49,12 @@ export const Sidebar = defineControl<Props>((props, children) => {
 		distanceBeforeMove: 25,
 		constraintDirection: "horisontal",
 		start: e => {
+			// check if the mobile version is enabled
 			if(getComputedStyle(result).position !== "absolute"){
 				return false
 			}
 			isDragging(true)
-			result.before(overlay)
 			startX = pointerEventsToClientCoords(e).x
-			width(wrap.clientWidth)
 			return true
 		},
 		onMove: e => dragProgress(calcDragProgress(e)),
@@ -65,10 +66,6 @@ export const Sidebar = defineControl<Props>((props, children) => {
 				isOpen(true)
 			}
 			isDragging(false)
-
-			if(!isOpen()){
-				overlay.remove()
-			}
 		}
 	}))
 

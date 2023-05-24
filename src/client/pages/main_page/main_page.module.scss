@@ -25,7 +25,17 @@ body {
 
 }
 
+.menuButton {
+	display: none;
+	margin-right: 1rem;
+}
+
 @media only screen and (max-width: $mobile-breakpoint) {
+
+	.menuButton {
+		display: block;
+	}
+
 	.pageRoot {
 		padding: 0;
 

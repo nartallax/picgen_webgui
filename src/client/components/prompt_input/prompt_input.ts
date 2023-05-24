@@ -36,6 +36,7 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 			}),
 			input,
 			tag({
+				tag: "button",
 				class: [css.generateButton, "icon-brush"],
 				onClick: props.startGeneration // TODO: falloff to prevent doubleclicking
 			})

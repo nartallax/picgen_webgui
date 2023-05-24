@@ -17,6 +17,8 @@ import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentP
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
+import {Row} from "client/controls/layout/row_col"
+import {IconButton} from "client/controls/icon_button/icon_button"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -85,15 +87,24 @@ export function MainPage(): HTMLElement {
 		})
 	}
 
+	const isMenuOpen = box(false)
+
 	const result = tag({class: css.pageRoot}, [
 		tag({class: css.generationColumn}, [
-			PromptInput({
-				promptValue: currentPrompt,
-				selectedContentTags: currentContentTags,
-				shapeValue: currentShapeTag,
-				shapeValues: allKnownShapeTags,
-				startGeneration: startGeneration
-			}),
+			Row({align: "start", gap: true, padding: "bottom"}, [
+				IconButton({
+					icon: "icon-menu",
+					onClick: () => isMenuOpen(!isMenuOpen()),
+					class: css.menuButton
+				}),
+				PromptInput({
+					promptValue: currentPrompt,
+					selectedContentTags: currentContentTags,
+					shapeValue: currentShapeTag,
+					shapeValues: allKnownShapeTags,
+					startGeneration: startGeneration
+				})
+			]),
 			Feed({
 				getId: task => task.id,
 				loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
@@ -107,9 +118,16 @@ export function MainPage(): HTMLElement {
 				bottomLoadingPlaceholder: tag(["Loading..."])
 			})
 		]),
-		Sidebar([
+		Sidebar({isOpen: isMenuOpen}, [
 			tag({class: css.settingsColumn}, [
-				LoginBar(),
+				Row({align: "start"}, [
+					IconButton({
+						icon: "icon-menu",
+						onClick: () => isMenuOpen(!isMenuOpen()),
+						class: css.menuButton
+					}),
+					LoginBar()
+				]),
 				Select({
 					options: allKnownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
 					value: currentParamSetName

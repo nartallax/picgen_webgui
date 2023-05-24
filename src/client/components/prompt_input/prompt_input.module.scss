@@ -3,7 +3,8 @@
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
-	margin-bottom: 1em;
+	flex: 1 1 0;
+	min-width: 0;
 
 	.firstLine {
 		flex-grow: 0;
@@ -48,9 +49,12 @@
 			left: 2px;
 		}
 
-		&:hover {
-			background: #bdb;
-		}
 	}
 
+}
+
+@media (hover: hover) {
+    .generateButton:hover {
+		background: #bdb;
+	}
 }
