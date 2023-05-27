@@ -28,14 +28,18 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			readonly: true
 		},
 		onFocus: () => {
-			listHidden(false)
+			listPosition(getListPosition())
 			window.addEventListener("click", handleWindowClick)
 		},
 		onBlur: () => {
 			window.removeEventListener("click", handleWindowClick)
-			listHidden(true)
+			listPosition(null)
 		}
 	})
+
+	const getListPosition = () => {
+		return input.getBoundingClientRect().left
+	}
 
 	input.addEventListener("keydown", e => {
 		const down = e.key === "ArrowDown"
@@ -61,7 +65,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		}
 	})
 
-	const listHidden = box(true)
+	const listPosition = box<null | number>(null)
 	const selectedItem = box(-1)
 
 	const listWrap = tag({
@@ -84,14 +88,18 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		}
 	))
 
+	const listPositionWrap = tag({class: css.listPosWrap}, [
+		listWrap
+	])
+
 	const wrap = tag({
 		class: [css.select, {[css.argumentInput!]: props.isArgumentInput}]
 	}, [
 		input,
 		tag({class: [css.dropdownIcon, "icon-down-open", {
-			[css.open!]: listHidden.map(hidden => !hidden)
+			[css.open!]: listPosition.map(pos => pos !== null)
 		}]}),
-		listWrap
+		listPositionWrap
 	])
 
 	function updateValue(): void {
@@ -129,8 +137,8 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	})
 
 	const hideTimeoutHandle: ReturnType<typeof setTimeout> | null = null
-	whileMounted(wrap, listHidden, isHidden => {
-		if(isHidden){
+	whileMounted(wrap, listPosition, position => {
+		if(position === null){
 			listWrap.style.opacity = "0"
 			setTimeout(() => {
 				listWrap.style.display = "none"
@@ -139,6 +147,8 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			if(hideTimeoutHandle !== null){
 				clearTimeout(hideTimeoutHandle)
 			}
+			listPositionWrap.style.left = `-${position}px`
+			listPositionWrap.style.paddingLeft = `${position}px`
 			listWrap.style.opacity = "0"
 			listWrap.style.display = ""
 			requestAnimationFrame(() => listWrap.style.opacity = "1")

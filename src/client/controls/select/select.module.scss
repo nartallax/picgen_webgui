@@ -20,6 +20,7 @@
     }
 
     .selectInput { 
+        cursor: pointer;
         font-size: 1.25rem;
         width: 100%;
         padding: 0.25rem 1rem;
@@ -38,17 +39,11 @@
 }
 
 .dropdown {
-    pointer-events: all;
-    z-index: 100;
-
     transition: opacity 0.15s;
-    position: absolute;
-    top: 100%;
-    left: 1em;
-    right: 1em;
     background-color: #f5edeb;
     border-radius: 0 0 1em 1em;
     overflow-y: auto;
+    margin: 0 1em;
 }
 
 .option {
@@ -60,8 +55,19 @@
 
     background-color: #f5edeb;
 
+    white-space: nowrap;
+
     &.selectedItem,
     &:hover {
         background-color: #fff;
     }
+}
+
+.listPosWrap {
+    z-index: 100;
+    position: absolute;
+    top: 100%;
+    max-width: 95vw;
+    min-width: 100%;
+    box-sizing: content-box;
 }
