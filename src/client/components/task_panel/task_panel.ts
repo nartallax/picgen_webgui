@@ -81,7 +81,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			makeUrl: picture => ClientApi.getPictureUrl(picture.id, picture.salt),
 			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
 			equalizeByHeight: true,
-			formatLabel: img => `${img.naturalWidth} x ${img.naturalHeight}`
+			formatLabel: img => `${img.naturalWidth} x ${img.naturalHeight}`,
+			panBounds: {x: "centerInPicture", y: "borderToBorder"}
 		})
 	}
 

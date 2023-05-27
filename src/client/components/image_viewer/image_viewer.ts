@@ -30,18 +30,18 @@ type BoundCalcParams = {
 	readonly windowSize: number
 	readonly type: PanBoundsType
 	readonly zoom: number
+	readonly borderOffset: number
 }
 
 type Bounds = {max: number, min: number}
 
-export function calculateBoundsForImageViewer(params: BoundCalcParams): Bounds {
+function calculateBoundsForImageViewer(params: BoundCalcParams): Bounds {
 	switch(params.type){
 		case "none": return {min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER}
 		case "centerInPicture": return {min: params.min, max: params.max}
 		case "borderToBorder": {
-			let min = (params.min * params.zoom) + params.windowSize
-			let max = (params.max * params.zoom) - params.windowSize
-			// console.log({min, max, zoom: params.zoom, params: params})
+			let min = (params.min - params.borderOffset) + params.windowSize / 2
+			let max = (params.max + params.borderOffset) - params.windowSize / 2
 			if(min > max){
 				min = 0
 				max = 0
@@ -63,6 +63,9 @@ type Props<T> = {
 		readonly x: PanBoundsType
 		readonly y: PanBoundsType
 	}
+	/** A fraction of picture that will be used as offset.
+	 * 0.1 means that there will be borders of 10% of picture height. */
+	readonly defaultOffset?: number
 }
 
 export async function showImageViewer<T>(props: Props<T>): Promise<void> {
@@ -77,6 +80,9 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 	// 	backgroundColor: "red"
 	// }}))
 
+	const defaultOffsetZoomMult = 1 / (1 + (props.defaultOffset ?? 0.1))
+	// console.log({defaultOffsetZoomMult})
+
 	const isGrabbed = box(false)
 	// screenspace coords of the center of the screen. they include zoom.
 	const xPos = box(0)
@@ -84,7 +90,12 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 
 	const maxNatHeight = box(0)
 
-	let bounds: {top: number, bottom: number, left: number, right: number} | null = null
+	const bounds = {
+		top: Number.MIN_SAFE_INTEGER,
+		bottom: Number.MAX_SAFE_INTEGER,
+		left: Number.MIN_SAFE_INTEGER,
+		right: Number.MAX_SAFE_INTEGER
+	}
 
 	const updateMaxNatHeight = debounce(1, () => {
 		const imgArr = imgs().map(([img]) => img)
@@ -99,29 +110,40 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 		if(updateMaxNatHeight.isRunScheduled){
 			await updateMaxNatHeight.waitForScheduledRun() // just in case
 		}
-		bounds = {
-			top: Number.MAX_SAFE_INTEGER,
-			bottom: Number.MIN_SAFE_INTEGER,
-			left: Number.MAX_SAFE_INTEGER,
-			right: Number.MIN_SAFE_INTEGER
-		}
 
 		const imgArr = imgs().map(([img]) => img)
 
 		const halfWidth = (window.innerWidth / 2)// * zoom()
 		const halfHeight = (window.innerHeight / 2)// * zoom()
+
+		let top = Number.MAX_SAFE_INTEGER,
+			bottom = Number.MIN_SAFE_INTEGER,
+			left = Number.MAX_SAFE_INTEGER,
+			right = Number.MIN_SAFE_INTEGER
 		for(const img of imgArr){
 			const rect = img.getBoundingClientRect()
-			bounds.top = Math.min(bounds.top, rect.top - halfHeight + yPos())
-			bounds.bottom = Math.max(bounds.bottom, rect.bottom - halfHeight + yPos())
-			bounds.left = Math.min(bounds.left, rect.left - halfWidth + xPos())
-			bounds.right = Math.max(bounds.right, rect.right - halfWidth + xPos())
-			// if(img === imgArr[0]){
-			// 	console.log({left: rect.left, halfWidth: halfWidth, xPos: xPos(), res: bounds.left})
-			// }
+			top = Math.min(top, rect.top - halfHeight + yPos())
+			bottom = Math.max(bottom, rect.bottom - halfHeight + yPos())
+			left = Math.min(left, rect.left - halfWidth + xPos())
+			right = Math.max(right, rect.right - halfWidth + xPos())
 		}
 
-		// console.log(bounds, {zoom: zoom()})
+		const verticalBounds = calculateBoundsForImageViewer({
+			min: top, max: bottom,
+			borderOffset: (window.innerHeight / 2) * (1 - defaultOffsetZoomMult),
+			type: props.panBounds?.y ?? "none", windowSize: window.innerHeight, zoom: zoom()
+		})
+		const horisontalBounds = calculateBoundsForImageViewer({
+			min: left, max: right,
+			borderOffset: (window.innerWidth / 2) * (1 - defaultOffsetZoomMult),
+			type: props.panBounds?.x ?? "none", windowSize: window.innerWidth, zoom: zoom()
+		})
+		bounds.top = verticalBounds.min
+		bounds.bottom = verticalBounds.max
+		bounds.left = horisontalBounds.min
+		bounds.right = horisontalBounds.max
+
+
 		updatePanX()
 		updatePanY()
 	})
@@ -166,7 +188,7 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 		const natWidth = props.equalizeByHeight ? (img.naturalWidth / img.naturalHeight) * maxNatHeight() : img.naturalWidth
 		const hRatio = window.innerHeight / natHeight
 		const wRatio = window.innerWidth / natWidth
-		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * 0.9)
+		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * defaultOffsetZoomMult)
 		zoom(defaultZoom)
 		zoomChanger.reset()
 
@@ -277,24 +299,20 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 
 	const updatePanX = () => {
 		const x = xPos()
-		if(bounds){
-			const fx = Math.max(bounds.left, Math.min(bounds.right, x))
-			if(fx !== x){
-				xPos(fx)
-				return
-			}
+		const fx = Math.max(bounds.left, Math.min(bounds.right, x))
+		if(fx !== x){
+			xPos(fx)
+			return
 		}
 		wrap.style.left = (-x + (window.innerWidth / 2)) + "px"
 	}
 
 	const updatePanY = () => {
 		const y = yPos()
-		if(bounds){
-			const fy = Math.max(bounds.top, Math.min(bounds.bottom, y))
-			if(fy !== y){
-				yPos(fy)
-				return
-			}
+		const fy = Math.max(bounds.top, Math.min(bounds.bottom, y))
+		if(fy !== y){
+			yPos(fy)
+			return
 		}
 		wrap.style.top = (-y + (window.innerHeight / 2)) + "px"
 	}
