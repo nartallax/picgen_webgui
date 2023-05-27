@@ -115,7 +115,8 @@ export function MainPage(): HTMLElement {
 				}),
 				values: knownTasks,
 				renderElement: taskBox => TaskPanel({task: taskBox}),
-				bottomLoadingPlaceholder: tag(["Loading..."])
+				bottomLoadingPlaceholder: tag(["Loading..."]),
+				class: css.mainPageFeed
 			})
 		]),
 		Sidebar({isOpen: isMenuOpen}, [

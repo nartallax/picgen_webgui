@@ -11,6 +11,7 @@ interface FeedProps<T> {
 	getId: (value: T) => string | number
 	renderElement: (value: WBox<T>) => HTMLElement
 	bottomLoadingPlaceholder?: HTMLElement
+	class?: string
 }
 
 export function Feed<T>(props: FeedProps<T>): HTMLElement {
@@ -19,7 +20,7 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	let isLoadingNow = false
 	const bottomPlaceholder = props.bottomLoadingPlaceholder ?? tag(["Loading..."])
 
-	const result = tag({class: css.feed}, [
+	const result = tag({class: [css.feed, props.class]}, [
 		tag({
 			class: css.feedItemsContainer
 		}, props.values.mapArray(props.getId, props.renderElement)),
