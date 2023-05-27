@@ -22,10 +22,12 @@ async function main() {
 	// this is how you can update prompt
 	// this can break tag parsing when loading prompt for reuse; not a fatality, but still unpleasant
 	// so let's not do that
-
 	// if(parameters.prompt){
 	// 	Process.stdout.write(JSON.stringify({updatedPrompt: parameters.prompt + ", nya!"}) + "\n")
 	// }
+
+	// we can send arbitrary text messages while generating stuff to be displayed to frontend
+	Process.stdout.write(JSON.stringify({message: "Hewwo! I'm starting!", displayFor: 10}) + "\n")
 
 	const willGenerateFilesCount = 10
 
@@ -50,7 +52,10 @@ async function main() {
 		// note newline at the end of the string
 		// bot expects that each new JSON will be on the next line
 		// you can also notify server if you're modified any arguments
-		Process.stdout.write(JSON.stringify({generatedPicture: filePath, modifiedArguments: {prompt: parameters.prompt + " number " + (i + 1)}}) + "\n")
+		Process.stdout.write(JSON.stringify({
+			generatedPicture: filePath,
+			modifiedArguments: {prompt: parameters.prompt + " number " + (i + 1)}
+		}) + "\n")
 	}
 
 	// everything is fine! let's exit normally, with exit code 0

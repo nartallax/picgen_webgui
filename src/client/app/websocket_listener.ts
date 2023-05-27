@@ -1,5 +1,6 @@
 import {WBox} from "@nartallax/cardboard"
 import {Event} from "client/base/event"
+import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {ApiNotification} from "common/infra_entities/notifications"
 
@@ -93,6 +94,14 @@ export class WebsocketListener {
 				break
 			case "task_admin_notification":
 				onAdminTaskUpdate.fire(notification.task)
+				break
+			case "task_message":
+				console.log(notification)
+				showToast({
+					type: notification.messageType,
+					timeoutSeconds: notification.displayFor ?? 15,
+					text: notification.message
+				})
 				break
 			default:
 				console.log("Unrecognised websocket notification", notification)

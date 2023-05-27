@@ -21,6 +21,7 @@ function isGeneratedFileLine(line: OutputLine): line is GeneratedFileLine {
 
 interface ErrorLine {
 	error: string
+	displayFor?: number
 }
 function isErrorLine(line: OutputLine): line is ErrorLine {
 	return typeof((line as ErrorLine).error) === "string"
@@ -28,6 +29,7 @@ function isErrorLine(line: OutputLine): line is ErrorLine {
 
 interface MessageLine {
 	message: string
+	displayFor?: number
 }
 function isMessageLine(line: OutputLine): line is MessageLine {
 	return typeof((line as MessageLine).message) === "string"
@@ -51,8 +53,8 @@ export interface GenRunnerCallbacks {
 	onPromptUpdated(newPrompt: string): void
 	onFileProduced(path: string, modifiedArguments: Picture["modifiedArguments"]): void
 	onExpectedPictureCountKnown(expectedPictureCount: number): void
-	onMessage(message: string): void
-	onErrorMessage(message: string): void
+	onMessage(message: string, displayFor: number | null): void
+	onErrorMessage(message: string, displayFor: number | null): void
 }
 
 export class GenRunner {
@@ -111,9 +113,9 @@ export class GenRunner {
 					return
 				}
 				if(isErrorLine(line)){
-					this.callbacks.onErrorMessage(line.error)
+					this.callbacks.onErrorMessage(line.error, line.displayFor ?? null)
 				} else if(isMessageLine(line)){
-					this.callbacks.onErrorMessage(line.message)
+					this.callbacks.onMessage(line.message, line.displayFor ?? null)
 				} else if(isGeneratedFileLine(line)){
 					await this.onFileProduced(line, line.modifiedArguments ?? null)
 				} else if(isExpectedPicturesLine(line)){

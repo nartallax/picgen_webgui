@@ -241,23 +241,25 @@ export class TaskQueueController {
 
 		const callbacks: GenRunnerCallbacks = {
 
-			onErrorMessage: msg => {
+			onErrorMessage: (msg, displayFor) => {
 				log(`Task #${task.id} produced error message: ${msg}`)
 				sendTaskNotification({
 					type: "task_message",
 					messageType: "error",
 					message: msg,
-					taskId: task.id
+					taskId: task.id,
+					displayFor
 				})
 			},
 
-			onMessage: msg => {
+			onMessage: (msg, displayFor) => {
 				log(`Task #${task.id} produced message: ${msg}`)
 				sendTaskNotification({
 					type: "task_message",
 					messageType: "info",
 					message: msg,
-					taskId: task.id
+					taskId: task.id,
+					displayFor
 				})
 			},
 

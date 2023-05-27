@@ -24,6 +24,7 @@ export interface TaskMessageNotification {
 	taskId: number
 	messageType: "error" | "info"
 	message: string
+	displayFor: number | null
 }
 
 export interface TaskExpectedPictureCountKnownNotification {
