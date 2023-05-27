@@ -2,7 +2,6 @@ type Options = {
 	readonly getValue: () => number
 	readonly setValue: (value: number) => void
 	readonly timeMs: number
-	readonly onChange?: (value: number) => void
 }
 
 export class SoftValueChanger {
@@ -53,14 +52,12 @@ export class SoftValueChanger {
 			const progress = (now - this.startTime) / this.opts.timeMs
 			if(progress >= 1){
 				this.opts.setValue(this.desiredValue)
-				this.opts.onChange && this.opts.onChange(this.desiredValue)
 				this.isRunning = false
 				return
 			}
 
 			const value = this.startValue + ((this.desiredValue - this.startValue) * progress)
 			this.opts.setValue(value)
-			this.opts.onChange && this.opts.onChange(value)
 			requestAnimationFrame(update)
 		}
 

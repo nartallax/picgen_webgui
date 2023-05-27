@@ -77,7 +77,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		const pictureIndex = pictures().indexOf(args.picture)
 		showImageViewer({
 			imageDescriptions: pictures,
-			// makeUrl: picture => `https://dummyimage.com/256x${(picture.id % pictures().length) + 1}00`,
+			// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
 			makeUrl: picture => ClientApi.getPictureUrl(picture.id, picture.salt),
 			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
 			equalizeByHeight: true,

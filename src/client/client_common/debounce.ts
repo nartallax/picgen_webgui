@@ -1,5 +1,5 @@
 type DebouncedFn<T> = T & {
-	isRunScheduled?: boolean
+	isRunScheduled: boolean
 	waitForScheduledRun: () => Promise<void>
 }
 

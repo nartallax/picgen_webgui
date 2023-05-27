@@ -22,6 +22,36 @@ function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	})
 }
 
+type PanBoundsType = "centerInPicture" | "borderToBorder" | "none"
+
+type BoundCalcParams = {
+	readonly max: number
+	readonly min: number
+	readonly windowSize: number
+	readonly type: PanBoundsType
+	readonly zoom: number
+}
+
+type Bounds = {max: number, min: number}
+
+export function calculateBoundsForImageViewer(params: BoundCalcParams): Bounds {
+	switch(params.type){
+		case "none": return {min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER}
+		case "centerInPicture": return {min: params.min, max: params.max}
+		case "borderToBorder": {
+			let min = (params.min * params.zoom) + params.windowSize
+			let max = (params.max * params.zoom) - params.windowSize
+			// console.log({min, max, zoom: params.zoom, params: params})
+			if(min > max){
+				min = 0
+				max = 0
+			}
+			return {min, max}
+		}
+	}
+
+}
+
 type Props<T> = {
 	readonly imageDescriptions: RBox<readonly T[]>
 	readonly makeUrl: (imageDescription: T) => string
@@ -29,11 +59,26 @@ type Props<T> = {
 	readonly centerOn?: number
 	readonly equalizeByHeight?: boolean
 	readonly formatLabel?: (img: HTMLImageElement, imageDescription: T) => string
+	readonly panBounds?: {
+		readonly x: PanBoundsType
+		readonly y: PanBoundsType
+	}
 }
 
 export async function showImageViewer<T>(props: Props<T>): Promise<void> {
+	// debug dot right in the center of the screen
+	// document.body.appendChild(tag({style: {
+	// 	width: "10px",
+	// 	height: "10px",
+	// 	position: "absolute",
+	// 	top: "50vh",
+	// 	left: "50vw",
+	// 	transform: "translate(-5px, -5px)",
+	// 	backgroundColor: "red"
+	// }}))
+
 	const isGrabbed = box(false)
-	// coords of center of the screen in "image space"
+	// screenspace coords of the center of the screen. they include zoom.
 	const xPos = box(0)
 	const yPos = box(0)
 
@@ -41,31 +86,44 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 
 	let bounds: {top: number, bottom: number, left: number, right: number} | null = null
 
-	const updateBounds = debounce(0, () => {
-		if(!bounds){
-			bounds = {
-				top: Number.MAX_SAFE_INTEGER,
-				bottom: Number.MIN_SAFE_INTEGER,
-				left: Number.MAX_SAFE_INTEGER,
-				right: Number.MIN_SAFE_INTEGER
-			}
-		}
-
+	const updateMaxNatHeight = debounce(1, () => {
 		const imgArr = imgs().map(([img]) => img)
-
 		let natHeight = maxNatHeight()
 		for(const img of imgArr){
 			natHeight = Math.max(img.naturalHeight, natHeight)
 		}
 		maxNatHeight(natHeight)
+	})
 
+	const updateBounds = debounce(1, async() => {
+		if(updateMaxNatHeight.isRunScheduled){
+			await updateMaxNatHeight.waitForScheduledRun() // just in case
+		}
+		bounds = {
+			top: Number.MAX_SAFE_INTEGER,
+			bottom: Number.MIN_SAFE_INTEGER,
+			left: Number.MAX_SAFE_INTEGER,
+			right: Number.MIN_SAFE_INTEGER
+		}
+
+		const imgArr = imgs().map(([img]) => img)
+
+		const halfWidth = (window.innerWidth / 2)// * zoom()
+		const halfHeight = (window.innerHeight / 2)// * zoom()
 		for(const img of imgArr){
 			const rect = img.getBoundingClientRect()
-			bounds.top = Math.min(bounds.top, -rect.height / 2)
-			bounds.bottom = Math.max(bounds.bottom, rect.height / 2)
-			bounds.left = Math.min(bounds.left, (rect.left / zoom()) - (window.innerWidth / 2) + xPos())
-			bounds.right = Math.max(bounds.right, (rect.right / zoom()) - (window.innerWidth / 2) + xPos())
+			bounds.top = Math.min(bounds.top, rect.top - halfHeight + yPos())
+			bounds.bottom = Math.max(bounds.bottom, rect.bottom - halfHeight + yPos())
+			bounds.left = Math.min(bounds.left, rect.left - halfWidth + xPos())
+			bounds.right = Math.max(bounds.right, rect.right - halfWidth + xPos())
+			// if(img === imgArr[0]){
+			// 	console.log({left: rect.left, halfWidth: halfWidth, xPos: xPos(), res: bounds.left})
+			// }
 		}
+
+		// console.log(bounds, {zoom: zoom()})
+		updatePanX()
+		updatePanY()
 	})
 
 	let defaultZoom = 1
@@ -73,12 +131,7 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 	const zoomChanger = new SoftValueChanger({
 		getValue: zoom,
 		setValue: zoom,
-		timeMs: 50,
-		onChange: () => {
-			if(lastScrollActionCoords){
-				scrollCoordsToPoint(lastScrollActionCoords.abs, lastScrollActionCoords.rel)
-			}
-		}
+		timeMs: 50
 	})
 
 	let lastScrollActionCoords: {
@@ -122,6 +175,9 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 
 		yPos(0)
 		xPos(xPos() + imgLeft + (imgRect.width / 2))
+
+		updatePanX()
+		updatePanY()
 	}
 
 	// scroll view in a way that point of the picture is present at the coords of the screen
@@ -177,6 +233,7 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 
 			const onLoad = () => {
 				natSideRatio(img.naturalWidth / img.naturalHeight)
+				updateMaxNatHeight()
 				updateBounds()
 			}
 			if(img.complete){
@@ -217,28 +274,41 @@ export async function showImageViewer<T>(props: Props<T>): Promise<void> {
 		onClick: () => modal.close()
 	}, imgsWithLabels.mapArray(([img]) => img, imgAndDesc => imgAndDesc()[0]))
 
-	// those handlers are only to have better control over updates
-	// (i.e. to impose boundaries)
-	whileMounted(wrap, xPos, x => {
+
+	const updatePanX = () => {
+		const x = xPos()
 		if(bounds){
-			const fx = Math.max(bounds.left * zoom(), Math.min(bounds.right * zoom(), x))
+			const fx = Math.max(bounds.left, Math.min(bounds.right, x))
 			if(fx !== x){
 				xPos(fx)
 				return
 			}
 		}
 		wrap.style.left = (-x + (window.innerWidth / 2)) + "px"
-	})
+	}
 
-	whileMounted(wrap, yPos, y => {
+	const updatePanY = () => {
+		const y = yPos()
 		if(bounds){
-			const fy = Math.max(bounds.top * zoom(), Math.min(bounds.bottom * zoom(), y))
+			const fy = Math.max(bounds.top, Math.min(bounds.bottom, y))
 			if(fy !== y){
 				yPos(fy)
 				return
 			}
 		}
 		wrap.style.top = (-y + (window.innerHeight / 2)) + "px"
+	}
+
+	// those handlers are only to have better control over updates
+	// (i.e. to impose boundaries)
+	whileMounted(wrap, xPos, updatePanX)
+	whileMounted(wrap, yPos, updatePanY)
+
+	whileMounted(wrap, zoom, () => {
+		updateBounds()
+		if(lastScrollActionCoords){
+			scrollCoordsToPoint(lastScrollActionCoords.abs, lastScrollActionCoords.rel)
+		}
 	})
 
 	const modal = showModalBase({closeByBackgroundClick: true}, [wrap])
