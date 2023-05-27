@@ -1,6 +1,5 @@
-import {defineControl, onMount, tag} from "@nartallax/cardboard-dom"
+import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./sidebar.module.scss"
-import {addMouseDragHandler, pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {WBox, box, viewBox} from "@nartallax/cardboard"
 
 type Props = {
@@ -29,6 +28,9 @@ export const Sidebar = defineControl<Props>((props, children) => {
 		class: [css.sidebar]
 	}, [overlay, wrap])
 
+	// turns out it's a bad idea to add a handler to the window
+	// because it fucks up a lot of native behaviours
+	/*
 	let startX = 0
 
 	function calcDragProgress(e: MouseEvent | TouchEvent): number {
@@ -68,6 +70,7 @@ export const Sidebar = defineControl<Props>((props, children) => {
 			isDragging(false)
 		}
 	}))
+	*/
 
 	return result
 })
