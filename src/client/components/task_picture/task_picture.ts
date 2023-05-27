@@ -18,10 +18,7 @@ export type OpenTaskPictureViewerArgs = {picture: Picture, el: HTMLElement, url:
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))
 
-	const linkButton = tag({
-		class: [css.iconLink, "icon-link-ext"]
-	})
-
+	const linkButton = tag({class: "icon-link-ext"})
 	linkButton.addEventListener("click", e => {
 		e.stopPropagation()
 		window.open(url(), "_blank")
@@ -29,7 +26,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 
 	let copyButton: HTMLElement | null = null
 	if(props.onPictureParamCopy){
-		copyButton = tag({class: [css.iconCopy, "icon-docs"]})
+		copyButton = tag({class: "icon-docs"})
 		copyButton.addEventListener("click", e => {
 			e.stopPropagation()
 			props.onPictureParamCopy!()
