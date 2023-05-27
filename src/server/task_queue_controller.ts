@@ -270,24 +270,24 @@ export class TaskQueueController {
 				})
 			},
 
-			onFileProduced: path => update(async context => {
+			onFileProduced: (path, modifiedArguments) => update(async context => {
 				const ext = Path.extname(path).substring(1).toLowerCase()
 				assertIsPictureType(ext)
 				let serverPic: ServerPicture
 				switch(context.config.resultingPictureReceivingStrategy){
 					case "copy": {
 						const content = await Fs.readFile(path)
-						serverPic = await context.picture.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext)
+						serverPic = await context.picture.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext, modifiedArguments)
 						break
 					}
 					case "move": {
 						const content = await Fs.readFile(path)
-						serverPic = await context.picture.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext)
+						serverPic = await context.picture.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext, modifiedArguments)
 						await Fs.rm(path)
 						break
 					}
 					case "refer": {
-						serverPic = await context.picture.storeGeneratedPictureByPathReference(path, task, task.generatedPictures, ext)
+						serverPic = await context.picture.storeGeneratedPictureByPathReference(path, task, task.generatedPictures, ext, modifiedArguments)
 						break
 					}
 				}

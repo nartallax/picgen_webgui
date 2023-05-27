@@ -49,7 +49,8 @@ async function main() {
 		// and then emit JSON into stdout, saying "hey, we just generated a file!"
 		// note newline at the end of the string
 		// bot expects that each new JSON will be on the next line
-		Process.stdout.write(JSON.stringify({generatedPicture: filePath}) + "\n")
+		// you can also notify server if you're modified any arguments
+		Process.stdout.write(JSON.stringify({generatedPicture: filePath, modifiedArguments: {prompt: parameters.prompt + " number " + (i + 1)}}) + "\n")
 	}
 
 	// everything is fine! let's exit normally, with exit code 0

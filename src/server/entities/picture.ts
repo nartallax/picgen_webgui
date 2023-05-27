@@ -52,6 +52,20 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 		await Fs.mkdir(dirPath, {recursive: true})
 	}
 
+	protected override fieldFromDb<K extends keyof ServerPicture & string>(field: K, value: ServerPicture[K]): unknown {
+		switch(field){
+			case "modifiedArguments": return value === null ? null : JSON.parse(value as string)
+			default: return value
+		}
+	}
+
+	protected fieldToDb<K extends keyof ServerPicture & string>(field: K, value: ServerPicture[K]): unknown {
+		switch(field){
+			case "modifiedArguments": return value === null ? null : JSON.stringify(value)
+			default: return value
+		}
+	}
+
 	stripServerData(pic: ServerPicture): Picture {
 		return {
 			id: pic.id,
@@ -60,7 +74,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			ownerUserId: pic.ownerUserId,
 			ext: pic.ext,
 			name: pic.name,
-			salt: pic.salt
+			salt: pic.salt,
+			modifiedArguments: pic.modifiedArguments
 		}
 	}
 
@@ -94,17 +109,18 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 		return Math.floor(Math.random() * 0xffffffff)
 	}
 
-	async storeGeneratedPictureByContent(data: Buffer, genTask: GenerationTask, index: number, ext: PictureType): Promise<ServerPicture> {
+	async storeGeneratedPictureByContent(data: Buffer, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"]): Promise<ServerPicture> {
 		return await this.storePicture(data, {
 			generationTaskId: genTask.id,
 			ownerUserId: genTask.userId,
 			ext: ext,
 			name: (index + 1) + "",
-			salt: this.getSalt()
+			salt: this.getSalt(),
+			modifiedArguments
 		})
 	}
 
-	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, ext: PictureType): Promise<ServerPicture> {
+	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"]): Promise<ServerPicture> {
 		const relPath = Path.relative(this.getContext().config.pictureStorageDir, path)
 		return await this.create({
 			creationTime: unixtime(),
@@ -114,7 +130,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			ownerUserId: genTask.userId,
 			ext: ext,
 			name: (index + 1) + "",
-			salt: this.getSalt()
+			salt: this.getSalt(),
+			modifiedArguments
 		})
 	}
 
@@ -124,7 +141,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			ownerUserId: userId,
 			ext: ext,
 			name: name,
-			salt: this.getSalt()
+			salt: this.getSalt(),
+			modifiedArguments: null
 		})
 	}
 

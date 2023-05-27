@@ -1,4 +1,5 @@
 import {RC} from "@nartallax/ribcage"
+import {GenerationTask} from "common/entities/generation_task"
 
 export interface Picture {
 	readonly id: number
@@ -8,6 +9,7 @@ export interface Picture {
 	readonly ext: PictureType
 	readonly name: string | null
 	readonly salt: number
+	readonly modifiedArguments: GenerationTask["params"] | null
 }
 
 export interface PictureInfo {

@@ -222,6 +222,12 @@ export const migrations: Migration[] = [
 		await db.run(`
 			update "users" set "isAdmin" = false, "isAllowed" = false;
 		`)
+	}},
+
+	{name: "00013", handler: async db => {
+		await db.run(`
+			alter table "pictures" add "modifiedArguments" text;
+		`)
 	}}
 
 ]

@@ -7,11 +7,13 @@ import {log} from "server/log"
 import {ApiError} from "common/infra_entities/api_error"
 import {ServerGenerationTaskInputData} from "server/entities/generation_task"
 import {GenerationTask} from "common/entities/generation_task"
+import {Picture} from "common/entities/picture"
 
 type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | UpdatedPromptLine
 
 interface GeneratedFileLine {
 	generatedPicture: string
+	modifiedArguments?: Picture["modifiedArguments"]
 }
 function isGeneratedFileLine(line: OutputLine): line is GeneratedFileLine {
 	return typeof((line as GeneratedFileLine).generatedPicture) === "string"
@@ -47,7 +49,7 @@ function isUpdatedPromptLine(line: OutputLine): line is UpdatedPromptLine {
 
 export interface GenRunnerCallbacks {
 	onPromptUpdated(newPrompt: string): void
-	onFileProduced(path: string): void
+	onFileProduced(path: string, modifiedArguments: Picture["modifiedArguments"]): void
 	onExpectedPictureCountKnown(expectedPictureCount: number): void
 	onMessage(message: string): void
 	onErrorMessage(message: string): void
@@ -89,8 +91,8 @@ export class GenRunner {
 		return this.exitPromise
 	}
 
-	private async onFileProduced(line: GeneratedFileLine): Promise<void> {
-		this.callbacks.onFileProduced(line.generatedPicture)
+	private async onFileProduced(line: GeneratedFileLine, modifiedArguments: Picture["modifiedArguments"]): Promise<void> {
+		this.callbacks.onFileProduced(line.generatedPicture, modifiedArguments)
 	}
 
 	private addStdoutParser(): void {
@@ -113,7 +115,7 @@ export class GenRunner {
 				} else if(isMessageLine(line)){
 					this.callbacks.onErrorMessage(line.message)
 				} else if(isGeneratedFileLine(line)){
-					await this.onFileProduced(line)
+					await this.onFileProduced(line, line.modifiedArguments ?? null)
 				} else if(isExpectedPicturesLine(line)){
 					this.callbacks.onExpectedPictureCountKnown(line.willGenerateCount)
 				} else if(isUpdatedPromptLine(line)){
