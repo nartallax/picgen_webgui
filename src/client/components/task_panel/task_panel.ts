@@ -96,7 +96,20 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					isDisabled,
 					openViewer,
 					onLoad: debouncedUpdateDisabledState,
-					loadAnimation: isInDOM
+					loadAnimation: isInDOM,
+					onPictureParamCopy: () => {
+						const genInputData = {...props.task()}
+						let modifiedArgs = picture().modifiedArguments
+						if(modifiedArgs){
+							if("prompt" in modifiedArgs){ // TODO: cringe
+								genInputData.prompt = modifiedArgs.prompt + ""
+								modifiedArgs = {...modifiedArgs}
+								delete modifiedArgs.prompt
+							}
+							genInputData.params = {...genInputData.params, ...modifiedArgs}
+						}
+						loadArguments(genInputData)
+					}
 				})
 				picturesWithDisableBoxes.push({el, isDisabled})
 				return el
@@ -248,13 +261,14 @@ function loadArguments(task: GenerationTaskInputData): void {
 		const argBox = currentArgumentBoxes[key]
 		if(!argBox){
 			nonLoadableParamNames.push(key)
+			continue
 		}
 		(argBox as WBox<GenerationTaskArgument>)(value)
 	}
 
 	if(nonLoadableParamNames.length > 0){
 		showToast({
-			text: `Some of parameters of the task are now non-existent and wasn't loaded: ${nonLoadableParamNames.join(", ")}`,
+			text: `Some of parameters of the task are now non-existent and were not loaded: ${nonLoadableParamNames.join(", ")}`,
 			type: "info"
 		})
 	}

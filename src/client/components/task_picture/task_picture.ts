@@ -9,6 +9,7 @@ interface TaskPictureProps {
 	openViewer?: (args: OpenTaskPictureViewerArgs) => void
 	isDisabled?: RBox<boolean>
 	onLoad?: () => void
+	onPictureParamCopy?: () => void
 	loadAnimation?: boolean
 }
 
@@ -25,6 +26,15 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		e.stopPropagation()
 		window.open(url(), "_blank")
 	})
+
+	let copyButton: HTMLElement | null = null
+	if(props.onPictureParamCopy){
+		copyButton = tag({class: [css.iconCopy, "icon-docs"]})
+		copyButton.addEventListener("click", e => {
+			e.stopPropagation()
+			props.onPictureParamCopy!()
+		})
+	}
 
 	const img = tag({
 		tag: "img",
@@ -63,7 +73,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		}, [
 			tag([]), // tbd
 			!props.openViewer ? null : tag({class: [css.iconOpen, "icon-resize-full-alt"]}),
-			tag({class: css.iconLinkWrap}, [linkButton])
+			tag({class: css.rightColumn}, [copyButton, linkButton])
 		])
 	])
 

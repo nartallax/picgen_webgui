@@ -58,11 +58,14 @@
 			text-align: center;
 		}
 
-		.iconLinkWrap {
-			align-self: flex-end;
-			text-align: right;
+		.rightColumn {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+    		justify-content: space-between;
+			align-self: stretch;
 
-			.iconLink {
+			> * {
 				padding: 1rem;
 				font-size: 2rem;
 				cursor: pointer;
