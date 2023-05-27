@@ -5,7 +5,8 @@ body {
 }
 
 .pageRoot {
-	padding: 1vw;
+	padding: 1rem;
+	padding-right: 0;
 	display: flex;
 	flex-direction: row-reverse;
 	align-items: stretch;
@@ -20,7 +21,7 @@ body {
 		flex-grow: 1;
 		flex-basis: 0;
 		min-width: 0;
-		padding-left: 1vw;
+		padding-left: 1rem;
 
 		display: flex;
 		flex-direction: column;
