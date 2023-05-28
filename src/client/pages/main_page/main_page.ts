@@ -21,6 +21,7 @@ import {Col, Row} from "client/controls/layout/row_col"
 import {IconButton} from "client/controls/icon_button/icon_button"
 import {GenerationTaskArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
+import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -116,18 +117,25 @@ export function MainPage(): HTMLElement {
 				] as const,
 				value: selectedTab
 			}),
-			Feed({
-				getId: task => task.id,
-				loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
-					fetch: ClientApi.listTasks,
-					sortBy: "creationTime" as const,
-					desc: true,
-					packSize: 10
-				}),
-				values: knownTasks,
-				renderElement: taskBox => TaskPanel({task: taskBox}),
-				bottomLoadingPlaceholder: tag(["Loading..."]),
-				class: css.mainPageFeed
+			SwitchPanel({
+				value: selectedTab,
+				class: css.mainPageSwitchPanel,
+				routes: {
+					favorites: () => tag(["uwu"]),
+					tasks: () => Feed({
+						getId: task => task.id,
+						loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
+							fetch: ClientApi.listTasks,
+							sortBy: "creationTime" as const,
+							desc: true,
+							packSize: 10
+						}),
+						values: knownTasks,
+						renderElement: taskBox => TaskPanel({task: taskBox}),
+						bottomLoadingPlaceholder: tag(["Loading..."]),
+						class: css.mainPageFeed
+					})
+				}
 			})
 		]),
 		Sidebar({isOpen: isMenuOpen}, [
