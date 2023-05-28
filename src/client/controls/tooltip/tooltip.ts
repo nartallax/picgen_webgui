@@ -11,11 +11,9 @@ export const TooltipIcon = defineControl<TooltipIconProps>(props => {
 		class: css.tooltipIcon
 	}, [
 		"?",
-		tag({class: css.contentWrap}, [
-			tag({
-				class: css.content
-			}, [props.tooltip])
-		])
+		tag({
+			class: css.content
+		}, [props.tooltip])
 	])
 
 })
