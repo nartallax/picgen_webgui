@@ -10,7 +10,7 @@ import {TaskPanel} from "client/components/task_panel/task_panel"
 import {box, unbox, viewBox} from "@nartallax/cardboard"
 import {isInDOM, localStorageBox, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
-import {GenerationTask, GenerationTaskArgument, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle, defaultValueOfParam} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
 import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags} from "client/app/global_values"
@@ -19,6 +19,8 @@ import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
 import {Col, Row} from "client/controls/layout/row_col"
 import {IconButton} from "client/controls/icon_button/icon_button"
+import {GenerationTaskArgument} from "common/entities/arguments"
+import {Tabs} from "client/controls/tabs/tabs"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -89,6 +91,8 @@ export function MainPage(): HTMLElement {
 
 	const isMenuOpen = box(false)
 
+	const selectedTab = box<"tasks" | "favorites">("tasks")
+
 	const result = tag({class: css.pageRoot}, [
 		tag({class: css.generationColumn}, [
 			Row({align: "start", gap: true, padding: "bottom"}, [
@@ -105,6 +109,13 @@ export function MainPage(): HTMLElement {
 					startGeneration: startGeneration
 				})
 			]),
+			Tabs({
+				options: [
+					{label: "Tasks", value: "tasks"},
+					{label: "Favorites", value: "favorites"}
+				] as const,
+				value: selectedTab
+			}),
 			Feed({
 				getId: task => task.id,
 				loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
