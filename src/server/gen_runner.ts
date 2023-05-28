@@ -9,7 +9,7 @@ import {ServerGenerationTaskInputData} from "server/entities/generation_task"
 import {GenerationTask} from "common/entities/generation_task"
 import {Picture} from "common/entities/picture"
 
-type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | UpdatedPromptLine
+type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | UpdatedPromptLine | TimeLeftLine
 
 interface GeneratedFileLine {
 	generatedPicture: string
@@ -49,12 +49,20 @@ function isUpdatedPromptLine(line: OutputLine): line is UpdatedPromptLine {
 	return typeof((line as UpdatedPromptLine).updatedPrompt) === "string"
 }
 
+interface TimeLeftLine {
+	timeLeft: number
+}
+function isTimeLeftLine(line: OutputLine): line is TimeLeftLine {
+	return typeof((line as TimeLeftLine).timeLeft) === "number"
+}
+
 export interface GenRunnerCallbacks {
 	onPromptUpdated(newPrompt: string): void
 	onFileProduced(path: string, modifiedArguments: Picture["modifiedArguments"]): void
 	onExpectedPictureCountKnown(expectedPictureCount: number): void
 	onMessage(message: string, displayFor: number | null): void
 	onErrorMessage(message: string, displayFor: number | null): void
+	onTimeLeftKnown(timeLeft: number): void
 }
 
 export class GenRunner {
@@ -122,6 +130,8 @@ export class GenRunner {
 					this.callbacks.onExpectedPictureCountKnown(line.willGenerateCount)
 				} else if(isUpdatedPromptLine(line)){
 					this.callbacks.onPromptUpdated(line.updatedPrompt)
+				} else if(isTimeLeftLine(line)){
+					this.callbacks.onTimeLeftKnown(line.timeLeft)
 				} else {
 					console.error("Unknown action in line " + lineStr + ". Skipping it.")
 				}

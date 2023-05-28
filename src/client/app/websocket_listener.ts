@@ -103,6 +103,12 @@ export class WebsocketListener {
 					text: notification.message
 				})
 				break
+			case "task_estimated_duration_known":
+				this.updateTaskById(
+					notification.taskId,
+					task => ({...task, estimatedDuration: notification.estimatedDuration})
+				)
+				break
 			default:
 				console.log("Unrecognised websocket notification", notification)
 				break

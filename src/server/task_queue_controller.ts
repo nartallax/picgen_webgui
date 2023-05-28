@@ -16,7 +16,11 @@ import {ServerPicture} from "server/entities/picture"
 
 export class TaskQueueController {
 
-	private runningGeneration: {gen: GenRunner, input: ServerGenerationTaskInputData} | null = null
+	private runningGeneration: {
+		gen: GenRunner
+		input: ServerGenerationTaskInputData
+		estimatedDuration: number | null
+	} | null = null
 	private generationIsStarting = false
 	private queueIsMoving = false
 
@@ -149,7 +153,7 @@ export class TaskQueueController {
 				return await context.generationTask.prepareInputData(task)
 			})
 			const gen = new GenRunner(config, callbacks, preparedInputData, task)
-			this.runningGeneration = {gen, input: preparedInputData}
+			this.runningGeneration = {gen, input: preparedInputData, estimatedDuration: null}
 
 			const startTime = unixtime()
 			update(() => {
@@ -309,6 +313,21 @@ export class TaskQueueController {
 					taskId: task.id,
 					prompt: prompt
 				})
+			},
+
+			onTimeLeftKnown: timeLeft => {
+				const timePassed = unixtime() - (task.startTime ?? unixtime())
+				const duration = timePassed + timeLeft
+
+				if(this.runningGeneration){
+					this.runningGeneration.estimatedDuration = duration
+				}
+
+				sendTaskNotification({
+					type: "task_estimated_duration_known",
+					taskId: task.id,
+					estimatedDuration: duration
+				})
 			}
 		}
 
@@ -323,6 +342,23 @@ export class TaskQueueController {
 			result[name as keyof GenRunnerCallbacks] = wrapInCatchLog(callbackFn as any) as any // argh!
 		}
 		return result as GenRunnerCallbacks
+	}
+
+	getEstimatedDurationForTask(taskId: number): number | null {
+		if(this.runningGeneration && this.runningGeneration.gen.task.id === taskId){
+			return this.runningGeneration.estimatedDuration
+		}
+		return null
+	}
+
+	tryAddEstimatedDuration(task: GenerationTask): void {
+		// all this stuff is required because I don't want to store estimated duration in database
+		// it will require a column for a value that is basically never used unless task is running
+		// so it's more efficient to just keep this one value in memory
+		const duration = this.getEstimatedDurationForTask(task.id)
+		if(duration !== null){
+			task.estimatedDuration = duration
+		}
 	}
 
 }

@@ -36,11 +36,17 @@ async function main() {
 	// it just allows for more beautiful inputs
 	Process.stdout.write(JSON.stringify({willGenerateCount: willGenerateFilesCount}) + "\n")
 
+	const timePerPicture = 1000
+	// we also can notify server on how long it will take to generate all the stuff we want to generate
+	// we can do it at any time through generation run
+	// timeLeft is in seconds
+	Process.stdout.write(JSON.stringify({timeLeft: (willGenerateFilesCount * timePerPicture) / 1000}) + "\n")
+
 	// we will generate some pictures
 	for(let i = 0; i < willGenerateFilesCount; i++){
 		// sleep for 5 seconds
 		// implying some generation is going on, it's a slow process, give it some time
-		await new Promise(ok => setTimeout(ok, 1000))
+		await new Promise(ok => setTimeout(ok, timePerPicture))
 
 		// now let's generate a file!
 		// it will actually be the same file every time

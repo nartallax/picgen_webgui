@@ -196,7 +196,11 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 							}
 							return formatTimeSpan((task.finishTime || 0) - task.startTime)
 						}
-						case "running": return formatTimeSpan(Math.floor(nowBox() / 1000) - (task.startTime || 0))
+						case "running": {
+							const timePassed = formatTimeSpan(Math.floor(nowBox() / 1000) - (task.startTime || 0))
+							const endTime = !task.estimatedDuration ? null : formatTimeSpan(task.estimatedDuration)
+							return endTime ? `${timePassed} / ${endTime}` : timePassed
+						}
 					}
 				})])
 			]),

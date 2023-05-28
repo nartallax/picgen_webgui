@@ -13,6 +13,7 @@ export type ApiNotification = TaskMessageNotification
 | TaskStartedNotification
 | TaskCreatedNotification
 | TaskAdminNotification
+| TaskEstimatedDurationKnownNotification
 
 export interface TaskAdminNotification {
 	type: "task_admin_notification"
@@ -61,4 +62,10 @@ export interface TaskStartedNotification {
 export interface TaskCreatedNotification {
 	type: "task_created"
 	task: GenerationTask
+}
+
+export interface TaskEstimatedDurationKnownNotification {
+	type: "task_estimated_duration_known"
+	taskId: number
+	estimatedDuration: number
 }
