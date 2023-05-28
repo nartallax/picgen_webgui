@@ -17,7 +17,7 @@ $trp: rgba(255, 255, 255, 0); // same as $clr, just transparent
 }
 
 .tab {
-	background-color: transparent;
+	background-color: #cdbbb6;
 	transition: background-color 0.25s;
 	
 	font-size: 1.35rem;
@@ -30,6 +30,6 @@ $trp: rgba(255, 255, 255, 0); // same as $clr, just transparent
 	border-bottom: none;
 
 	&.active {
-		background-color: #bdb;
+		background-color: #a0c2a5;
 	}
 }
