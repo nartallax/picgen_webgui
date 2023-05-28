@@ -7,9 +7,10 @@ import {GenerationParameterSet} from "common/entities/parameter"
 import {User} from "common/entities/user"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SimpleListQueryParams} from "common/infra_entities/query"
-import {Picture, PictureInfo} from "common/entities/picture"
+import {Picture, PictureInfo, PictureWithEffectiveArgs} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import {RequestContext} from "server/request_context"
+import {unixtime} from "server/utils/unixtime"
 
 async function adminCont(): Promise<RequestContext> {
 	const context = cont()
@@ -293,6 +294,64 @@ export namespace ServerApi {
 		async(): Promise<boolean> => {
 			const context = cont()
 			return context.taskQueue.isPaused
+		}
+	)
+
+	export const setPictureFavorite = RCV.validatedFunction(
+		[RC.struct({pictureId: RC.number(), isFavorite: RC.bool()})] as const,
+		async({pictureId, isFavorite}): Promise<number | null> => {
+			const context = cont()
+			const [picture, user] = await Promise.all([
+				context.picture.getById(pictureId),
+				context.user.getCurrent()
+			])
+			if(picture.ownerUserId !== user.id){
+				throw new Error(`Picture ${picture.id} does not belong to user ${user.id}.`)
+			}
+			picture.favoritesAddTime = isFavorite ? unixtime() : null
+			context.picture.update(picture)
+			return picture.favoritesAddTime
+		}
+	)
+
+	export const listPicturesWithEffectiveArgs = RCV.validatedFunction(
+		[RC.struct({query: SimpleListQueryParams(Picture)})] as const,
+		async({query}): Promise<PictureWithEffectiveArgs[]> => {
+			const context = cont()
+			const currentUser = await context.user.getCurrent();
+			(query.filters ||= []).push(
+				{op: "=", a: {field: "ownerUserId"}, b: {value: currentUser.id}},
+			)
+			const serverPictures = await context.picture.list(query)
+			const pictures = serverPictures.map(pic => context.picture.stripServerData(pic) as PictureWithEffectiveArgs)
+
+			const taskIds = [...new Set(pictures.map(x => x.generationTaskId))]
+				.filter((x): x is number => x !== null)
+			const tasks = await context.generationTask.list({
+				filters: [{
+					a: {field: "id"},
+					op: "in",
+					b: {value: [...taskIds]}
+				}]
+			})
+			const taskMap = new Map(tasks.map(task => [task.id, task]))
+
+			for(const picture of pictures){
+				const task = taskMap.get(picture.generationTaskId ?? -1)
+				if(!task){
+					// should never happen
+					picture.effectiveArgs = {}
+					continue
+				}
+
+				picture.effectiveArgs = {
+					...task.params,
+					prompt: task.prompt, // ew.
+					...(picture.modifiedArguments || {})
+				}
+			}
+
+			return pictures
 		}
 	)
 

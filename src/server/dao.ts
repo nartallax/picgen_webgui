@@ -90,25 +90,12 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const args = [] as unknown[]
 
 		let where = (query.filters || []).map(({a, b, op}) => {
-			let aStr, bStr
-			if(isFilterField(a)){
-				this.validateField(a.field)
-				aStr = `"${a.field}"`
-			} else {
-				aStr = "?"
-				args.push(a.value)
-			}
-			if(isFilterField(b)){
-				this.validateField(b.field)
-				bStr = `"${b.field}"`
-			} else {
-				bStr = "?"
-				args.push(b.value)
-			}
-
 			if(!allowedFilterOps.has(op)){
 				throw new Error(`Filtering operator "${op}" is not allowed.`)
 			}
+
+			const aStr = this.filterValueToQueryPart(a, args)
+			const bStr = this.filterValueToQueryPart(b, args)
 
 			return `${aStr} ${op} ${bStr}`
 		}).join("\nand ")
@@ -126,6 +113,30 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		`, args)
 
 		return result.map(x => this.fromDb(x))
+	}
+
+	private filterValueToQueryPart<T extends IdentifiedEntity>(value: FilterValue<T>, args: unknown[]): string {
+		if(isFilterField(value)){
+			this.validateField(value.field)
+			return `"${value.field}"`
+		} else if(Array.isArray(value.value)){
+			let result = "("
+			let first = true
+			for(const arrItem of value.value){
+				if(first){
+					first = false
+				} else {
+					result += ", "
+				}
+				result += "?"
+				args.push(arrItem)
+			}
+			result += ")"
+			return result
+		} else {
+			args.push(value.value)
+			return "?"
+		}
 	}
 
 	async queryAllFieldIncludes<K extends string & keyof T>(field: K, values: T[K][]): Promise<T[]> {

@@ -75,7 +75,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			ext: pic.ext,
 			name: pic.name,
 			salt: pic.salt,
-			modifiedArguments: pic.modifiedArguments
+			modifiedArguments: pic.modifiedArguments,
+			favoritesAddTime: pic.favoritesAddTime
 		}
 	}
 
@@ -116,7 +117,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			ext: ext,
 			name: (index + 1) + "",
 			salt: this.getSalt(),
-			modifiedArguments
+			modifiedArguments,
+			favoritesAddTime: null
 		})
 	}
 
@@ -131,7 +133,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			ext: ext,
 			name: (index + 1) + "",
 			salt: this.getSalt(),
-			modifiedArguments
+			modifiedArguments,
+			favoritesAddTime: null
 		})
 	}
 
@@ -142,7 +145,8 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			ext: ext,
 			name: name,
 			salt: this.getSalt(),
-			modifiedArguments: null
+			modifiedArguments: null,
+			favoritesAddTime: null
 		})
 	}
 

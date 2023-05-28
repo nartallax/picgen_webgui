@@ -33,6 +33,18 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		})
 	}
 
+	const favAddTime = box(props.picture().favoritesAddTime)
+	const favoriteButton = tag({class: [
+		css.iconFavorite,
+		favAddTime.map(time => time !== null ? "icon-star" : "icon-star-empty")
+	]})
+	favoriteButton.addEventListener("click", async e => {
+		e.stopPropagation()
+		const isFavoriteNow = favAddTime() !== null
+		favAddTime(isFavoriteNow ? null : 1)
+		await ClientApi.setPictureFavorite(props.picture().id, !isFavoriteNow)
+	})
+
 	const img = tag({
 		tag: "img",
 		attrs: {
@@ -68,7 +80,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				}
 			}
 		}, [
-			tag([]), // tbd
+			tag({class: css.leftColumn}, [favoriteButton]),
 			!props.openViewer ? null : tag({class: [css.iconOpen, "icon-resize-full-alt"]}),
 			tag({class: css.rightColumn}, [copyButton, linkButton])
 		])

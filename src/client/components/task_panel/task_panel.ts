@@ -6,7 +6,7 @@ import {ClientApi} from "client/app/client_api"
 import {RBox, WBox, box, viewBox} from "@nartallax/cardboard"
 import {onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
-import {GenerationTaskArgument, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
 import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
@@ -14,6 +14,7 @@ import {SoftScroller} from "client/base/soft_scroller"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {showImageViewer} from "client/components/image_viewer/image_viewer"
 import {debounce} from "client/client_common/debounce"
+import {GenerationTaskArgument} from "common/entities/arguments"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>

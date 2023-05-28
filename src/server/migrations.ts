@@ -228,6 +228,12 @@ export const migrations: Migration[] = [
 		await db.run(`
 			alter table "pictures" add "modifiedArguments" text;
 		`)
+	}},
+
+	{name: "00014", handler: async db => {
+		await db.run(`
+			alter table "pictures" add "favoritesAddTime" bigint;
+		`)
 	}}
 
 ]

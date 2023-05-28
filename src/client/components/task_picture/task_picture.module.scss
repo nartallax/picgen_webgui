@@ -59,11 +59,21 @@
 		}
 
 		.rightColumn {
-			display: flex;
-			flex-direction: column;
 			align-items: flex-end;
     		justify-content: space-between;
+		}
+
+		.leftColumn {
+			align-items: flex-start;
+    		justify-content: flex-end;
+		}
+
+		.rightColumn,
+		.leftColumn {
+			display: flex;
+			flex-direction: column;
 			align-self: stretch;
+
 
 			> * {
 				padding: 1rem;
@@ -78,6 +88,10 @@
 					opacity: 1;
 				}
 			}
+		}
+
+		.iconFavorite {
+			color: #ffdb59;
 		}
 	}
 }

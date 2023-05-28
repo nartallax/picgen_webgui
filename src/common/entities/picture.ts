@@ -1,16 +1,6 @@
 import {RC} from "@nartallax/ribcage"
-import {GenerationTask} from "common/entities/generation_task"
-
-export interface Picture {
-	readonly id: number
-	readonly generationTaskId: number | null
-	readonly ownerUserId: number
-	readonly creationTime: number
-	readonly ext: PictureType
-	readonly name: string | null
-	readonly salt: number
-	readonly modifiedArguments: GenerationTask["params"] | null
-}
+import {GenerationTaskArgsObject} from "common/entities/arguments"
+import type {GenerationTask} from "common/entities/generation_task"
 
 export interface PictureInfo {
 	width: number
@@ -22,18 +12,27 @@ const pictureTypeArr = ["gif", "png", "jpg", "webp", "bmp", "tiff", "svg", "psd"
 export type PictureType = RC.Value<typeof PictureType>
 export const PictureType = RC.constUnion(pictureTypeArr)
 
-export const pictureTypeSet: ReadonlySet<PictureType> = new Set(pictureTypeArr)
-
-export type PictureArgument = RC.Value<typeof PictureArgument>
-export const PictureArgument = RC.struct(RC.structFields({
-	normal: {
-		id: RC.number(),
-		salt: RC.number()
+export interface PictureWithEffectiveArgs extends Picture {
+	effectiveArgs: GenerationTask["params"]
+}
+export type Picture = RC.Value<typeof Picture>
+export const Picture = RC.struct(RC.structFields({
+	ro: {
+		id: RC.int(),
+		generationTaskId: RC.union([RC.constant(null), RC.int()]),
+		ownerUserId: RC.int(),
+		creationTime: RC.int(),
+		ext: PictureType,
+		name: RC.union([RC.constant(null), RC.string()]),
+		salt: RC.int(),
+		modifiedArguments: RC.union([RC.constant(null), GenerationTaskArgsObject])
 	},
-	opt: {
-		mask: RC.string()
+	normal: {
+		favoritesAddTime: RC.union([RC.constant(null), RC.int()])
 	}
 }))
+
+export const pictureTypeSet: ReadonlySet<PictureType> = new Set(pictureTypeArr)
 
 export type Point2D = RC.Value<typeof Point2D>
 export const Point2D = RC.struct({x: RC.number(), y: RC.number()})
