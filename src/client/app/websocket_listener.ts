@@ -96,7 +96,6 @@ export class WebsocketListener {
 				onAdminTaskUpdate.fire(notification.task)
 				break
 			case "task_message":
-				console.log(notification)
 				showToast({
 					type: notification.messageType,
 					timeoutSeconds: notification.displayFor ?? 15,

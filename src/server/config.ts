@@ -25,7 +25,7 @@ const ConfigFile = RC.struct(RC.structFields({
 			"move",
 			"copy",
 			"refer"
-		] as const),
+		]),
 		dbFilePath: RC.string(),
 		parameterSets: RC.roArray(GenerationParameterSet),
 		tags: RC.struct(RC.structFields({ro: {

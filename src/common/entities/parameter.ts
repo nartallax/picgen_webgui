@@ -25,7 +25,7 @@ const BaseGenParam = RC.struct(RC.structFields({
 export type FloatGenParam = RC.Value<typeof FloatGenParam>
 export const FloatGenParam = RC.struct(RC.structFields({
 	ro: {
-		type: RC.constant("float" as const),
+		type: RC.constant("float"),
 		default: RC.number()
 	},
 	roOpt: {
@@ -37,7 +37,7 @@ export const FloatGenParam = RC.struct(RC.structFields({
 export type IntGenParam = RC.Value<typeof IntGenParam>
 export const IntGenParam = RC.struct(RC.structFields({
 	ro: {
-		type: RC.constant("int" as const),
+		type: RC.constant("int"),
 		default: RC.int()
 	},
 	roOpt: {
@@ -49,14 +49,14 @@ export const IntGenParam = RC.struct(RC.structFields({
 
 export type BoolGenParam = RC.Value<typeof BoolGenParam>
 export const BoolGenParam = RC.roStruct({
-	type: RC.constant("bool" as const),
+	type: RC.constant("bool"),
 	default: RC.bool()
 }, {}, BaseGenParam)
 
 export type StringGenParam = RC.Value<typeof StringGenParam>
 export const StringGenParam = RC.struct(RC.structFields({
 	ro: {
-		type: RC.constant("string" as const),
+		type: RC.constant("string"),
 		default: RC.string()
 	},
 	roOpt: {
@@ -68,7 +68,7 @@ export const StringGenParam = RC.struct(RC.structFields({
 export type PictureGenParam = RC.Value<typeof PictureGenParam>
 export const PictureGenParam = RC.struct(RC.structFields({
 	ro: {
-		type: RC.constant("picture" as const)
+		type: RC.constant("picture")
 	},
 	roOpt: {
 		allowedTypes: RC.roArray(PictureType),
@@ -84,7 +84,7 @@ export const PictureGenParam = RC.struct(RC.structFields({
 
 export type EnumGenParam = RC.Value<typeof EnumGenParam>
 export const EnumGenParam = RC.roStruct({
-	type: RC.constant("enum" as const),
+	type: RC.constant("enum"),
 	options: RC.roArray(
 		RC.union([
 			RC.number(),

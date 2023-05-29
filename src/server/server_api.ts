@@ -21,33 +21,33 @@ async function adminCont(): Promise<RequestContext> {
 export namespace ServerApi {
 
 	export const getGenerationParameterSets = RCV.validatedFunction(
-		[] as const,
+		[],
 		(): readonly GenerationParameterSet[] => {
 			return config.parameterSets
 		})
 
 	export const getShapeTags = RCV.validatedFunction(
-		[] as const,
+		[],
 		(): readonly string[] => {
 			return config.tags.shape
 		})
 
 	export const getContentTags = RCV.validatedFunction(
-		[] as const,
+		[],
 		(): {readonly [tagContent: string]: readonly string[]} => {
 			return config.tags.content
 		})
 
-	const Protocol = RC.union([RC.constant("http" as const), RC.constant("https" as const)])
+	const Protocol = RC.constUnion(["http", "https"])
 	export const getDiscordLoginUrl = RCV.validatedFunction(
-		[RC.struct({protocol: Protocol, domain: RC.string()})] as const,
+		[RC.struct({protocol: Protocol, domain: RC.string()})],
 		({protocol, domain}): string => {
 			const str = `https://discord.com/api/oauth2/authorize?client_id=${encodeURIComponent(config.discordClientId)}&redirect_uri=${encodeURIComponent(`${protocol}://${domain}/api/discordOauth2`)}&response_type=code&scope=identify`
 			return str
 		})
 
 	export const discordOauth2 = RCV.validatedFunction(
-		[RC.struct({code: RC.string()})] as const,
+		[RC.struct({code: RC.string()})],
 		async({code}): Promise<void> => {
 			const context = cont()
 			const redirectUrl = new URL(context.requestUrl)
@@ -75,7 +75,7 @@ export namespace ServerApi {
 		})
 
 	export const getUserData = RCV.validatedFunction(
-		[] as const,
+		[],
 		async(): Promise<User> => {
 			const context = cont()
 			const user = await context.user.getCurrent()
@@ -95,7 +95,7 @@ export namespace ServerApi {
 		})
 
 	export const logout = RCV.validatedFunction(
-		[] as const,
+		[],
 		async(): Promise<void> => {
 			const context = cont()
 			const user = await context.user.getCurrent()
@@ -105,13 +105,13 @@ export namespace ServerApi {
 		})
 
 	export const createGenerationTask = RCV.validatedFunction(
-		[RC.struct({inputData: GenerationTaskInputData})] as const,
+		[RC.struct({inputData: GenerationTaskInputData})],
 		async({inputData}): Promise<GenerationTask> => {
 			return await cont().taskQueue.addToQueue(inputData)
 		})
 
 	export const listTasks = RCV.validatedFunction(
-		[RC.struct({query: SimpleListQueryParams(GenerationTask)})] as const,
+		[RC.struct({query: SimpleListQueryParams(GenerationTask)})],
 		async({query}): Promise<GenerationTaskWithPictures[]> => {
 			const context = cont()
 			const currentUser = await context.user.getCurrent();
@@ -137,7 +137,7 @@ export namespace ServerApi {
 
 	export const getPictureData = RCV.validatedFunction(
 		// actually number expected, string is for calling this stuff through HTTP GET
-		[RC.struct({id: RC.union([RC.int(), RC.string()]), salt: RC.union([RC.int(), RC.string()])})] as const,
+		[RC.struct({id: RC.union([RC.int(), RC.string()]), salt: RC.union([RC.int(), RC.string()])})],
 		async({id, salt}): Promise<Buffer> => {
 			const context = cont()
 
@@ -165,7 +165,7 @@ export namespace ServerApi {
 		})
 
 	export const getPictureInfoById = RCV.validatedFunction(
-		[RC.struct({id: RC.int(), salt: RC.int()})] as const,
+		[RC.struct({id: RC.int(), salt: RC.int()})],
 		async({id, salt}): Promise<Picture & PictureInfo> => {
 			const context = cont()
 			const picture = await context.picture.getById(id)
@@ -181,7 +181,7 @@ export namespace ServerApi {
 		})
 
 	export const killOwnTask = RCV.validatedFunction(
-		[RC.struct({id: RC.int()})] as const,
+		[RC.struct({id: RC.int()})],
 		async({id}): Promise<void> => {
 			const context = cont()
 			const user = await context.user.getCurrent()
@@ -189,7 +189,7 @@ export namespace ServerApi {
 		})
 
 	export const uploadPictureAsArgument = RCV.validatedFunction(
-		[RC.struct({paramSetName: RC.string(), paramName: RC.string(), fileName: RC.string(), data: RC.binary()})] as const,
+		[RC.struct({paramSetName: RC.string(), paramName: RC.string(), fileName: RC.string(), data: RC.binary()})],
 		async({paramSetName, paramName, fileName, data}): Promise<Picture> => {
 			if(!(data instanceof Buffer)){
 				throw new Error("Data is not buffer!")
@@ -201,7 +201,7 @@ export namespace ServerApi {
 		})
 
 	export const hideTask = RCV.validatedFunction(
-		[RC.struct({taskId: RC.int()})] as const,
+		[RC.struct({taskId: RC.int()})],
 		async({taskId}): Promise<void> => {
 			const context = cont()
 			const [user, task] = await Promise.all([
@@ -217,7 +217,7 @@ export namespace ServerApi {
 	)
 
 	export const adminListUsers = RCV.validatedFunction(
-		[RC.struct({query: SimpleListQueryParams(User)})] as const,
+		[RC.struct({query: SimpleListQueryParams(User)})],
 		async({query}): Promise<User[]> => {
 			const context = await adminCont()
 			const users = await context.user.list(query)
@@ -226,7 +226,7 @@ export namespace ServerApi {
 	)
 
 	export const adminUpdateUser = RCV.validatedFunction(
-		[RC.struct({user: User})] as const,
+		[RC.struct({user: User})],
 		async({user}): Promise<void> => {
 			const context = await adminCont()
 			await context.user.update({
@@ -237,12 +237,12 @@ export namespace ServerApi {
 	)
 
 	export const getIsUserControlEnabled = RCV.validatedFunction(
-		[] as const,
+		[],
 		() => cont().config.userControl
 	)
 
 	export const adminListTasks = RCV.validatedFunction(
-		[RC.struct({query: SimpleListQueryParams(GenerationTask)})] as const,
+		[RC.struct({query: SimpleListQueryParams(GenerationTask)})],
 		async({query}): Promise<GenerationTask[]> => {
 			const context = await adminCont()
 			return await context.generationTask.list(query)
@@ -250,7 +250,7 @@ export namespace ServerApi {
 	)
 
 	export const adminKillTask = RCV.validatedFunction(
-		[RC.struct({taskId: RC.int()})] as const,
+		[RC.struct({taskId: RC.int()})],
 		async({taskId}): Promise<void> => {
 			const context = await adminCont()
 			await context.taskQueue.kill(taskId, null)
@@ -258,7 +258,7 @@ export namespace ServerApi {
 	)
 
 	export const adminKillAllQueuedTasks = RCV.validatedFunction(
-		[] as const,
+		[],
 		async(): Promise<void> => {
 			const context = await adminCont()
 			await context.generationTask.killAllQueued(null)
@@ -266,7 +266,7 @@ export namespace ServerApi {
 	)
 
 	export const adminKillAllQueuedAndRunningTasks = RCV.validatedFunction(
-		[] as const,
+		[],
 		async(): Promise<void> => {
 			const context = await adminCont()
 			await context.generationTask.killAllQueuedAndRunning(null)
@@ -274,7 +274,7 @@ export namespace ServerApi {
 	)
 
 	export const adminPauseQueue = RCV.validatedFunction(
-		[] as const,
+		[],
 		async(): Promise<void> => {
 			const context = await adminCont()
 			context.taskQueue.pause()
@@ -282,7 +282,7 @@ export namespace ServerApi {
 	)
 
 	export const adminUnpauseQueue = RCV.validatedFunction(
-		[] as const,
+		[],
 		async(): Promise<void> => {
 			const context = await adminCont()
 			context.taskQueue.unpause()
@@ -290,7 +290,7 @@ export namespace ServerApi {
 	)
 
 	export const getIsQueuePaused = RCV.validatedFunction(
-		[] as const,
+		[],
 		async(): Promise<boolean> => {
 			const context = cont()
 			return context.taskQueue.isPaused
@@ -298,7 +298,7 @@ export namespace ServerApi {
 	)
 
 	export const setPictureFavorite = RCV.validatedFunction(
-		[RC.struct({pictureId: RC.number(), isFavorite: RC.bool()})] as const,
+		[RC.struct({pictureId: RC.number(), isFavorite: RC.bool()})],
 		async({pictureId, isFavorite}): Promise<number | null> => {
 			const context = cont()
 			const [picture, user] = await Promise.all([
@@ -315,7 +315,7 @@ export namespace ServerApi {
 	)
 
 	export const listPicturesWithEffectiveArgs = RCV.validatedFunction(
-		[RC.struct({query: SimpleListQueryParams(Picture)})] as const,
+		[RC.struct({query: SimpleListQueryParams(Picture)})],
 		async({query}): Promise<PictureWithEffectiveArgs[]> => {
 			const context = cont()
 			const currentUser = await context.user.getCurrent();
