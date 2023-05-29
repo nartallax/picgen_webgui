@@ -12,9 +12,6 @@ const pictureTypeArr = ["gif", "png", "jpg", "webp", "bmp", "tiff", "svg", "psd"
 export type PictureType = RC.Value<typeof PictureType>
 export const PictureType = RC.constUnion(pictureTypeArr)
 
-export interface PictureWithEffectiveArgs extends Picture {
-	effectiveArgs: GenerationTask["params"]
-}
 export type Picture = RC.Value<typeof Picture>
 export const Picture = RC.struct(RC.structFields({
 	ro: {
@@ -40,3 +37,11 @@ export type Polygon = RC.Value<typeof Polygon>
 export const Polygon = RC.array(Point2D)
 export type PictureMask = RC.Value<typeof PictureMask>
 export const PictureMask = RC.array(Polygon)
+
+export type PictureWithEffectiveArgs = Picture & {
+	effectiveArgs: GenerationTask["params"]
+	paramSetName: string
+}
+export function pictureHasEffectiveArgs(picture: Picture): picture is PictureWithEffectiveArgs {
+	return !!(picture as PictureWithEffectiveArgs).effectiveArgs
+}

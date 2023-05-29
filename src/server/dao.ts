@@ -1,3 +1,4 @@
+import {BinaryQueryCondition} from "common/infra_entities/query"
 import {FilterField, FilterValue, SimpleListQueryParams, allowedFilterOps} from "common/infra_entities/query"
 import {UserlessContext} from "server/request_context"
 
@@ -89,16 +90,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const usedFields: string[] = query.sortBy ? [query.sortBy] : []
 		const args = [] as unknown[]
 
-		let where = (query.filters || []).map(({a, b, op}) => {
-			if(!allowedFilterOps.has(op)){
-				throw new Error(`Filtering operator "${op}" is not allowed.`)
-			}
-
-			const aStr = this.filterValueToQueryPart(a, args)
-			const bStr = this.filterValueToQueryPart(b, args)
-
-			return `${aStr} ${op} ${bStr}`
-		}).join("\nand ")
+		let where = (query.filters || []).map(filter => this.filterToQueryPart(filter, args)).join("\nand ")
 
 		this.validateFieldNames(usedFields)
 		const limit = "limit " + Math.min(this.getMaxQueryRows(), query.limit ?? Number.MAX_SAFE_INTEGER)
@@ -115,7 +107,30 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		return result.map(x => this.fromDb(x))
 	}
 
-	private filterValueToQueryPart<T extends IdentifiedEntity>(value: FilterValue<T>, args: unknown[]): string {
+	private filterToQueryPart(filter: BinaryQueryCondition<T>, args: unknown[]): string {
+		const {a, b, op} = filter
+		if(!allowedFilterOps.has(op)){
+			throw new Error(`Filtering operator "${op}" is not allowed.`)
+		}
+
+		const bIsNull = !isFilterField(b) && b.value === null
+		if(bIsNull && (op === "=" || op === "!=")){
+			return `${this.filterValueToQueryPart(a, args)} is ${op === "!=" ? "not " : ""}null`
+		}
+
+		const aIsNull = !isFilterField(a) && a.value === null
+		if(!bIsNull && aIsNull && (op === "=" || op === "!=")){
+			// just to avoid repeating myself
+			return this.filterToQueryPart({a: b, b: a, op}, args)
+		}
+
+		const aStr = this.filterValueToQueryPart(a, args)
+		const bStr = this.filterValueToQueryPart(b, args)
+
+		return `${aStr} ${op} ${bStr}`
+	}
+
+	private filterValueToQueryPart(value: FilterValue<T>, args: unknown[]): string {
 		if(isFilterField(value)){
 			this.validateField(value.field)
 			return `"${value.field}"`

@@ -1,19 +1,19 @@
-import {RBox, box} from "@nartallax/cardboard"
+import {MRBox, RBox, box, constBoxWrap, unbox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
 import {Picture} from "common/entities/picture"
+import {GenerationTaskWithPictures} from "common/entities/generation_task"
+import {loadArgumentsFromPicture} from "client/app/load_arguments"
+import {ShowImageViewerProps, showImageViewer} from "client/components/image_viewer/image_viewer"
 
 interface TaskPictureProps {
 	picture: RBox<Picture>
-	openViewer?: (args: OpenTaskPictureViewerArgs) => void
 	isDisabled?: RBox<boolean>
 	onLoad?: () => void
-	onPictureParamCopy?: () => void
+	generationTask?: MRBox<GenerationTaskWithPictures>
 	loadAnimation?: boolean
 }
-
-export type OpenTaskPictureViewerArgs = {picture: Picture, el: HTMLElement, url: string}
 
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))
@@ -24,14 +24,11 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		window.open(url(), "_blank")
 	})
 
-	let copyButton: HTMLElement | null = null
-	if(props.onPictureParamCopy){
-		copyButton = tag({class: "icon-docs"})
-		copyButton.addEventListener("click", e => {
-			e.stopPropagation()
-			props.onPictureParamCopy!()
-		})
-	}
+	const copyButton = tag({class: "icon-docs"})
+	copyButton.addEventListener("click", e => {
+		e.stopPropagation()
+		loadArgumentsFromPicture(props.picture(), unbox(props.generationTask))
+	})
 
 	const favAddTime = box(props.picture().favoritesAddTime)
 	const favoriteButton = tag({class: [
@@ -65,14 +62,11 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		tag({
 			class: css.overlay,
 			onClick: () => {
-				const openViewer = props.openViewer
-				if(openViewer){
-					requestAnimationFrame(() => {
-						// raf is here to prevent opening and then immediately closing the viewer
-						// it's some weird interference in events and closing-modal-by-background-click
-						openViewer({url: url(), el: result, picture: props.picture()})
-					})
-				}
+				requestAnimationFrame(() => {
+					// raf is here to prevent opening and then immediately closing the viewer
+					// it's some weird interference in events and closing-modal-by-background-click
+					openViewer(props.picture, props.generationTask)
+				})
 			},
 			onMousedown: e => {
 				if(e.button === 1){
@@ -81,7 +75,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			}
 		}, [
 			tag({class: css.leftColumn}, [favoriteButton]),
-			!props.openViewer ? null : tag({class: [css.iconOpen, "icon-resize-full-alt"]}),
+			tag({class: [css.iconOpen, "icon-resize-full-alt"]}),
 			tag({class: css.rightColumn}, [copyButton, linkButton])
 		])
 	])
@@ -104,4 +98,33 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	img.addEventListener("load", onLoad)
 
 	return result
+}
+
+function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPictures>): void {
+	let props: ShowImageViewerProps<Picture>
+	const commonProps = {
+		// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
+		makeUrl: (picture: Picture) => ClientApi.getPictureUrl(picture.id, picture.salt),
+		equalizeByHeight: true,
+		formatLabel: (img: HTMLImageElement) => `${img.naturalWidth} x ${img.naturalHeight}`
+	} satisfies Partial<ShowImageViewerProps<Picture>>
+	if(task){
+		const pictures = constBoxWrap(task).prop("pictures").map(x => [...x].reverse())
+		const pictureIndex = pictures().indexOf(unbox(picture))
+		props = {
+			...commonProps,
+			imageDescriptions: pictures,
+			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
+			panBounds: {x: "centerInPicture", y: "borderToBorder"}
+		}
+	} else {
+		props = {
+			...commonProps,
+			imageDescriptions: constBoxWrap(picture).map(pic => [pic]),
+			centerOn: 0,
+			panBounds: {x: "centerInPicture", y: "borderToBorder"}
+		}
+	}
+
+	showImageViewer(props)
 }

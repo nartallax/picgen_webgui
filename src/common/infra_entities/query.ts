@@ -7,7 +7,7 @@ export const FilterField = <F extends RC.StructFields>(itemType: RC.Struct<F>) =
 })
 
 export type FilterConstantValue = RC.Value<typeof FilterConstantValue>
-const FilterPrimitive = RC.union([RC.string(), RC.number(), RC.bool()])
+const FilterPrimitive = RC.union([RC.string(), RC.number(), RC.bool(), RC.constant(null)])
 export const FilterConstantValue = RC.struct({
 	value: RC.union([FilterPrimitive, RC.array(FilterPrimitive)])
 })
@@ -19,7 +19,7 @@ export const FilterValue = <F extends RC.StructFields>(itemType: RC.Struct<F>) =
 ])
 
 
-const filterOpsArray = [">", ">=", "<", "<=", "=", "in"] as const
+const filterOpsArray = [">", ">=", "<", "<=", "=", "!=", "in"] as const
 
 type FilterOp = RC.Value<typeof FilterOp>
 const FilterOp = RC.union(filterOpsArray.map(x => RC.constant(x)))

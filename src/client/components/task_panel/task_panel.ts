@@ -1,20 +1,16 @@
 import {formatTimeSpan} from "client/client_common/format"
 import {getNowBox} from "client/base/now_box"
-import {OpenTaskPictureViewerArgs, TaskPicture} from "client/components/task_picture/task_picture"
+import {TaskPicture} from "client/components/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
 import {RBox, WBox, box, viewBox} from "@nartallax/cardboard"
 import {onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
-import {GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
-import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
-import {decomposePrompt} from "client/app/prompt_composing"
-import {showToast} from "client/controls/toast/toast"
+import {GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SoftScroller} from "client/base/soft_scroller"
 import {addDragScroll} from "client/client_common/drag_scroll"
-import {showImageViewer} from "client/components/image_viewer/image_viewer"
 import {debounce} from "client/client_common/debounce"
-import {GenerationTaskArgument} from "common/entities/arguments"
+import {loadArguments} from "client/app/load_arguments"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>
@@ -74,19 +70,6 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const picturesWithDisableBoxes: {el: HTMLElement, isDisabled: WBox<boolean>}[] = []
 
-	function openViewer(args: OpenTaskPictureViewerArgs): void {
-		const pictureIndex = pictures().indexOf(args.picture)
-		showImageViewer({
-			imageDescriptions: pictures,
-			// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
-			makeUrl: picture => ClientApi.getPictureUrl(picture.id, picture.salt),
-			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
-			equalizeByHeight: true,
-			formatLabel: img => `${img.naturalWidth} x ${img.naturalHeight}`,
-			panBounds: {x: "centerInPicture", y: "borderToBorder"}
-		})
-	}
-
 	const pictureContainer = tag({class: css.pictures},
 		pictures.mapArray(
 			picture => picture.id,
@@ -95,22 +78,9 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				const el = TaskPicture({
 					picture,
 					isDisabled,
-					openViewer,
 					onLoad: debouncedUpdateDisabledState,
 					loadAnimation: isInDOM,
-					onPictureParamCopy: () => {
-						const genInputData = {...props.task()}
-						let modifiedArgs = picture().modifiedArguments
-						if(modifiedArgs){
-							if("prompt" in modifiedArgs){ // TODO: cringe
-								genInputData.prompt = modifiedArgs.prompt + ""
-								modifiedArgs = {...modifiedArgs}
-								delete modifiedArgs.prompt
-							}
-							genInputData.params = {...genInputData.params, ...modifiedArgs}
-						}
-						loadArguments(genInputData)
-					}
+					generationTask: props.task
 				})
 				picturesWithDisableBoxes.push({el, isDisabled})
 				return el
@@ -241,41 +211,4 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	])
 
 	return result
-}
-
-function loadArguments(task: GenerationTaskInputData): void {
-	const paramSet = allKnownParamSets().find(paramSet => paramSet.internalName === task.paramSetName)
-	if(!paramSet){
-		showToast({
-			text: `There's no parameter set ${task.paramSetName} anymore. This task used that parameter set. Cannot load values.`,
-			type: "error"
-		})
-		return
-	}
-
-
-	const prompt = decomposePrompt(task.prompt, allKnownShapeTags() ?? [], Object.keys(allKnownContentTags() ?? {}))
-
-	currentParamSetName(task.paramSetName)
-	currentShapeTag(prompt.shape)
-	currentPrompt(prompt.body)
-	currentContentTags(prompt.content)
-
-	const nonLoadableParamNames: string[] = []
-	for(const [key, value] of Object.entries(task.params)){
-		const argBox = currentArgumentBoxes[key]
-		if(!argBox){
-			nonLoadableParamNames.push(key)
-			continue
-		}
-		(argBox as WBox<GenerationTaskArgument>)(value)
-	}
-
-	if(nonLoadableParamNames.length > 0){
-		showToast({
-			text: `Some of parameters of the task are now non-existent and were not loaded: ${nonLoadableParamNames.join(", ")}`,
-			type: "info"
-		})
-	}
-
 }

@@ -9,6 +9,9 @@ export enum GenerationTaskStatus {
 }
 
 export type GenerationTaskWithPictures = GenerationTask & {pictures: Picture[]}
+export function taskHasPicturesAttached(task: GenerationTask): task is GenerationTaskWithPictures {
+	return !!(task as GenerationTaskWithPictures).pictures
+}
 
 export type GenerationTaskInputData = RC.Value<typeof GenerationTaskInputData>
 export const GenerationTaskInputData = RC.struct({

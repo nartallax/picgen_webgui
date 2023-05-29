@@ -349,6 +349,7 @@ export namespace ServerApi {
 					prompt: task.prompt, // ew.
 					...(picture.modifiedArguments || {})
 				}
+				picture.paramSetName = task.paramSetName
 			}
 
 			return pictures

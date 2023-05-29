@@ -52,7 +52,7 @@ function calculateBoundsForImageViewer(params: BoundCalcParams): Bounds {
 
 }
 
-type Props<T> = {
+export type ShowImageViewerProps<T> = {
 	readonly imageDescriptions: RBox<readonly T[]>
 	readonly makeUrl: (imageDescription: T) => string
 	readonly zoomSpeed?: number
@@ -68,7 +68,7 @@ type Props<T> = {
 	readonly defaultOffset?: number
 }
 
-export async function showImageViewer<T>(props: Props<T>): Promise<void> {
+export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promise<void> {
 	// debug dot right in the center of the screen
 	// document.body.appendChild(tag({style: {
 	// 	width: "10px",

@@ -6,15 +6,17 @@ import {IdentifiedEntity} from "server/dao"
 import {BinaryQueryCondition, SimpleListQueryParams} from "common/infra_entities/query"
 
 interface FeedProps<T> {
-	values: WBox<T[]>
+	values?: WBox<T[]>
 	loadNext: (currentValues: T[]) => T[] | Promise<T[]>
 	getId: (value: T) => string | number
 	renderElement: (value: WBox<T>) => HTMLElement
 	bottomLoadingPlaceholder?: HTMLElement
 	class?: string
+	containerClass?: string
 }
 
 export function Feed<T>(props: FeedProps<T>): HTMLElement {
+	const values = props.values ?? box([])
 	const isBottomVisible = box(false)
 	const reachedEndOfFeed = box(false)
 	let isLoadingNow = false
@@ -22,8 +24,8 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 
 	const result = tag({class: [css.feed, props.class]}, [
 		tag({
-			class: css.feedItemsContainer
-		}, props.values.mapArray(props.getId, props.renderElement)),
+			class: [css.feedItemsContainer, props.containerClass]
+		}, values.mapArray(props.getId, props.renderElement)),
 		VisibilityNotifier({
 			isOnScreen: isBottomVisible,
 			hide: reachedEndOfFeed
@@ -31,11 +33,11 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	])
 
 	async function loadNext(): Promise<void> {
-		let currentValues = props.values()
+		let currentValues = values()
 		// console.log("Loading next, starting with " + currentValues.length)
 		const newValues = await Promise.resolve(props.loadNext(currentValues))
 		currentValues = [...currentValues, ...newValues]
-		props.values(currentValues)
+		values(currentValues)
 		reachedEndOfFeed(newValues.length === 0)
 		// if(reachedEndOfFeed()){
 		// 	console.log("Reached end of feed.")
@@ -62,7 +64,7 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 
 	whileMounted(result, isBottomVisible, tryLoadNext)
 	whileMounted(result, reachedEndOfFeed, tryLoadNext)
-	whileMounted(result, props.values, () => reachedEndOfFeed(false))
+	whileMounted(result, values, () => reachedEndOfFeed(false))
 
 	return result
 }
@@ -76,18 +78,19 @@ type SimpleFeedFetcherParams<T extends Record<string, unknown> & IdentifiedEntit
 }
 
 export function makeSimpleFeedFetcher<T extends Record<string, unknown> & IdentifiedEntity, O extends Record<string, unknown> & IdentifiedEntity = T>(params: SimpleFeedFetcherParams<T, O>): (loadedValues: O[]) => Promise<O[]> {
+	const sortBy = params.sortBy ?? "id"
 	return loadedValues => {
 		const lastEntry = loadedValues[loadedValues.length - 1]
 		const filters: BinaryQueryCondition<T>[] = []
 		if(lastEntry){
 			filters.push({
-				a: {field: "id"},
+				a: {field: sortBy},
 				op: "<",
 				b: {value: lastEntry.id}
 			})
 		}
 		return params.fetch({
-			sortBy: params.sortBy ?? "id",
+			sortBy: sortBy,
 			desc: params.desc ?? true,
 			limit: params.packSize || 10,
 			filters

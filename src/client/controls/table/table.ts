@@ -1,4 +1,4 @@
-import {WBox, box, viewBox} from "@nartallax/cardboard"
+import {WBox, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {Feed, makeSimpleFeedFetcher} from "client/controls/feed/feed"
 import {SimpleListQueryParams} from "common/infra_entities/query"
@@ -29,7 +29,7 @@ export function Table<T extends Record<string, unknown> & IdentifiedEntity, O ex
 			style: {gridTemplateColumns: templateCols}
 		}, props.headers.map(header => tag([header.label]))),
 		Feed<O>({
-			values: props.values ?? box([] as O[]),
+			values: props.values,
 			getId: row => row.id,
 			loadNext: makeSimpleFeedFetcher<T, O>({
 				fetch: props.fetch,

@@ -22,6 +22,8 @@ import {IconButton} from "client/controls/icon_button/icon_button"
 import {GenerationTaskArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
 import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
+import {Picture, PictureWithEffectiveArgs} from "common/entities/picture"
+import {TaskPicture} from "client/components/task_picture/task_picture"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -121,12 +123,26 @@ export function MainPage(): HTMLElement {
 				value: selectedTab,
 				class: css.mainPageSwitchPanel,
 				routes: {
-					favorites: () => tag(["uwu"]),
+					favorites: () => Feed({
+						class: css.mainPageFeed,
+						containerClass: css.favoritesFeed,
+						getId: picture => picture.id,
+						renderElement: picture => TaskPicture({picture}),
+						loadNext: makeSimpleFeedFetcher<Picture, PictureWithEffectiveArgs>({
+							fetch: query => {
+								(query.filters ||= []).push(
+									{a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}}
+								)
+								return ClientApi.listPicturesWithEffectiveArgs(query)
+							},
+							desc: true,
+							packSize: 50
+						})
+					}),
 					tasks: () => Feed({
 						getId: task => task.id,
 						loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
 							fetch: ClientApi.listTasks,
-							sortBy: "creationTime" as const,
 							desc: true,
 							packSize: 10
 						}),
