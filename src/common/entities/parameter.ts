@@ -1,5 +1,5 @@
 import {RC} from "@nartallax/ribcage"
-import {GenerationTaskArgument} from "common/entities/generation_task"
+import {GenerationTaskArgument} from "common/entities/arguments"
 import {PictureType} from "common/entities/picture"
 import {flatten} from "common/utils/flatten"
 

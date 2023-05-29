@@ -5,9 +5,10 @@ import {generateUniqDomID} from "client/client_common/generate_uniq_dom_id"
 import {readFileToArrayBuffer} from "client/client_common/read_file_to_array_buffer"
 import {showImageMaskInput} from "client/components/image_mask_input/image_mask_input"
 import * as css from "./picture_input.module.scss"
-import {Picture, PictureArgument, pictureTypeSet} from "common/entities/picture"
+import {Picture, pictureTypeSet} from "common/entities/picture"
 import {PictureGenParam} from "common/entities/parameter"
 import {currentParamSetName} from "client/app/global_values"
+import {PictureArgument} from "common/entities/arguments"
 
 interface PictureInputProps {
 	readonly value: WBox<PictureArgument>

@@ -4,7 +4,7 @@ import {LoadingPage} from "client/pages/loading_page/loading_page"
 import {LoginPage} from "client/pages/login_page/login_page"
 import {MainPage} from "client/pages/main_page/main_page"
 import {NotAllowedPage} from "client/pages/not_allowed_page/not_allowed_page"
-import {GenerationTaskArgument} from "common/entities/generation_task"
+import {GenerationTaskArgument} from "common/entities/arguments"
 import {GenerationParameterSet} from "common/entities/parameter"
 import {User} from "common/entities/user"
 

@@ -4,14 +4,13 @@ import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {GenParameter, GenParameterGroup, defaultValueOfParam} from "common/entities/parameter"
 import {currentArgumentBoxes} from "client/app/global_values"
-import {GenerationTaskArgument} from "common/entities/generation_task"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {TextInput} from "client/controls/text_input/text_input"
 import {PictureInput} from "client/components/picture_input/picture_input"
 import {Select} from "client/controls/select/select"
-import {PictureArgument} from "common/entities/picture"
 import {Form, FormField, FormHeader} from "client/controls/form/form"
+import {GenerationTaskArgument, PictureArgument} from "common/entities/arguments"
 
 interface ArgumentsInputBlock {
 	readonly paramGroups: RBox<null | readonly GenParameterGroup[]>
