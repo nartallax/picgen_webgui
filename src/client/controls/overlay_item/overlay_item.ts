@@ -9,7 +9,7 @@ type Props = {
 	body: HTMLElement
 	visible: RBox<boolean>
 	/** Point of overlay item that will be matched with referencePosition */
-	tooltipPosition?: Corner
+	overlayPosition?: Corner
 	referencePosition?: Corner
 	canShiftVertically?: boolean
 	canShiftHorisonally?: boolean
@@ -61,6 +61,7 @@ const showOverlayItem = (props: Props): OverlayItem => {
 			const pos = window.getComputedStyle(el).position
 			if(pos === "relative" || pos === "absolute" || pos === "fixed" || pos === "sticky"){
 				nearestRelParent = el
+				break
 			}
 			if(!(el.parentElement instanceof HTMLElement) || el.parentElement === document.body){
 				break
@@ -72,7 +73,7 @@ const showOverlayItem = (props: Props): OverlayItem => {
 	const rect = props.referenceElement.getBoundingClientRect()
 	const parentRect = nearestRelParent.getBoundingClientRect()
 
-	const tooltipPosition = parseCorner(props.tooltipPosition ?? "topLeft")
+	const tooltipPosition = parseCorner(props.overlayPosition ?? "topLeft")
 	const referencePosition = parseCorner(props.referencePosition ?? "topRight")
 	const growsLeft = tooltipPosition.isRight
 	const growsDown = tooltipPosition.isTop
@@ -83,7 +84,7 @@ const showOverlayItem = (props: Props): OverlayItem => {
 		class: css.padding,
 		style: {
 			minHeight: props.canShiftVertically ? "0" : undefined,
-			flexShrink: props.canShiftVertically ? "1" : undefined,
+			flexShrink: props.canShiftVertically ? "1" : "0",
 			height: (rect.top + (addRefHeight ? rect.height : 0)) + "px"
 		}
 	})
@@ -92,7 +93,7 @@ const showOverlayItem = (props: Props): OverlayItem => {
 		class: css.padding,
 		style: {
 			minWidth: props.canShiftHorisonally ? "0" : undefined,
-			flexShrink: props.canShiftHorisonally ? "1" : undefined,
+			flexShrink: props.canShiftHorisonally ? "1" : "0",
 			width: (rect.left + (addRefWidth ? rect.width : 0)) + "px"
 		}
 	})
@@ -110,11 +111,12 @@ const showOverlayItem = (props: Props): OverlayItem => {
 		tag({
 			class: css.overlayItemHorisontalWrap,
 			style: {
-				flexDirection: growsLeft ? "row-reverse" : "row"
+				flexDirection: growsLeft ? "row-reverse" : "row",
+				minHeight: props.canShiftVertically ? undefined : "0"
 			}
 		}, [
 			hPadding,
-			props.body
+			tag({class: css.overlayContentWrap}, [props.body])
 		])
 	]);
 

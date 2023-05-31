@@ -8,15 +8,10 @@
 }
 
 .overlayItemHorisontalWrap {
-	flex-grow: 0;
+	flex-grow: 1;
     flex-shrink: 1;
     flex-basis: 0;
-	max-height: 100%;
-
-	> :not(.padding){
-		pointer-events: all;
-		max-height: 100%;
-	}
+	max-width: 100%;
 }
 
 .overlayItemVerticalWrap, 
@@ -30,4 +25,11 @@
 .padding {
 	flex-grow: 0;
 	flex-basis: auto;
+}
+
+.overlayContentWrap {
+	pointer-events: all;
+	max-height: 100%;
+	display: flex; // helps with overflows, magically
+	min-width: 0;
 }

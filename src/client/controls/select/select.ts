@@ -1,6 +1,7 @@
 import {MRBox, WBox, box, constBoxWrap, viewBox} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./select.module.scss"
+import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
 
 interface Props<T> {
 	value: WBox<T>
@@ -23,6 +24,8 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	}
 
 	const searchText = box("")
+	const isDropdownVisible = box(false)
+	const selectedItem = box(-1)
 
 	const onChange = () => {
 		if(!props.isSearchable){
@@ -39,7 +42,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			readonly: !props.isSearchable
 		},
 		onFocus: () => {
-			listPosition(getListPosition())
+			isDropdownVisible(true)
 			window.addEventListener("click", handleWindowClick)
 			if(props.isSearchable){
 				input.value = ""
@@ -48,7 +51,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		},
 		onBlur: () => {
 			window.removeEventListener("click", handleWindowClick)
-			listPosition(null)
+			isDropdownVisible(false)
 			updateValue()
 		},
 		onChange: onChange,
@@ -63,10 +66,6 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		onKeypress: onChange,
 		onPaste: onChange
 	})
-
-	const getListPosition = () => {
-		return input.getBoundingClientRect().left
-	}
 
 	input.addEventListener("keydown", e => {
 		const down = e.key === "ArrowDown"
@@ -92,10 +91,6 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		}
 	})
 
-	const listPosition = box<null | number>(null)
-	const selectedItem = box(-1)
-
-	// setTimeout(() => listPosition(getListPosition()), 500)
 
 	const normalize = (str: string): string => {
 		return str.replace(/\s/g, "").toLowerCase()
@@ -119,8 +114,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	const listWrap = tag({
 		class: [css.dropdown],
 		style: {
-			// FIXME
-			// maxHeight: ((props.listSizeLimit ?? 10) * 2) + "em"
+			maxHeight: ((props.listSizeLimit ?? 10) * 2) + "em"
 		}
 	}, filteredOptions.mapArray(
 		value => value,
@@ -138,19 +132,24 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		}
 	))
 
-	const listPositionWrap = tag({class: css.listPosWrap}, [
-		listWrap
-	])
-
 	const wrap = tag({
 		class: [css.select, {[css.argumentInput!]: props.isArgumentInput}]
 	}, [
 		input,
 		tag({class: [css.dropdownIcon, "icon-down-open", {
-			[css.open!]: listPosition.map(pos => pos !== null)
-		}]}),
-		listPositionWrap
+			[css.open!]: isDropdownVisible
+		}]})
 	])
+
+	makeOverlayItem({
+		referenceElement: input,
+		body: listWrap,
+		visible: isDropdownVisible,
+		parent: wrap,
+		referencePosition: "bottomLeft",
+		overlayPosition: "topLeft",
+		zIndex: 100
+	})
 
 	function updateValue(): void {
 		const value = props.value()
@@ -183,25 +182,6 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			} else if(hasClass){
 				child.classList.remove(css.selectedItem!)
 			}
-		}
-	})
-
-	const hideTimeoutHandle: ReturnType<typeof setTimeout> | null = null
-	whileMounted(wrap, listPosition, position => {
-		if(position === null){
-			listWrap.style.opacity = "0"
-			setTimeout(() => {
-				listWrap.style.display = "none"
-			}, 150)
-		} else {
-			if(hideTimeoutHandle !== null){
-				clearTimeout(hideTimeoutHandle)
-			}
-			listPositionWrap.style.left = `-${position}px`
-			listPositionWrap.style.paddingLeft = `${position}px`
-			listWrap.style.opacity = "0"
-			listWrap.style.display = ""
-			requestAnimationFrame(() => listWrap.style.opacity = "1")
 		}
 	})
 
