@@ -83,23 +83,28 @@ export const PictureGenParam = RC.struct(RC.structFields({
 }), {}, BaseGenParam)
 
 export type EnumGenParam = RC.Value<typeof EnumGenParam>
-export const EnumGenParam = RC.roStruct({
-	type: RC.constant("enum"),
-	options: RC.roArray(
-		RC.union([
-			RC.number(),
-			RC.string(),
-			RC.roStruct({
-				label: RC.string(),
-				value: RC.union([
-					RC.number(),
-					RC.string()
-				])
-			})
-		]),
-		{validators: [arr => arr.length > 0]}
-	)
-}, {}, BaseGenParam)
+export const EnumGenParam = RC.struct(RC.structFields({
+	ro: {
+		type: RC.constant("enum"),
+		options: RC.roArray(
+			RC.union([
+				RC.number(),
+				RC.string(),
+				RC.roStruct({
+					label: RC.string(),
+					value: RC.union([
+						RC.number(),
+						RC.string()
+					])
+				})
+			]),
+			{validators: [arr => arr.length > 0]}
+		)
+	},
+	roOpt: {
+		searchable: RC.bool()
+	}
+}), {}, BaseGenParam)
 
 export type GenParameter = RC.Value<typeof GenParameter>
 export const GenParameter = RC.union([

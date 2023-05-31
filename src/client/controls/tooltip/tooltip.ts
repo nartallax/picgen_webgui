@@ -22,10 +22,8 @@ export const TooltipIcon = defineControl<TooltipIconProps>(props => {
 		class: css.tooltipIcon,
 		onMouseover: () => {
 			const rect = tooltipIcon.getBoundingClientRect()
-			console.log(rect.top)
 			contentWrap.style.top = -rect.top + "px"
 			posPadding.style.height = rect.top + "px"
-			console.log(posPadding.style.height)
 		}
 	}, ["?", contentWrap])
 

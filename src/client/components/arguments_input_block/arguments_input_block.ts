@@ -107,6 +107,7 @@ function ArgumentInput(def: GenParameter, value: WBox<GenerationTaskArgument>): 
 			return Select({
 				value: value as WBox<string | number>,
 				isArgumentInput: true,
+				isSearchable: def.searchable,
 				options: def.options.map(opt => {
 					if(typeof(opt) === "string" || typeof(opt) === "number"){
 						return {label: opt + "", value: opt}
