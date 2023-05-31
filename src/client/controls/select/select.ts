@@ -41,7 +41,10 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		onFocus: () => {
 			listPosition(getListPosition())
 			window.addEventListener("click", handleWindowClick)
-			onChange()
+			if(props.isSearchable){
+				input.value = ""
+				onChange()
+			}
 		},
 		onBlur: () => {
 			window.removeEventListener("click", handleWindowClick)
@@ -49,7 +52,13 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			updateValue()
 		},
 		onChange: onChange,
-		onKeydown: onChange,
+		onKeydown: e => {
+			if(e.key === "Escape"){
+				input.blur()
+			} else {
+				onChange()
+			}
+		},
 		onKeyup: onChange,
 		onKeypress: onChange,
 		onPaste: onChange
@@ -86,6 +95,8 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	const listPosition = box<null | number>(null)
 	const selectedItem = box(-1)
 
+	// setTimeout(() => listPosition(getListPosition()), 500)
+
 	const normalize = (str: string): string => {
 		return str.replace(/\s/g, "").toLowerCase()
 	}
@@ -108,7 +119,8 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	const listWrap = tag({
 		class: [css.dropdown],
 		style: {
-			maxHeight: (props.listSizeLimit ?? 10) + "em"
+			// FIXME
+			// maxHeight: ((props.listSizeLimit ?? 10) * 2) + "em"
 		}
 	}, filteredOptions.mapArray(
 		value => value,

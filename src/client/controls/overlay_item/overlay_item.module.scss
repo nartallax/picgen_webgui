@@ -1,0 +1,33 @@
+.overlayItemVerticalWrap {
+	position: absolute;
+	opacity: 0;
+	transition: opacity 0.2s;
+	overflow: hidden;
+	width: 100vw;
+	height: 100vh;
+}
+
+.overlayItemHorisontalWrap {
+	flex-grow: 0;
+    flex-shrink: 1;
+    flex-basis: 0;
+	max-height: 100%;
+
+	> :not(.padding){
+		pointer-events: all;
+		max-height: 100%;
+	}
+}
+
+.overlayItemVerticalWrap, 
+.overlayItemHorisontalWrap {
+	display: flex;
+	justify-content: flex-start;
+	align-items: flex-start;
+	pointer-events: none;
+}
+
+.padding {
+	flex-grow: 0;
+	flex-basis: auto;
+}

@@ -1,5 +1,7 @@
 import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./tooltip.module.scss"
+import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
+import {box} from "@nartallax/cardboard"
 
 interface TooltipIconProps {
 	tooltip: string
@@ -7,25 +9,24 @@ interface TooltipIconProps {
 
 export const TooltipIcon = defineControl<TooltipIconProps>(props => {
 
-	const posPadding = tag({class: css.positioningPadding})
-
-	const contentWrap = tag({
-		class: css.contentPositionWrap
-	}, [
-		posPadding,
-		tag({
-			class: css.content
-		}, [props.tooltip])
-	])
+	const overlayItemVisible = box(false)
 
 	const tooltipIcon = tag({
 		class: css.tooltipIcon,
-		onMouseover: () => {
-			const rect = tooltipIcon.getBoundingClientRect()
-			contentWrap.style.top = -rect.top + "px"
-			posPadding.style.height = rect.top + "px"
-		}
-	}, ["?", contentWrap])
+		onMouseenter: () => overlayItemVisible(true),
+		onMouseleave: () => overlayItemVisible(false)
+	}, ["?"])
+
+	makeOverlayItem({
+		referenceElement: tooltipIcon,
+		body: tag({class: css.content}, [props.tooltip]),
+		visible: overlayItemVisible,
+		referencePosition: "bottomRight",
+		tooltipPosition: "topLeft",
+		canShiftVertically: true,
+		zIndex: 200,
+		parent: tooltipIcon
+	})
 
 	return tooltipIcon
 

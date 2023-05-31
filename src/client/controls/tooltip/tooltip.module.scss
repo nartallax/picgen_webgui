@@ -4,43 +4,16 @@
     border: 2px solid #625e5e;
     color: #625e5e;
     font-weight: bold;
-    position: relative;
     height: 1.5rem;
     width: 1.5rem;
     text-align: center;
     margin-left: 0.25rem;
     cursor: default;
-
-	&:hover .contentPositionWrap {
-		display: flex;
-	}
-}
-
-.contentPositionWrap {
-	position: absolute;
-	height: 99vh; // should be 100vh, but that creates weird scroll sometimes
-	left: 100%;	
-	display: none;
-	z-index: 200;
-	flex-direction: column;
-	justify-content: flex-start;
-}
-
-.positioningPadding {
-	flex-grow: 0;
-	flex-shrink: 1;
-	min-height: 0;
 }
 
 .content {
-	margin-top: 1rem;
 	text-align: left;
-	overflow: visible;
-	max-height: 95vh;
 	overflow-y: auto;
-
-	flex-grow: 0;
-	flex-shrink: 0;
 
 	background: #cdbbb6;
 	border: 2px solid #625e5e;
