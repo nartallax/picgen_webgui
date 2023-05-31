@@ -103,26 +103,25 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPictures>): void {
 	let props: ShowImageViewerProps<Picture>
 	const commonProps = {
-		// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
 		makeUrl: (picture: Picture) => ClientApi.getPictureUrl(picture.id, picture.salt),
-		equalizeByHeight: true,
-		formatLabel: (img: HTMLImageElement) => `${img.naturalWidth} x ${img.naturalHeight}`
+		formatLabel: (img: HTMLImageElement) => `${img.naturalWidth} x ${img.naturalHeight}`,
+		panBounds: {x: "centerInPicture", y: "borderToBorder"}
 	} satisfies Partial<ShowImageViewerProps<Picture>>
 	if(task){
 		const pictures = constBoxWrap(task).prop("pictures").map(x => [...x].reverse())
 		const pictureIndex = pictures().indexOf(unbox(picture))
 		props = {
 			...commonProps,
+			// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
 			imageDescriptions: pictures,
 			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
-			panBounds: {x: "centerInPicture", y: "borderToBorder"}
+			equalizeByHeight: true
 		}
 	} else {
 		props = {
 			...commonProps,
 			imageDescriptions: constBoxWrap(picture).map(pic => [pic]),
-			centerOn: 0,
-			panBounds: {x: "centerInPicture", y: "borderToBorder"}
+			centerOn: 0
 		}
 	}
 
