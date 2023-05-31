@@ -11,20 +11,36 @@
     margin-left: 0.25rem;
     cursor: default;
 
-	&:hover .content {
-		display: block;
+	&:hover .contentPositionWrap {
+		display: flex;
 	}
 }
 
-.content {
-	display: none;
+.contentPositionWrap {
 	position: absolute;
-	top: 100%;
-	left: 100%;
-	overflow: visible;
+	height: 99vh; // should be 100vh, but that creates weird scroll sometimes
+	left: 100%;	
+	display: none;
 	z-index: 200;
+	flex-direction: column;
+	justify-content: flex-start;
+}
 
-	pointer-events: none;
+.positioningPadding {
+	flex-grow: 0;
+	flex-shrink: 1;
+	min-height: 0;
+}
+
+.content {
+	margin-top: 1rem;
+	text-align: left;
+	overflow: visible;
+	max-height: 95vh;
+	overflow-y: auto;
+
+	flex-grow: 0;
+	flex-shrink: 0;
 
 	background: #cdbbb6;
 	border: 2px solid #625e5e;
@@ -33,5 +49,5 @@
 	font-size: 1rem;
 	max-width: 35rem;
 	width: max-content;
-	white-space: normal;
+	white-space: pre-wrap;
 }

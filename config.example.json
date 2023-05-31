@@ -66,18 +66,19 @@
 				"default": 512,
 				"min": 64,
 				"max": 1024,
-				"step": 16
+				"step": 16,
+				"tooltip": "uwu"
 			}, {
 				"type": "bool",
 				"jsonName": "upscale",
 				"uiName": "Upscale",
-				"default": false
+				"default": false,
+				"tooltip": "MODELS\n\n======== VANILLA ========\n\n0: ('Vanilla Stable Diffusion 1.5\n15: Stable Diffusion 2.1 (768px)\n16: Stable Diffusion 2.1 (512px)\n\n======== ANIME ==========\n\n1: AnyPM-Dreamshaper 071 + 0.2\n3: ether BluMix 4\n4: Anything + Dreamshaper 55% + Novel 25%; 5: Anything + Novel 55% + Protogen 45% + Dreamshaper 25%\n6: AnythingExperimental-055\n7: Anything + Protogen 25%, two-step mix, 0.25 + 0.10\n8: Anything + ??? 70%, two-step mix, 0.70 + 0.39\n10: ayonimix_V6VAEBaked\n12: Conterfeit mix\n27: wonton Colorbox 10\n28: pastel Mix\n29: Anything V5\n31: mixPro v4\n32: Counterfeit v3.0,\n33: revAnimated v12.2\n34: Niji v5\n38: camelliamixLine_v2\n\n======== REALISM ========\n\n2: finmix0.5 counterfeit anything\n9: URPM-94'\n11: Добронавт | 1coolmix4u_protoanar_dif_5050\n13: cheeseDaddys 30\n14: DHSDSAP 05\n26: edge Of Realism\n30: cyberrealistic v14\n35: chilloutmix\n36: URPM13\n37: amIReal V2\n\n======== STYLED ========\n\n1: fantassified icons v2\n17: Rozalski-1\n18: Rozalski-2\n19: WoW Icon\n20: Icons step 35720\n21: Icons step 121520\n23: Isolated Sketches A\n24: Isolated Sketches B\n25: Supercars\n39: GTA 5 Artwork"
 			}, {
 				"type": "string",
 				"jsonName": "exclude",
 				"uiName": "Exclude",
-				"default": "",
-				"tooltip": "Content of this string will be used as negative terms, excluding its values from the generated content."
+				"default": ""
 			}, {
 				"type": "enum",
 				"jsonName": "example_enum",
