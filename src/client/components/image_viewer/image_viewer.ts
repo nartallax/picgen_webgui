@@ -273,13 +273,23 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	const imgsWithLabels = imgs.mapArray(
 		img => img,
 		img => tag({class: css.imgWrap}, img.map(img => {
+			const loaded = box(false)
+			waitLoadEvent(img).then(() => loaded(true))
+
 			const label = tag({
 				class: css.imgLabel,
 				style: {
 					fontSize: maxNatHeight.map(height => (height / 400) + "rem")
 				}
-			}, [])
-			waitLoadEvent(img).then(() => label.textContent = `${img.naturalWidth} x ${img.naturalHeight}`)
+			}, [viewBox(() => {
+				if(!loaded()){
+					return ""
+				}
+				void zoom() // just to change values on zoom change
+				const rate = img.getBoundingClientRect().height / img.naturalHeight
+				return `${img.naturalWidth} x ${img.naturalHeight}, ${(rate * 100).toFixed(2)}%`
+			})])
+
 			return [img, label]
 		}))
 	)
