@@ -6,6 +6,7 @@ import {Picture, pictureHasAttachedTask} from "common/entities/picture"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {loadArgumentsFromPicture} from "client/app/load_arguments"
 import {ShowImageViewerProps, showImageViewer} from "client/components/image_viewer/image_viewer"
+import {loadArguments} from "client/app/load_arguments"
 
 interface TaskPictureProps {
 	picture: RBox<Picture>
@@ -24,7 +25,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		window.open(url(), "_blank")
 	})
 
-	const copyButton = tag({class: "icon-docs"})
+	const copyButton = tag({class: ["icon-docs", css.iconCopy]}, [tag(["P"])])
 	copyButton.addEventListener("click", e => {
 		e.stopPropagation()
 		const pic = props.picture()
@@ -36,6 +37,21 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			throw new Error("No task to take params from")
 		}
 		loadArgumentsFromPicture(pic, task)
+	})
+
+	const copyTaskButton = tag({
+		class: ["icon-docs", css.iconCopy],
+		style: {
+			display: props.picture.map(pic => pictureHasAttachedTask(pic) ? "block" : "none")
+		}
+	}, [tag(["T"])])
+	copyTaskButton.addEventListener("click", e => {
+		e.stopPropagation()
+		const pic = props.picture()
+		if(!pictureHasAttachedTask(pic)){
+			throw new Error("No attached task!")
+		}
+		loadArguments(pic.task)
 	})
 
 	const favAddTime = box(props.picture().favoritesAddTime)
@@ -82,9 +98,11 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				}
 			}
 		}, [
-			tag({class: css.leftColumn}, [favoriteButton]),
-			tag({class: [css.iconOpen, "icon-resize-full-alt"]}),
-			tag({class: css.rightColumn}, [copyButton, linkButton])
+			tag({class: css.topRow}, [copyTaskButton, copyButton]),
+			tag({class: css.middleRow}, [
+				tag({class: [css.iconOpen, "icon-resize-full-alt"]})
+			]),
+			tag({class: css.bottomRow}, [favoriteButton, linkButton])
 		])
 	])
 
