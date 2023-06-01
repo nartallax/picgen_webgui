@@ -58,7 +58,6 @@ export type ShowImageViewerProps<T> = {
 	readonly zoomSpeed?: number
 	readonly centerOn?: number
 	readonly equalizeByHeight?: boolean
-	readonly formatLabel?: (img: HTMLImageElement, imageDescription: T) => string
 	readonly panBounds?: {
 		readonly x: PanBoundsType
 		readonly y: PanBoundsType
@@ -98,7 +97,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	}
 
 	const updateMaxNatHeight = debounce(1, () => {
-		const imgArr = imgs().map(([img]) => img)
+		const imgArr = imgs()
 		let natHeight = maxNatHeight()
 		for(const img of imgArr){
 			natHeight = Math.max(img.naturalHeight, natHeight)
@@ -111,7 +110,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			await updateMaxNatHeight.waitForScheduledRun() // just in case
 		}
 
-		const imgArr = imgs().map(([img]) => img)
+		const imgArr = imgs()
 
 		const halfWidth = (window.innerWidth / 2)// * zoom()
 		const halfHeight = (window.innerHeight / 2)// * zoom()
@@ -163,7 +162,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	function scrollToNextImage(direction: -1 | 1): void {
 		const targetIndex = getCentralImageIndex() + direction
-		const imgArr = imgs().map(([img]) => img)
+		const imgArr = imgs()
 		if(targetIndex >= imgArr.length || targetIndex < 0){
 			return
 		}
@@ -172,7 +171,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	function getCentralImageIndex(): number {
 		const windowCenter = window.innerWidth / 2
-		const imgArr = imgs().map(([img]) => img)
+		const imgArr = imgs()
 		for(let i = 0; i < imgArr.length; i++){
 			const img = imgArr[i]!
 			const rect = img.getBoundingClientRect()
@@ -267,23 +266,22 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				img.addEventListener("load", onLoad, {capture: true, once: true})
 			}
 
-			return [img, desc] as const
+			return img
 		}
 	)
 
-	const imgsWithLabels = !props.formatLabel ? imgs : imgs.mapArray(
-		([img]) => img,
-		imgAndDesc => [tag({class: css.imgWrap}, imgAndDesc.map(([img, descBox]) => {
+	const imgsWithLabels = imgs.mapArray(
+		img => img,
+		img => tag({class: css.imgWrap}, img.map(img => {
 			const label = tag({
 				class: css.imgLabel,
 				style: {
 					fontSize: maxNatHeight.map(height => (height / 400) + "rem")
 				}
 			}, [])
-			waitLoadEvent(img).then(() => label.textContent = props.formatLabel!(img, descBox()))
-			whileMounted(label, descBox, desc => label.textContent = props.formatLabel!(img, desc))
+			waitLoadEvent(img).then(() => label.textContent = `${img.naturalWidth} x ${img.naturalHeight}`)
 			return [img, label]
-		})), imgAndDesc()[1]] as const
+		}))
 	)
 
 	const wrap = tag({
@@ -294,7 +292,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			transform: zoom.map(zoom => `scale(${zoom})`)
 		},
 		onClick: () => modal.close()
-	}, imgsWithLabels.mapArray(([img]) => img, imgAndDesc => imgAndDesc()[0]))
+	}, imgsWithLabels)
 
 
 	const updatePanX = () => {
@@ -370,7 +368,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	onMount(wrap, async() => {
 		const targetIndex = props.centerOn ?? 0
 
-		const imgArr = imgs().map(([img]) => img)
+		const imgArr = imgs()
 		const imgsBeforeTarget = imgArr.slice(0, targetIndex + 1)
 		await Promise.all(imgsBeforeTarget.map(img => waitLoadEvent(img)))
 		const targetImg = imgArr[targetIndex]!

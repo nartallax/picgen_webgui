@@ -104,7 +104,6 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 	let props: ShowImageViewerProps<Picture>
 	const commonProps = {
 		makeUrl: (picture: Picture) => ClientApi.getPictureUrl(picture.id, picture.salt),
-		formatLabel: (img: HTMLImageElement) => `${img.naturalWidth} x ${img.naturalHeight}`,
 		panBounds: {x: "centerInPicture", y: "borderToBorder"}
 	} satisfies Partial<ShowImageViewerProps<Picture>>
 	if(task){
