@@ -234,16 +234,22 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		setZoomByCoords(pointerEventsToClientCoords(e), value)
 	}
 
+	function calcZoomnessRate(img: HTMLImageElement): number {
+		return img.getBoundingClientRect().height / img.naturalHeight
+	}
+
 	const imgs = props.imageDescriptions.mapArray(
 		desc => props.makeUrl(desc),
 		desc => {
 			const natSideRatio = box(1)
-			const img: HTMLImageElement = tag({
+			let img: HTMLImageElement | null = null
+			img = tag({
 				tag: "img",
 				attrs: {src: desc.map(desc => props.makeUrl(desc)), alt: ""},
 				style: {
 					width: !props.equalizeByHeight ? undefined : viewBox(() => (natSideRatio() * maxNatHeight()) + "px"),
-					height: !props.equalizeByHeight ? undefined : maxNatHeight.map(height => height + "px")
+					height: !props.equalizeByHeight ? undefined : maxNatHeight.map(height => height + "px"),
+					imageRendering: zoom.map(() => img && calcZoomnessRate(img) >= 1 ? "pixelated" : "auto")
 				},
 				onMousedown: e => {
 					if(e.button === 1){
@@ -253,7 +259,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			})
 
 			const onLoad = () => {
-				natSideRatio(img.naturalWidth / img.naturalHeight)
+				natSideRatio(img!.naturalWidth / img!.naturalHeight)
 				updateMaxNatHeight()
 				updateBounds()
 			}
@@ -275,7 +281,6 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		img => tag({class: css.imgWrap}, img.map(img => {
 			const loaded = box(false)
 			waitLoadEvent(img).then(() => loaded(true))
-
 			const label = tag({
 				class: css.imgLabel,
 				style: {
@@ -285,9 +290,8 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				if(!loaded()){
 					return ""
 				}
-				void zoom() // just to change values on zoom change
-				const rate = img.getBoundingClientRect().height / img.naturalHeight
-				return `${img.naturalWidth} x ${img.naturalHeight}, ${(rate * 100).toFixed(2)}%`
+				void zoom() // just to subscribe
+				return `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
 			})])
 
 			return [img, label]
