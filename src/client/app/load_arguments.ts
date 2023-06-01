@@ -4,33 +4,18 @@ import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTaskArgument} from "common/entities/arguments"
 import {GenerationTaskInputData} from "common/entities/generation_task"
-import {Picture, pictureHasEffectiveArgs} from "common/entities/picture"
+import {Picture} from "common/entities/picture"
 
-export function loadArgumentsFromPicture(picture: Picture, task?: GenerationTaskInputData): void {
-	let genInputData: GenerationTaskInputData
-	if(pictureHasEffectiveArgs(picture)){
-		genInputData = {
-			prompt: picture.effectiveArgs.prompt as string, // ew.
-			params: {
-				...(task?.params ?? {}),
-				...picture.effectiveArgs
-			},
-			paramSetName: picture.paramSetName
+export function loadArgumentsFromPicture(picture: Picture, task: GenerationTaskInputData): void {
+	const genInputData = {...task}
+	let modifiedArgs = picture.modifiedArguments
+	if(modifiedArgs){
+		if("prompt" in modifiedArgs){ // TODO: cringe
+			genInputData.prompt = modifiedArgs.prompt + ""
+			modifiedArgs = {...modifiedArgs}
+			delete modifiedArgs.prompt
 		}
-		delete genInputData.params!.prompt
-	} else if(task){
-		genInputData = {...task}
-		let modifiedArgs = picture.modifiedArguments
-		if(modifiedArgs){
-			if("prompt" in modifiedArgs){ // TODO: cringe
-				genInputData.prompt = modifiedArgs.prompt + ""
-				modifiedArgs = {...modifiedArgs}
-				delete modifiedArgs.prompt
-			}
-			genInputData.params = {...genInputData.params, ...modifiedArgs}
-		}
-	} else {
-		throw new Error("Cannot load arguments from picture: there's no attached effective args, and there's no task.")
+		genInputData.params = {...genInputData.params, ...modifiedArgs}
 	}
 
 	loadArguments(genInputData)

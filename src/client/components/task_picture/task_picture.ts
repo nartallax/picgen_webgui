@@ -2,8 +2,8 @@ import {MRBox, RBox, box, constBoxWrap, unbox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
-import {Picture} from "common/entities/picture"
-import {GenerationTaskWithPictures} from "common/entities/generation_task"
+import {Picture, pictureHasAttachedTask} from "common/entities/picture"
+import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {loadArgumentsFromPicture} from "client/app/load_arguments"
 import {ShowImageViewerProps, showImageViewer} from "client/components/image_viewer/image_viewer"
 
@@ -27,7 +27,15 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	const copyButton = tag({class: "icon-docs"})
 	copyButton.addEventListener("click", e => {
 		e.stopPropagation()
-		loadArgumentsFromPicture(props.picture(), unbox(props.generationTask))
+		const pic = props.picture()
+		let task: GenerationTask | undefined = unbox(props.generationTask)
+		if(pictureHasAttachedTask(pic)){
+			task = pic.task
+		}
+		if(!task){
+			throw new Error("No task to take params from")
+		}
+		loadArgumentsFromPicture(pic, task)
 	})
 
 	const favAddTime = box(props.picture().favoritesAddTime)

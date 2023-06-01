@@ -2,7 +2,7 @@ import {ApiClient} from "client/app/api_client"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenerationParameterSet} from "common/entities/parameter"
-import {Picture, PictureInfo, PictureWithEffectiveArgs} from "common/entities/picture"
+import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import {User} from "common/entities/user"
 import {SimpleListQueryParams} from "common/infra_entities/query"
 
@@ -85,7 +85,7 @@ export namespace ClientApi {
 	export const setPictureFavorite = (pictureId: number, isFavorite: boolean) =>
 		client.call<boolean>("setPictureFavorite", {pictureId, isFavorite})
 
-	export const listPicturesWithEffectiveArgs = (query: SimpleListQueryParams<Picture>) =>
-		client.call<PictureWithEffectiveArgs[]>("listPicturesWithEffectiveArgs", {query})
+	export const listPicturesWithTasks = (query: SimpleListQueryParams<Picture>) =>
+		client.call<PictureWithTask[]>("listPicturesWithTasks", {query})
 
 }

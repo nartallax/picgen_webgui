@@ -38,10 +38,9 @@ export const Polygon = RC.array(Point2D)
 export type PictureMask = RC.Value<typeof PictureMask>
 export const PictureMask = RC.array(Polygon)
 
-export type PictureWithEffectiveArgs = Picture & {
-	effectiveArgs: GenerationTask["params"]
-	paramSetName: string
+export type PictureWithTask = Picture & {
+	task: GenerationTask
 }
-export function pictureHasEffectiveArgs(picture: Picture): picture is PictureWithEffectiveArgs {
-	return !!(picture as PictureWithEffectiveArgs).effectiveArgs
+export function pictureHasAttachedTask(picture: Picture): picture is PictureWithTask {
+	return !!(picture as PictureWithTask).task
 }

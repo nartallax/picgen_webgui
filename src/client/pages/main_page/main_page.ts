@@ -22,7 +22,7 @@ import {IconButton} from "client/controls/icon_button/icon_button"
 import {GenerationTaskArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
 import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
-import {Picture, PictureWithEffectiveArgs} from "common/entities/picture"
+import {Picture, PictureWithTask} from "common/entities/picture"
 import {TaskPicture} from "client/components/task_picture/task_picture"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
@@ -128,12 +128,12 @@ export function MainPage(): HTMLElement {
 						containerClass: css.favoritesFeed,
 						getId: picture => picture.id,
 						renderElement: picture => TaskPicture({picture}),
-						loadNext: makeSimpleFeedFetcher<Picture, PictureWithEffectiveArgs>({
+						loadNext: makeSimpleFeedFetcher<Picture, PictureWithTask>({
 							fetch: query => {
 								(query.filters ||= []).push(
 									{a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}}
 								)
-								return ClientApi.listPicturesWithEffectiveArgs(query)
+								return ClientApi.listPicturesWithTasks(query)
 							},
 							desc: true,
 							packSize: 50

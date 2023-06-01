@@ -7,7 +7,7 @@ import {GenerationParameterSet} from "common/entities/parameter"
 import {User} from "common/entities/user"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SimpleListQueryParams} from "common/infra_entities/query"
-import {Picture, PictureInfo, PictureWithEffectiveArgs} from "common/entities/picture"
+import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import {RequestContext} from "server/request_context"
 import {unixtime} from "server/utils/unixtime"
@@ -314,16 +314,16 @@ export namespace ServerApi {
 		}
 	)
 
-	export const listPicturesWithEffectiveArgs = RCV.validatedFunction(
+	export const listPicturesWithTasks = RCV.validatedFunction(
 		[RC.struct({query: SimpleListQueryParams(Picture)})],
-		async({query}): Promise<PictureWithEffectiveArgs[]> => {
+		async({query}): Promise<PictureWithTask[]> => {
 			const context = cont()
 			const currentUser = await context.user.getCurrent();
 			(query.filters ||= []).push(
 				{op: "=", a: {field: "ownerUserId"}, b: {value: currentUser.id}},
 			)
 			const serverPictures = await context.picture.list(query)
-			const pictures = serverPictures.map(pic => context.picture.stripServerData(pic) as PictureWithEffectiveArgs)
+			const pictures = serverPictures.map(pic => context.picture.stripServerData(pic) as PictureWithTask)
 
 			const taskIds = [...new Set(pictures.map(x => x.generationTaskId))]
 				.filter((x): x is number => x !== null)
@@ -339,17 +339,10 @@ export namespace ServerApi {
 			for(const picture of pictures){
 				const task = taskMap.get(picture.generationTaskId ?? -1)
 				if(!task){
-					// should never happen
-					picture.effectiveArgs = {}
-					continue
+					throw new ApiError("generic", `Task #${picture.generationTaskId} not found for picture #${picture.id}`)
 				}
 
-				picture.effectiveArgs = {
-					...task.params,
-					prompt: task.prompt, // ew.
-					...(picture.modifiedArguments || {})
-				}
-				picture.paramSetName = task.paramSetName
+				picture.task = task
 			}
 
 			return pictures
