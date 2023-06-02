@@ -343,10 +343,42 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	const modal = showModalBase({closeByBackgroundClick: true}, [wrap])
 
+	function getNextZoomValue(direction: -1 | 1, currentImageZoomness: number, speed: number): number {
+
+		const nowZoom = zoomChanger.currentTargetValue
+		let nextZoom = nowZoom * (direction === 1 ? (1 + speed) : (1 / (1 + speed)))
+
+		function willHitZoomBreakpoint(breakpoint: number): boolean {
+			if(Math.abs(nowZoom - breakpoint) < 0.001){
+				return false // to prevent locking on a breakpoint
+			}
+			return (nowZoom < breakpoint) === (nextZoom > breakpoint)
+		}
+
+		const breakpoints = [
+			nowZoom * (1 / currentImageZoomness),
+			defaultZoom
+		]
+
+		for(const breakpoint of breakpoints){
+			if(willHitZoomBreakpoint(breakpoint)){
+				nextZoom = breakpoint
+				break
+			}
+		}
+
+		return nextZoom
+	}
+
 	modal.overlay.addEventListener("wheel", e => {
 		e.preventDefault()
-		const speed = props.zoomSpeed ?? 0.2
-		setZoom(e, zoomChanger.currentTargetValue * (1 + (e.deltaY > 0 ? -speed : speed)))
+		const centralIndex = getCentralImageIndex()
+		const centralImage = imgs()[centralIndex]!
+		setZoom(e, getNextZoomValue(
+			e.deltaY > 0 ? -1 : 1,
+			calcZoomnessRate(centralImage),
+			props.zoomSpeed ?? 0.2
+		))
 	})
 
 	onMount(wrap, () => {
