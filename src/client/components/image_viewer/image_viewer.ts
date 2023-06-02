@@ -280,11 +280,12 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		img => img,
 		img => tag({class: css.imgWrap}, img.map(img => {
 			const loaded = box(false)
-			waitLoadEvent(img).then(() => loaded(true))
+			waitLoadEvent(img).then(() => requestAnimationFrame(() => loaded(true)))
 			const label = tag({
 				class: css.imgLabel,
 				style: {
-					fontSize: maxNatHeight.map(height => (height / 400) + "rem")
+					// fontSize: maxNatHeight.map(height => (height / 400) + "rem")
+					fontSize: zoom.map(zoom => (1 / zoom) + "rem")
 				}
 			}, [viewBox(() => {
 				if(!loaded()){
