@@ -25,10 +25,11 @@ export const FormHeader = (props: FormHeaderProps): HTMLElement => tag({tag: "tr
 type FormFieldProps = {
 	label: MRBox<string>
 	input: HTMLElement
-	hint?: MRBox<string>
+	hint?: MRBox<string | undefined>
 	onRevert?: () => void
 	revertable?: MRBox<boolean>
 	visible?: MRBox<boolean>
+	onDelete?: () => void
 }
 
 export const FormField = (props: FormFieldProps): HTMLElement => {
@@ -51,7 +52,15 @@ export const FormField = (props: FormFieldProps): HTMLElement => {
 		}),
 		tag({
 			tag: "td",
-			class: css.inputWrap
-		}, [props.input])
+			class: [css.inputWrap, {
+				[css.withDeleteButton!]: constBoxWrap(props.onDelete).map(onDelete => !!onDelete)
+			}]
+		}, [
+			props.input,
+			tag({
+				class: [css.deleteButton, "icon-cancel"],
+				onClick: () => props.onDelete?.()
+			})
+		])
 	])
 }

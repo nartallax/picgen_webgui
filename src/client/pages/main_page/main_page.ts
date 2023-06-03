@@ -24,6 +24,7 @@ import {Tabs} from "client/controls/tabs/tabs"
 import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 import {Picture, PictureWithTask} from "common/entities/picture"
 import {TaskPicture} from "client/components/task_picture/task_picture"
+import {LoreSelectionPanel} from "client/components/lore_selection_panel/lore_selection_panel"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -176,6 +177,7 @@ export function MainPage(): HTMLElement {
 					contentTags: allKnownContentTags,
 					visibleTagLimit: 10
 				}),
+				LoreSelectionPanel(),
 				AdminButtons()
 			])
 		])

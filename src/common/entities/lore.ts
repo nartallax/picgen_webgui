@@ -15,3 +15,9 @@ export const LoreDescriptionFile = RC.struct(RC.structFields({
 		triggerWords: RC.roArray(RC.string())
 	}
 }))
+
+export type LoreArgument = RC.Value<typeof LoreArgument>
+export const LoreArgument = RC.roStruct({
+	id: RC.string(),
+	weight: RC.number()
+})

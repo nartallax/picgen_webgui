@@ -1,10 +1,10 @@
 import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./tooltip.module.scss"
 import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
-import {box} from "@nartallax/cardboard"
+import {box, constBoxWrap} from "@nartallax/cardboard"
 
 interface TooltipIconProps {
-	tooltip: string
+	tooltip: string | undefined
 }
 
 export const TooltipIcon = defineControl<TooltipIconProps>(props => {
@@ -12,6 +12,10 @@ export const TooltipIcon = defineControl<TooltipIconProps>(props => {
 	const overlayItemVisible = box(false)
 
 	const tooltipIcon = tag({
+		style: {
+			// TODO: wtf, why props.tooltip is not RBox<string | undefined> here
+			display: constBoxWrap(props.tooltip).map(tt => !tt ? "none" : "")
+		},
 		class: css.tooltipIcon,
 		onMouseenter: () => overlayItemVisible(true),
 		onMouseleave: () => overlayItemVisible(false)

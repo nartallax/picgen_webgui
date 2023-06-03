@@ -5,7 +5,7 @@ import {LoginPage} from "client/pages/login_page/login_page"
 import {MainPage} from "client/pages/main_page/main_page"
 import {NotAllowedPage} from "client/pages/not_allowed_page/not_allowed_page"
 import {GenerationTaskArgument} from "common/entities/arguments"
-import {Lore} from "common/entities/lore"
+import {Lore, LoreArgument} from "common/entities/lore"
 import {GenerationParameterSet} from "common/entities/parameter"
 import {User} from "common/entities/user"
 
@@ -19,6 +19,7 @@ export const currentParamSetName = localStorageBox("fixedGenArgument.selectedPar
 export const currentShapeTag = localStorageBox<string | null>("fixedGenArgument.prompt.shape", null)
 export const currentPrompt = localStorageBox("fixedGenArgument.prompt.prompt", "")
 export const currentContentTags = localStorageBox<readonly string[]>("fixedGenArgument.prompt.content", [])
+export const currentLores = localStorageBox<LoreArgument[]>("fixedGenArgument.lores", [])
 
 export const allKnownContentTags = box<null | {readonly [tagContent: string]: readonly string[]}>(null)
 export const allKnownShapeTags = box<null | readonly string[]>(null)

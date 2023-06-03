@@ -33,12 +33,34 @@
 		width: 100%;
 		position: relative;
 
-		> * {
+		> :not(.deleteButton) {
 			position: absolute;
 			left: 0;
 			top: 0;
 			width: 100%;
 			max-width: 100%;
+		}
+
+		&.withDeleteButton {
+			> :not(.deleteButton) {
+				width: auto;
+				right: 2rem;
+			}
+
+			.deleteButton {
+				display: block;
+			}
+		}
+
+		.deleteButton {
+			display: none;
+			color: #e55f42;
+			cursor: pointer;
+			font-size: 1.35rem;
+			line-height: 1.5em;
+			position: absolute;
+			right: 0;
+			top: 0;
 		}
 	}
 
