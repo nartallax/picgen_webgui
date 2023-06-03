@@ -12,6 +12,7 @@ import {ServerApi} from "server/server_api"
 import {errToString} from "server/utils/err_to_string"
 import {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
 import {ServerUser} from "server/entities/user"
+import {getLores} from "server/entities/lore"
 
 export async function main() {
 	try {
@@ -72,6 +73,7 @@ async function mainInternal(): Promise<void> {
 	initAsyncContext("picgen-gui")
 
 	await taskQueue.init()
+	await getLores() // just to load them to the cache at startup and not at the first request
 	const port = await server.start()
 	log(`Server started at ${config.haveHttps ? "https" : "http"}://${config.httpHost || "localhost"}:${port}/`)
 

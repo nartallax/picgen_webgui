@@ -13,6 +13,10 @@
 		"shapeTagsFile": "./shape_tags.json",
 		"contentTagsFile": "./content_tags.json"
 	},
+	"lores": {
+		"directory": "./lores",
+		"loreFileExtension": ".safetensors"
+	},
 	"parameterSets": [{
 		"uiName": "Picture generation",
 		"internalName": "default",

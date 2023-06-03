@@ -13,7 +13,7 @@ import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle, defaultValueOfParam} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags} from "client/app/global_values"
+import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownLores} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
@@ -191,11 +191,14 @@ export function MainPage(): HTMLElement {
 	});
 
 	(async() => {
-		const [paramSets, contentTags, shapeTags] = await Promise.all([
+		const [paramSets, contentTags, shapeTags, lores] = await Promise.all([
 			ClientApi.getGenerationParameterSets(),
 			ClientApi.getContentTags(),
-			ClientApi.getShapeTags()
+			ClientApi.getShapeTags(),
+			ClientApi.getAvailableLores()
 		])
+
+		allKnownLores(lores)
 
 		websocket = new WebsocketListener(knownTasks)
 		if(isInDOM(result)){
