@@ -4,6 +4,7 @@ import {UserlessContext} from "server/request_context"
 import {PictureInfo, ServerPicture} from "server/entities/picture"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskStatus} from "common/entities/generation_task"
 import {GenParameter, GenerationParameterSet, PictureGenParam, getParamDefList} from "common/entities/parameter"
+import {isPictureArgument} from "common/entities/arguments"
 
 interface DbGenerationTask extends Omit<GenerationTask, "params" | "status"> {
 	params: string
@@ -101,7 +102,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 			}
 
 			if(def.type === "picture"){
-				if(typeof(paramValue) !== "object" || paramValue === null || typeof(paramValue.id) !== "number"){
+				if(!isPictureArgument(paramValue)){
 					throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a description of picture; it is ${paramValue} now.`)
 				}
 				const pic = await context.picture.getById(paramValue.id)
@@ -159,8 +160,8 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		const context = this.getContext()
 		const paramDefs = this.getParams(inputData.paramSetName)
 		for(const def of paramDefs){
-			const paramValue = inputData.params[def.jsonName]
-			if(paramValue === undefined){
+			const argument = inputData.params[def.jsonName]
+			if(argument === undefined){
 				if(getServerGenParamDefault(def) !== undefined){
 					continue // parameter not passed, whatever, we can live with it
 				}
@@ -169,46 +170,46 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 
 			switch(def.type){
 				case "bool":
-					if(paramValue !== true && paramValue !== false){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be boolean; it is ${paramValue} now.`)
+					if(argument !== true && argument !== false){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be boolean; it is ${argument} now.`)
 					}
 					break
 				case "float":
 				case "int":
-					if(typeof(paramValue) !== "number"){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be number; it is ${paramValue} now.`)
+					if(typeof(argument) !== "number"){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be number; it is ${argument} now.`)
 					}
-					if(def.max !== undefined && paramValue > def.max){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should not be higher than ${def.max}; it is ${paramValue} now.`)
+					if(def.max !== undefined && argument > def.max){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should not be higher than ${def.max}; it is ${argument} now.`)
 					}
-					if(def.min !== undefined && paramValue < def.min){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should not be lower than ${def.min}; it is ${paramValue} now.`)
+					if(def.min !== undefined && argument < def.min){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should not be lower than ${def.min}; it is ${argument} now.`)
 					}
 					if(def.type === "int"){
-						if(paramValue % 1){
-							throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be integer (i.e. should not have fractional part); it is ${paramValue} now.`)
+						if(argument % 1){
+							throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be integer (i.e. should not have fractional part); it is ${argument} now.`)
 						}
-						if(def.step !== undefined && paramValue % def.step){
-							throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be divisible evenly by ${def.step}; it is ${paramValue} now.`)
+						if(def.step !== undefined && argument % def.step){
+							throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be divisible evenly by ${def.step}; it is ${argument} now.`)
 						}
 					}
 					break
 				case "string":
-					if(typeof(paramValue) !== "string"){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be string; it is ${paramValue} now.`)
+					if(typeof(argument) !== "string"){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be string; it is ${argument} now.`)
 					}
-					if(def.minLength !== undefined && paramValue.length < def.minLength){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minLength} characters long; it is "${paramValue}" now.`)
+					if(def.minLength !== undefined && argument.length < def.minLength){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minLength} characters long; it is "${argument}" now.`)
 					}
-					if(def.maxLength !== undefined && paramValue.length > def.maxLength){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.minLength} characters long; it is "${paramValue}" now.`)
+					if(def.maxLength !== undefined && argument.length > def.maxLength){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.minLength} characters long; it is "${argument}" now.`)
 					}
 					break
 				case "picture":{
-					if(typeof(paramValue) !== "object" || paramValue === null || typeof(paramValue.id) !== "number"){
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a description of picture; it is ${paramValue} now.`)
+					if(!isPictureArgument(argument)){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a description of picture; it is ${argument} now.`)
 					}
-					const picture = await context.picture.getById(paramValue.id)
+					const picture = await context.picture.getById(argument.id)
 					await this.validateInputPicture(picture, def)
 				} break
 			}

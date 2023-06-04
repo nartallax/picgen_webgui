@@ -1,9 +1,10 @@
 import {WBox} from "@nartallax/cardboard"
-import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
+import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentLores, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
 import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTaskArgument} from "common/entities/arguments"
 import {GenerationTaskInputData} from "common/entities/generation_task"
+import {LoreArgument} from "common/entities/lore"
 import {Picture} from "common/entities/picture"
 
 export function loadArgumentsFromPicture(picture: Picture, task: GenerationTaskInputData): void {
@@ -39,8 +40,16 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	currentPrompt(prompt.body)
 	currentContentTags(prompt.content)
 
+	const params = {...task.params}
+	if("lores" in params){
+		currentLores([...params["lores"] as LoreArgument[]])
+		delete params["lores"]
+	} else {
+		currentLores([])
+	}
+
 	const nonLoadableParamNames: string[] = []
-	for(const [key, value] of Object.entries(task.params)){
+	for(const [key, value] of Object.entries(params)){
 		const argBox = currentArgumentBoxes[key]
 		if(!argBox){
 			nonLoadableParamNames.push(key)

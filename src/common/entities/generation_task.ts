@@ -14,11 +14,13 @@ export function taskHasPicturesAttached(task: GenerationTask): task is Generatio
 }
 
 export type GenerationTaskInputData = RC.Value<typeof GenerationTaskInputData>
-export const GenerationTaskInputData = RC.struct({
-	prompt: RC.string(),
-	paramSetName: RC.string(),
-	params: GenerationTaskArgsObject
-})
+export const GenerationTaskInputData = RC.struct(RC.structFields({
+	normal: {
+		prompt: RC.string(),
+		paramSetName: RC.string(),
+		params: GenerationTaskArgsObject
+	}
+}))
 
 export type GenerationTask = RC.Value<typeof GenerationTask>
 export const GenerationTask = RC.struct(RC.structFields({

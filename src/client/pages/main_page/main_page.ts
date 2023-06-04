@@ -13,13 +13,13 @@ import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle, defaultValueOfParam} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownLores} from "client/app/global_values"
+import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownLores, currentLores} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
 import {Col, Row} from "client/controls/layout/row_col"
 import {IconButton} from "client/controls/icon_button/icon_button"
-import {GenerationTaskArgument} from "common/entities/arguments"
+import {GenerationTaskArgument, isPictureArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
 import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 import {Picture, PictureWithTask} from "common/entities/picture"
@@ -81,10 +81,13 @@ export function MainPage(): HTMLElement {
 		for(const paramName in currentArgumentBoxes){
 			const paramValue = unbox(currentArgumentBoxes[paramName])!
 			const def = paramDefsByName.get(paramName)
-			if(def && def.type === "picture" && typeof(paramValue) === "object" && paramValue.id === 0){
+			if(def && def.type === "picture" && isPictureArgument(paramValue) && paramValue.id === 0){
 				continue // not passed
 			}
 			paramValuesForApi[paramName] = paramValue
+		}
+		if(currentLores().length > 0){
+			paramValuesForApi["lores"] = currentLores()
 		}
 		await ClientApi.createGenerationTask({
 			prompt: fullPrompt,
@@ -167,7 +170,10 @@ export function MainPage(): HTMLElement {
 				]),
 				Col({class: css.propSetSelector, align: "stretch"}, [
 					Select({
-						options: allKnownParamSets.map(sets => sets.map(set => ({label: set.uiName, value: set.internalName}))),
+						options: allKnownParamSets.map(sets => sets.map(set => ({
+							label: set.uiName,
+							value: set.internalName
+						}))),
 						value: currentParamSetName
 					})
 				]),

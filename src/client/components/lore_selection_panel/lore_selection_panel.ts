@@ -11,7 +11,7 @@ import {Select} from "client/controls/select/select"
 export const LoreSelectionPanel = () => {
 
 	const emptySelectValue = {
-		label: "<Add lore...>",
+		label: "Select lore...",
 		value: null
 	}
 
