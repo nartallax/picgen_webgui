@@ -16,11 +16,11 @@ export const LoraSelectionPanel = () => {
 	}
 
 	const selectValue = box<string | null>(null)
-	const loraByIdMap = allKnownLoras.map(lores => new Map(lores.map(lore => [lore.id, lore])))
+	const loraByIdMap = allKnownLoras.map(loras => new Map(loras.map(lora => [lora.id, lora])))
 
 	const result = tag({
 		style: {
-			display: allKnownLoras.map(lores => lores.length > 0 ? "" : "none")
+			display: allKnownLoras.map(loras => loras.length > 0 ? "" : "none")
 		}
 	}, [BlockPanel([
 		BlockPanelHeader({header: "LoRAs"}),
@@ -29,34 +29,37 @@ export const LoraSelectionPanel = () => {
 			isArgumentInput: true,
 			isSearchable: true,
 			options: viewBox(() => {
-				const selectedLoreIds = new Set(currentLoras().map(lore => lore.id))
+				const selectedLoraIds = new Set(currentLoras().map(lora => lora.id))
 				return [
 					emptySelectValue,
 					...allKnownLoras()
-						.filter(lora => !selectedLoreIds.has(lora.id))
+						.filter(lora => !selectedLoraIds.has(lora.id))
 						.map(lora => ({label: lora.name, value: lora.id}))
 				]
 			})
 		}),
 		Form(currentLoras.mapArray(
-			selectedLore => selectedLore.id,
-			selectedLore => {
-				const loreDef = loraByIdMap.map(map => map.get(selectedLore().id) ?? {
-					id: selectedLore().id,
-					name: selectedLore().id
+			selectedLora => selectedLora.id,
+			selectedLora => {
+				const loraDef = loraByIdMap.map(map => map.get(selectedLora().id) ?? {
+					id: selectedLora().id,
+					name: selectedLora().id
 				})
 				return FormField({
-					label: loreDef.prop("name"),
+					label: loraDef.prop("name"),
 					input: NumberInput({
 						precision: 2,
-						value: selectedLore.prop("weight")
+						value: selectedLora.prop("weight")
 					}),
-					hint: loreDef.map(lore => !lore.triggerWords ? undefined : lore.triggerWords.join(", ")),
+					hint: loraDef.map(lora => [
+						lora.description,
+						!lora.triggerWords ? "" : lora.triggerWords.join(", ")
+					].filter(x => !!x).join("\n\n")),
 					revertable: false,
 					onDelete: () => {
 						currentLoras(
 							currentLoras()
-								.filter(lore => lore.id !== selectedLore().id)
+								.filter(lora => lora.id !== selectedLora().id)
 						)
 					}
 				})

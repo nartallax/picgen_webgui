@@ -1,9 +1,7 @@
 import {RC} from "@nartallax/ribcage"
 
-export interface Lora {
+export interface LoraDescription extends LoraDescriptionFile {
 	readonly id: string
-	readonly name: string
-	readonly triggerWords?: readonly string[]
 }
 
 export type LoraDescriptionFile = RC.Value<typeof LoraDescriptionFile>
@@ -12,7 +10,8 @@ export const LoraDescriptionFile = RC.struct(RC.structFields({
 		name: RC.string()
 	},
 	roOpt: {
-		triggerWords: RC.roArray(RC.string())
+		triggerWords: RC.roArray(RC.string()),
+		description: RC.string()
 	}
 }))
 
