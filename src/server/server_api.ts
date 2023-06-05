@@ -11,8 +11,8 @@ import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import {RequestContext} from "server/request_context"
 import {unixtime} from "server/utils/unixtime"
-import {Lore} from "common/entities/lore"
-import {getLores} from "server/entities/lore"
+import {Lora} from "common/entities/lora"
+import {getLoras} from "server/entities/lora"
 
 async function adminCont(): Promise<RequestContext> {
 	const context = cont()
@@ -351,10 +351,10 @@ export namespace ServerApi {
 		}
 	)
 
-	export const getAvailableLores = RCV.validatedFunction(
+	export const getAvailableLoras = RCV.validatedFunction(
 		[],
-		async(): Promise<readonly Lore[]> => {
-			return await getLores()
+		async(): Promise<readonly Lora[]> => {
+			return await getLoras()
 		}
 	)
 

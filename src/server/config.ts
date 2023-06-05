@@ -35,12 +35,12 @@ const ConfigFile = RC.struct(RC.structFields({
 	},
 	roOpt: {
 		httpHost: RC.string(),
-		lores: RC.struct(RC.structFields({
+		loras: RC.struct(RC.structFields({
 			ro: {
 				directory: RC.string()
 			},
 			roOpt: {
-				loreFileExtension: RC.string()
+				loraFileExtension: RC.string()
 			}
 		}))
 	}

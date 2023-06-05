@@ -1,15 +1,15 @@
-import {Lore, LoreDescriptionFile} from "common/entities/lore"
+import {Lora, LoraDescriptionFile} from "common/entities/lora"
 import {Config, config} from "server/config"
 import {promises as Fs} from "fs"
 import * as Path from "path"
 import {RCV} from "@nartallax/ribcage-validation"
 
-const loreFileValidator = RCV.getValidatorBuilder().build(LoreDescriptionFile)
+const loreFileValidator = RCV.getValidatorBuilder().build(LoraDescriptionFile)
 
-async function readLores(config: Config): Promise<Lore[]> {
-	const result: Lore[] = []
+async function readLoras(config: Config): Promise<Lora[]> {
+	const result: Lora[] = []
 
-	const loresConfig = config.lores
+	const loresConfig = config.loras
 	if(!loresConfig){
 		return result
 	}
@@ -25,8 +25,8 @@ async function readLores(config: Config): Promise<Lore[]> {
 
 		const id = Path.basename(filePath).replace(/\.json$/i, "")
 
-		if(loresConfig.loreFileExtension){
-			const loreFile = Path.resolve(loresConfig.directory, id + loresConfig.loreFileExtension)
+		if(loresConfig.loraFileExtension){
+			const loreFile = Path.resolve(loresConfig.directory, id + loresConfig.loraFileExtension)
 			if(!fileSet.has(loreFile)){
 				throw new Error(`Expected lore description ${filePath} to have related lore file at ${loreFile}, but it's not there.`)
 			}
@@ -41,7 +41,7 @@ async function readLores(config: Config): Promise<Lore[]> {
 
 		loreFileValidator(fileJson)
 
-		const lore: Lore = {
+		const lore: Lora = {
 			...fileJson, id
 		}
 		result.push(lore)
@@ -51,7 +51,7 @@ async function readLores(config: Config): Promise<Lore[]> {
 }
 
 
-let lores: readonly Lore[] | null = null
-export async function getLores(): Promise<readonly Lore[]> {
-	return lores ||= await readLores(config)
+let lores: readonly Lora[] | null = null
+export async function getLoras(): Promise<readonly Lora[]> {
+	return lores ||= await readLoras(config)
 }

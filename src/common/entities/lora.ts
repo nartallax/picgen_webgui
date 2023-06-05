@@ -1,13 +1,13 @@
 import {RC} from "@nartallax/ribcage"
 
-export interface Lore {
+export interface Lora {
 	readonly id: string
 	readonly name: string
 	readonly triggerWords?: readonly string[]
 }
 
-export type LoreDescriptionFile = RC.Value<typeof LoreDescriptionFile>
-export const LoreDescriptionFile = RC.struct(RC.structFields({
+export type LoraDescriptionFile = RC.Value<typeof LoraDescriptionFile>
+export const LoraDescriptionFile = RC.struct(RC.structFields({
 	ro: {
 		name: RC.string()
 	},
@@ -16,8 +16,8 @@ export const LoreDescriptionFile = RC.struct(RC.structFields({
 	}
 }))
 
-export type LoreArgument = RC.Value<typeof LoreArgument>
-export const LoreArgument = RC.roStruct({
+export type LoraArgument = RC.Value<typeof LoraArgument>
+export const LoraArgument = RC.roStruct({
 	id: RC.string(),
 	weight: RC.number()
 })

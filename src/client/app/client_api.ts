@@ -1,7 +1,7 @@
 import {ApiClient} from "client/app/api_client"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
-import {Lore} from "common/entities/lore"
+import {Lora} from "common/entities/lora"
 import {GenerationParameterSet} from "common/entities/parameter"
 import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import {User} from "common/entities/user"
@@ -89,7 +89,7 @@ export namespace ClientApi {
 	export const listPicturesWithTasks = (query: SimpleListQueryParams<Picture>) =>
 		client.call<PictureWithTask[]>("listPicturesWithTasks", {query})
 
-	export const getAvailableLores = () =>
-		client.call<readonly Lore[]>("getAvailableLores", {})
+	export const getAvailableLoras = () =>
+		client.call<readonly Lora[]>("getAvailableLoras", {})
 
 }

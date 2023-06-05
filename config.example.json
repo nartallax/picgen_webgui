@@ -13,9 +13,9 @@
 		"shapeTagsFile": "./shape_tags.json",
 		"contentTagsFile": "./content_tags.json"
 	},
-	"lores": {
-		"directory": "./lores",
-		"loreFileExtension": ".safetensors"
+	"loras": {
+		"directory": "./loras",
+		"loraFileExtension": ".safetensors"
 	},
 	"parameterSets": [{
 		"uiName": "Picture generation",

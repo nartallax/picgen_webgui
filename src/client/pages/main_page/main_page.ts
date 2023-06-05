@@ -13,7 +13,7 @@ import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle, defaultValueOfParam} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownLores, currentLores} from "client/app/global_values"
+import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownLoras, currentLoras} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
@@ -24,7 +24,7 @@ import {Tabs} from "client/controls/tabs/tabs"
 import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 import {Picture, PictureWithTask} from "common/entities/picture"
 import {TaskPicture} from "client/components/task_picture/task_picture"
-import {LoreSelectionPanel} from "client/components/lore_selection_panel/lore_selection_panel"
+import {LoraSelectionPanel} from "client/components/lora_selection_panel/lora_selection_panel"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -86,8 +86,8 @@ export function MainPage(): HTMLElement {
 			}
 			paramValuesForApi[paramName] = paramValue
 		}
-		if(currentLores().length > 0){
-			paramValuesForApi["lores"] = currentLores()
+		if(currentLoras().length > 0){
+			paramValuesForApi["loras"] = currentLoras()
 		}
 		await ClientApi.createGenerationTask({
 			prompt: fullPrompt,
@@ -183,7 +183,7 @@ export function MainPage(): HTMLElement {
 					contentTags: allKnownContentTags,
 					visibleTagLimit: 10
 				}),
-				LoreSelectionPanel(),
+				LoraSelectionPanel(),
 				AdminButtons()
 			])
 		])
@@ -199,14 +199,14 @@ export function MainPage(): HTMLElement {
 	});
 
 	(async() => {
-		const [paramSets, contentTags, shapeTags, lores] = await Promise.all([
+		const [paramSets, contentTags, shapeTags, loras] = await Promise.all([
 			ClientApi.getGenerationParameterSets(),
 			ClientApi.getContentTags(),
 			ClientApi.getShapeTags(),
-			ClientApi.getAvailableLores()
+			ClientApi.getAvailableLoras()
 		])
 
-		allKnownLores(lores)
+		allKnownLoras(loras)
 
 		websocket = new WebsocketListener(knownTasks)
 		if(isInDOM(result)){

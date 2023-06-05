@@ -1,10 +1,10 @@
 import {WBox} from "@nartallax/cardboard"
-import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentLores, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
+import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentLoras, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
 import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTaskArgument} from "common/entities/arguments"
 import {GenerationTaskInputData} from "common/entities/generation_task"
-import {LoreArgument} from "common/entities/lore"
+import {LoraArgument} from "common/entities/lora"
 import {Picture} from "common/entities/picture"
 
 export function loadArgumentsFromPicture(picture: Picture, task: GenerationTaskInputData): void {
@@ -41,11 +41,15 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	currentContentTags(prompt.content)
 
 	const params = {...task.params}
-	if("lores" in params){
-		currentLores([...params["lores"] as LoreArgument[]])
+	if("loras" in params){
+		currentLoras([...params["loras"] as LoraArgument[]])
+		delete params["loras"]
+	} else if("lores" in params){
+		// legacy naming
+		currentLoras([...params["lores"] as LoraArgument[]])
 		delete params["lores"]
 	} else {
-		currentLores([])
+		currentLoras([])
 	}
 
 	const nonLoadableParamNames: string[] = []

@@ -1,5 +1,5 @@
 import {RC} from "@nartallax/ribcage"
-import {LoreArgument} from "common/entities/lore"
+import {LoraArgument} from "common/entities/lora"
 
 export type PictureArgument = RC.Value<typeof PictureArgument>
 export const PictureArgument = RC.struct(RC.structFields({
@@ -22,7 +22,7 @@ export const GenerationTaskArgument = RC.union([
 	RC.bool(),
 	RC.number(),
 	PictureArgument,
-	RC.array(LoreArgument)
+	RC.array(LoraArgument)
 ])
 
 export type GenerationTaskArgsObject = RC.Value<typeof GenerationTaskArgsObject>
