@@ -43,7 +43,7 @@ export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defa
 			return
 		}
 		const min = unbox(props.min)
-		if(typeof(min) === "number" && min < 0 && code === minusCode){
+		if(code === minusCode && (min === undefined || min < 0)){
 			return
 		}
 		if(!unbox(props.int) && (code === dotCode || code === commaCode)){
