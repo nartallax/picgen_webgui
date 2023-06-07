@@ -12,7 +12,7 @@ import {ServerApi} from "server/server_api"
 import {errToString} from "server/utils/err_to_string"
 import {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
 import {ServerUser} from "server/entities/user"
-import {getLoras} from "server/entities/lora"
+import {LoraController} from "server/entities/lora"
 
 export async function main() {
 	try {
@@ -32,7 +32,8 @@ async function mainInternal(): Promise<void> {
 		discordApi: () => discordApi,
 		defaultToHttps: config.haveHttps,
 		websocketServer: () => websocketServer,
-		taskQueue: () => taskQueue
+		taskQueue: () => taskQueue,
+		lora: () => lora
 	}
 
 	process.on("uncaughtException", err => {
@@ -70,10 +71,12 @@ async function mainInternal(): Promise<void> {
 
 	const taskQueue = new TaskQueueController(userlessContextFactory)
 
+	const lora = new LoraController(userlessContextFactory)
+
 	initAsyncContext("picgen-gui")
 
 	await taskQueue.init()
-	await getLoras() // just to load them to the cache at startup and not at the first request
+	await lora.start()
 	const port = await server.start()
 	log(`Server started at ${config.haveHttps ? "https" : "http"}://${config.httpHost || "localhost"}:${port}/`)
 
@@ -84,6 +87,7 @@ async function mainInternal(): Promise<void> {
 				shutdownRequested++
 				break
 			case 1:
+				// wtfnode.dump()
 				log("Stop was already requested. If you want to force-terminate the app - request it one more time")
 				shutdownRequested++
 				return
@@ -127,6 +131,13 @@ async function mainInternal(): Promise<void> {
 			log("Task queue is shut down.")
 		} catch(e){
 			log("Failed to properly shut down task queue: " + e)
+		}
+
+		try {
+			await Promise.resolve(lora.stop())
+			log("Lora watcher stopped.")
+		} catch(e){
+			log("Failed to properly stop lora watcher: " + e)
 		}
 
 		log("Shutdown sequence is completed.")

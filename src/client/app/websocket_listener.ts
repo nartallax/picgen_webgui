@@ -1,4 +1,5 @@
 import {WBox} from "@nartallax/cardboard"
+import {allKnownLoras} from "client/app/global_values"
 import {Event} from "client/base/event"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
@@ -107,6 +108,9 @@ export class WebsocketListener {
 					notification.taskId,
 					task => ({...task, estimatedDuration: notification.estimatedDuration})
 				)
+				break
+			case "lora_description_update":
+				allKnownLoras(notification.newLoraDescriptions)
 				break
 			default:
 				console.log("Unrecognised websocket notification", notification)

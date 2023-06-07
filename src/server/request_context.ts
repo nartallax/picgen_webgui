@@ -1,16 +1,17 @@
-import {DbConnection, DbController} from "server/db/db_controller"
-import {DiscordApiClient} from "server/discord_api_client"
+import type {DbConnection, DbController} from "server/db/db_controller"
+import type {DiscordApiClient} from "server/discord_api_client"
 import {GenerationTaskDAO} from "server/entities/generation_task"
 import {CompleteUserDAO, ServerUser, UserlessUserDAO} from "server/entities/user"
 import {CookieController} from "server/http/cookie_controller"
 import * as Http from "http"
-import {WebsocketServer} from "server/http/websocket_server"
+import type {WebsocketServer} from "server/http/websocket_server"
 import {runInAsyncContext} from "server/async_context"
-import {Config} from "server/config"
-import {TaskQueueController} from "server/task_queue_controller"
+import type {Config} from "server/config"
+import type {TaskQueueController} from "server/task_queue_controller"
 import {CompletePictureDAO, UserlessPictureDAO} from "server/entities/picture"
 import {logError} from "server/log"
-import {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
+import type {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
+import type {LoraController} from "server/entities/lora"
 
 export interface ContextStaticProps {
 	config: Config
@@ -19,6 +20,7 @@ export interface ContextStaticProps {
 	defaultToHttps: boolean
 	db(): DbController
 	taskQueue(): TaskQueueController
+	lora(): LoraController
 }
 
 export class UserlessContext {
@@ -36,7 +38,8 @@ export class UserlessContext {
 		readonly websockets: WSServer,
 		readonly config: Config,
 		readonly dbController: DbController,
-		readonly taskQueue: TaskQueueController
+		readonly taskQueue: TaskQueueController,
+		readonly lora: LoraController
 	) {}
 
 	onClosed(handler: () => void): void {
@@ -83,9 +86,10 @@ export class RequestContext extends UserlessContext {
 		websockets: WSServer,
 		config: Config,
 		dbController: DbController,
-		taskQueue: TaskQueueController
+		taskQueue: TaskQueueController,
+		lora: LoraController
 	) {
-		super(discordApi, db, websockets, config, dbController, taskQueue)
+		super(discordApi, db, websockets, config, dbController, taskQueue, lora)
 	}
 
 	static makeUserlessFactory(baseProps: ContextStaticProps): UserlessContextFactory {
@@ -95,7 +99,8 @@ export class RequestContext extends UserlessContext {
 			baseProps.websocketServer(),
 			baseProps.config,
 			baseProps.db(),
-			baseProps.taskQueue()
+			baseProps.taskQueue(),
+			baseProps.lora()
 		), runner)
 	}
 
@@ -117,7 +122,8 @@ export class RequestContext extends UserlessContext {
 				baseProps.websocketServer(),
 				baseProps.config,
 				baseProps.db(),
-				baseProps.taskQueue()
+				baseProps.taskQueue(),
+				baseProps.lora()
 			), runner)
 		}
 	}

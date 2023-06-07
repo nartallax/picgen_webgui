@@ -12,7 +12,6 @@ import * as MimeTypes from "mime-types"
 import {RequestContext} from "server/request_context"
 import {unixtime} from "server/utils/unixtime"
 import {LoraDescription} from "common/entities/lora"
-import {getLoras} from "server/entities/lora"
 
 async function adminCont(): Promise<RequestContext> {
 	const context = cont()
@@ -354,7 +353,7 @@ export namespace ServerApi {
 	export const getAvailableLoras = RCV.validatedFunction(
 		[],
 		async(): Promise<readonly LoraDescription[]> => {
-			return await getLoras()
+			return cont().lora.getLoras()
 		}
 	)
 

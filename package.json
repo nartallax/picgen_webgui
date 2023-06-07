@@ -18,7 +18,7 @@
     "dev:server": "npm run dev:server:build && (npm run dev:server:watch & npm run dev:server:run & wait)",
     "dev:server:build": "./node_modules/.bin/parcel build --target server_dev --no-cache",
     "dev:server:watch": "./node_modules/.bin/parcel watch --target server_dev --no-cache --no-hmr",
-    "dev:server:run": "./node_modules/.bin/nodemon ./dist/server_dev/server_main.js -- --config config.example.json --http-root-url 'http://localhost:24658'",
+    "dev:server:run": "./node_modules/.bin/nodemon ./dist/server_dev/server_main.js --watch ./dist/server_dev/server_main.js -- --config config.example.json --http-root-url 'http://localhost:24658'",
     "typecheck": "cd src && ../node_modules/typescript/bin/tsc --noEmit && cd - > /dev/null"
   },
   "devDependencies": {
@@ -36,6 +36,7 @@
     "@types/shell-quote": "^1.7.1",
     "@types/sqlite3": "^3.1.8",
     "@types/ws": "^8.5.3",
+    "@types/wtfnode": "^0.7.0",
     "@typescript-eslint/eslint-plugin": "^5.8.1",
     "@typescript-eslint/parser": "^5.8.1",
     "buffer": "^5.7.1",
@@ -46,6 +47,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "wtfnode": "^0.9.1",
     "@nartallax/cardboard": "^1.0.21",
     "@nartallax/cardboard-dom": "^1.0.28",
     "@nartallax/ribcage": "^1.1.7",
@@ -53,6 +55,7 @@
     "cls-hooked": "^4.2.2",
     "discord.js": "^14.3.0",
     "mime-types": "^2.1.35",
+    "node-watch": "^0.7.3",
     "pngjs": "^6.0.0",
     "probe-image-size": "^7.2.3",
     "shell-quote": "^1.7.3",

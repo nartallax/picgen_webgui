@@ -1,4 +1,5 @@
 import {GenerationTask} from "common/entities/generation_task"
+import {LoraDescription} from "common/entities/lora"
 import {Picture} from "common/entities/picture"
 
 export interface ApiNotificationWrap {
@@ -14,6 +15,7 @@ export type ApiNotification = TaskMessageNotification
 | TaskCreatedNotification
 | TaskAdminNotification
 | TaskEstimatedDurationKnownNotification
+| LoraDescriptionUpdateNotification
 
 export interface TaskAdminNotification {
 	type: "task_admin_notification"
@@ -68,4 +70,9 @@ export interface TaskEstimatedDurationKnownNotification {
 	type: "task_estimated_duration_known"
 	taskId: number
 	estimatedDuration: number
+}
+
+export interface LoraDescriptionUpdateNotification {
+	type: "lora_description_update"
+	newLoraDescriptions: readonly LoraDescription[]
 }
