@@ -19,6 +19,7 @@ interface TaskPanelProps {
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
 	const taskHidden = box(false)
+	const taskDeletionProgress = box(0)
 	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse())
 	let isInDOM = false
 
@@ -109,10 +110,43 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		return () => isInDOM = false
 	})
 
+	const delTimer = makeDeletionTimer(500, taskDeletionProgress, async() => {
+		await ClientApi.hideTask(props.task().id)
+		taskHidden(true)
+	})
+
 	const result = tag({class: [css.taskPanel, {[css.hidden!]: taskHidden}]}, [
 		tag({class: css.body}, [
 			tag({class: css.header}, [
-				tag({class: css.id}, [props.task.map(task => "#" + task.id)]),
+				tag({
+					class: [
+						css.killButton, "icon-cancel", {
+							[css.hidden!]: props.task.map(task => task.status === "completed")
+						}
+					],
+					attrs: {title: "Cancel"},
+					onClick: limitClickRate(() => {
+						ClientApi.killOwnTask(props.task().id)
+					})
+				}),
+				tag({
+					class: [
+						css.deleteButton, "icon-trash-empty", {
+							[css.hidden!]: props.task.map(task => task.status !== "completed")
+						}
+					],
+					attrs: {title: "Delete (hold shift to delete immediately!)"},
+					onMousedown: () => delTimer.run(),
+					onTouchstart: () => delTimer.run(),
+					onMouseup: () => delTimer.cancel(),
+					onTouchend: () => delTimer.cancel(),
+					onClick: limitClickRate(async e => {
+						if(e.shiftKey){
+							await ClientApi.hideTask(props.task().id)
+							taskHidden(true)
+						}
+					})
+				}),
 				tag({class: css.status}, [
 					props.task.map(task => {
 						switch(task.status){
@@ -142,21 +176,6 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 						})
 					})
 				}),
-				tag({
-					class: [css.killButton, "icon-cancel", {[css.hidden!]: props.task.map(task => task.status === "completed")}],
-					attrs: {title: "Cancel"},
-					onClick: limitClickRate(() => {
-						ClientApi.killOwnTask(props.task().id)
-					})
-				}),
-				tag({
-					class: [css.deleteButton, "icon-trash-empty", {[css.hidden!]: props.task.map(task => task.status !== "completed")}],
-					attrs: {title: "Delete"},
-					onClick: limitClickRate(async() => {
-						await ClientApi.hideTask(props.task().id)
-						taskHidden(true)
-					})
-				}),
 				tag({class: css.timer}, [viewBox(() => {
 					const task = props.task()
 					switch(task.status){
@@ -175,7 +194,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					}
 				})])
 			]),
-			tag({class: css.picturesWrapWrap}, [picturesWrap]),
+			tag({
+				class: css.picturesWrapWrap,
+				style: {
+					opacity: taskDeletionProgress.map(x => 1 - x)
+				}
+			}, [picturesWrap]),
 			tag({class: css.footer}, [
 				tag({class: css.prompt}, [props.task.map(task => task.prompt)]),
 				tag({
@@ -211,4 +235,48 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	])
 
 	return result
+}
+
+interface DeletionTimer {
+	cancel(): void
+	run(): void
+}
+
+function makeDeletionTimer(duration: number, box: WBox<number>, afterEnd: () => void): DeletionTimer {
+	let rafHandle: ReturnType<typeof requestAnimationFrame> | null = null
+	let startTime = 0
+
+	const onFrame = () => {
+		rafHandle = null
+		const passedTime = Date.now() - startTime
+		const passedPercent = passedTime / duration
+		if(passedPercent >= 1){
+			box(1)
+			cancel()
+			afterEnd()
+			return
+		}
+
+		box(passedPercent)
+		rafHandle = requestAnimationFrame(onFrame)
+	}
+
+	const cancel = () => {
+		box(0)
+		if(rafHandle){
+			cancelAnimationFrame(rafHandle)
+			rafHandle = null
+		}
+	}
+
+	const run = () => {
+		if(rafHandle){
+			return
+		}
+
+		startTime = Date.now()
+		onFrame()
+	}
+
+	return {run, cancel}
 }
