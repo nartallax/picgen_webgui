@@ -84,6 +84,13 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 			update "${this.getTableName()}"
 			set ${fieldSetters}
 			where "id" = ?`, [...fieldValues, convertedItem.id])
+
+	}
+
+	async delete(item: T): Promise<void> {
+		await this.getContext().db.query(`
+			delete from "${this.getTableName()}"
+			where "id" = ?`, [item.id])
 	}
 
 	async list(query: SimpleListQueryParams<T>): Promise<T[]> {

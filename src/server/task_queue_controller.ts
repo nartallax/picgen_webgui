@@ -83,8 +83,7 @@ export class TaskQueueController {
 			finishTime: null,
 			generatedPictures: 0,
 			status: "queued",
-			runOrder: -1,
-			hidden: false
+			runOrder: -1
 		}
 
 		// TODO: fix runOrder here? after creation

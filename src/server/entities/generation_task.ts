@@ -36,7 +36,6 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		switch(field){
 			case "status": return GenerationTaskStatus[value as DbGenerationTask["status"]] // TODO: cringe
 			case "params": return JSON.parse(value as DbGenerationTask["params"])
-			case "hidden": return !!value
 			default: return value
 		}
 	}
@@ -256,6 +255,19 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		}
 
 		return picInf
+	}
+
+	override async delete(task: GenerationTask): Promise<void> {
+		const cont = this.getContext()
+		const pictures = await cont.picture.list({
+			filters: [{a: {field: "generationTaskId"}, op: "=", b: {value: task.id}}]
+		})
+
+		for(const picture of pictures){
+			cont.picture.delete(picture)
+		}
+
+		return await super.delete(task)
 	}
 
 }

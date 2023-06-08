@@ -66,7 +66,7 @@ export async function showTasksModal(): Promise<void> {
 				}
 			}, {
 				label: "Status",
-				getValue: task => `${task.status}, ${task.generatedPictures} / ${task.expectedPictures ?? "???"}${task.hidden ? ", hidden" : ""}`,
+				getValue: task => `${task.status}, ${task.generatedPictures} / ${task.expectedPictures ?? "???"}`,
 				width: "15rem"
 			}, {
 				label: "Actions",

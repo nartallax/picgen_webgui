@@ -1,4 +1,8 @@
+import {config} from "server/config"
 import {Migration} from "server/db/db_controller"
+import {log} from "server/log"
+import * as Path from "path"
+import {promises as Fs} from "fs"
 
 export const migrations: Migration[] = [
 	{name: "00000_users_gentasks_pictures", handler: async db => {
@@ -233,6 +237,40 @@ export const migrations: Migration[] = [
 	{name: "00014", handler: async db => {
 		await db.run(`
 			alter table "pictures" add "favoritesAddTime" bigint;
+		`)
+	}},
+
+	{name: "00015", handler: async db => {
+		const hiddenTaskIds = await db.query(`
+			select id from "generationTasks" where hidden = true;
+		`) as {id: number}[]
+		for(const {id: taskId} of hiddenTaskIds){
+			const pictures = await db.query(`
+				select id, "fileName" from "pictures" where "generationTaskId" = ? and "fileName" is not null
+			`, [taskId]) as {id: number, fileName: string}[]
+
+			log(`Deleting previously hidden task #${taskId} with ${pictures.length} pictures`)
+			await db.run(`
+				delete from "pictures" where "generationTaskId" = ?
+			`, [taskId])
+
+			await db.run(`
+				delete from "generationTasks" where "id" = ?
+			`, [taskId])
+
+			for(const picture of pictures){
+				let fullPath = picture.fileName
+				try {
+					fullPath = Path.resolve(config.pictureStorageDir, picture.fileName)
+					await Fs.rm(fullPath)
+				} catch(e){
+					log(`Failed to delete picture at ${fullPath}: ${e}`)
+				}
+			}
+		}
+
+		await db.run(`
+			alter table "generationTasks" drop column "hidden";
 		`)
 	}}
 

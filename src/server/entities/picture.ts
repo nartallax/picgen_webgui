@@ -237,6 +237,14 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 		await Fs.rm(path)
 	}
 
+	override async delete(picture: ServerPicture): Promise<void> {
+		if(picture.fileName){
+			const fullName = this.makeFullPicturePath(picture.fileName)
+			await Fs.rm(fullName)
+		}
+		return await super.delete(picture)
+	}
+
 }
 
 export function assertIsPictureType(x: string): asserts x is PictureType {

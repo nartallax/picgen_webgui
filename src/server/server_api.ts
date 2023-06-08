@@ -117,8 +117,7 @@ export namespace ServerApi {
 			const context = cont()
 			const currentUser = await context.user.getCurrent();
 			(query.filters ||= []).push(
-				{op: "=", a: {field: "userId"}, b: {value: currentUser.id}},
-				{op: "=", a: {field: "hidden"}, b: {value: false}}
+				{op: "=", a: {field: "userId"}, b: {value: currentUser.id}}
 			)
 			const tasks = await context.generationTask.list(query)
 			const serverPictures = await context.picture.queryAllFieldIncludes("generationTaskId", tasks.map(x => x.id))
@@ -201,7 +200,7 @@ export namespace ServerApi {
 			return context.picture.stripServerData(pic)
 		})
 
-	export const hideTask = RCV.validatedFunction(
+	export const deleteTask = RCV.validatedFunction(
 		[RC.struct({taskId: RC.int()})],
 		async({taskId}): Promise<void> => {
 			const context = cont()
@@ -212,8 +211,7 @@ export namespace ServerApi {
 			if(task.userId !== user.id){
 				throw new ApiError("validation_not_passed", `Task ${task.id} does not belong to user ${user.id}.`)
 			}
-			task.hidden = true
-			context.generationTask.update(task)
+			context.generationTask.delete(task)
 		}
 	)
 

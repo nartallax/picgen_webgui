@@ -111,7 +111,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	})
 
 	const delTimer = makeDeletionTimer(500, taskDeletionProgress, async() => {
-		await ClientApi.hideTask(props.task().id)
+		await ClientApi.deleteTask(props.task().id)
 		taskHidden(true)
 	})
 
@@ -142,7 +142,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					onTouchend: () => delTimer.cancel(),
 					onClick: limitClickRate(async e => {
 						if(e.shiftKey){
-							await ClientApi.hideTask(props.task().id)
+							await ClientApi.deleteTask(props.task().id)
 							taskHidden(true)
 						}
 					})
