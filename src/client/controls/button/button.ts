@@ -6,7 +6,8 @@ interface ButtonProps {
 	onclick(): void | Promise<void>
 	text?: string | null
 	iconClass?: string | null
-	variant?: "normal" | "small"
+	variant?: "normal" | "small" | "big"
+	moreHPadding?: boolean
 	isDisabled?: boolean
 }
 
@@ -14,7 +15,8 @@ const defaults = {
 	text: null,
 	iconClass: null,
 	variant: "normal",
-	isDisabled: false
+	isDisabled: false,
+	moreHPadding: undefined
 } satisfies Partial<ButtonProps>
 
 export const Button = defineControl<ButtonProps, typeof defaults>(defaults, props => {
@@ -34,7 +36,7 @@ export const Button = defineControl<ButtonProps, typeof defaults>(defaults, prop
 		tag: "button",
 		class: [css.button, props.iconClass, css[props.variant()], {
 			[css.disabled!]: viewBox(() => clickIsActive() || props.isDisabled()),
-			[css.moreHPadding!]: props.text.map(text => !!text)
+			[css.moreHPadding!]: viewBox(() => props.moreHPadding() ?? !!props.text())
 		}],
 		onClick: wrappedOnclick
 	}, [props.text])

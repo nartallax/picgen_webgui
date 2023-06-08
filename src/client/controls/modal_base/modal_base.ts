@@ -4,6 +4,7 @@ import * as css from "./modal_base.module.scss"
 
 export interface ModalBaseProps {
 	closeByBackgroundClick?: boolean
+	closeByEsc?: boolean
 }
 
 export interface ModalCloseEvent {
@@ -32,6 +33,9 @@ export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement
 	let closeReason: ModalCloseEvent["reason"] | null = null
 	const closeWaiters = [] as ((evt: ModalCloseEvent) => void)[]
 	function close(reason: ModalCloseEvent["reason"]): void {
+		if(escHandler){
+			window.removeEventListener("keydown", escHandler)
+		}
 		closeReason = reason
 		isClosed(true)
 		setTimeout(() => result.remove(), 1000)
@@ -58,6 +62,16 @@ export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement
 				close("background_click")
 			}
 		}, {passive: true})
+	}
+
+	let escHandler: ((e: KeyboardEvent) => void) | null = null
+	if(props.closeByEsc){
+		escHandler = (e: KeyboardEvent) => {
+			if(e.key === "Escape"){
+				close("close_method")
+			}
+		}
+		window.addEventListener("keydown", escHandler)
 	}
 
 	return {

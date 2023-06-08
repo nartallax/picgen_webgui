@@ -7,7 +7,7 @@ import {GenerationTaskInputData} from "common/entities/generation_task"
 import {LoraArgument} from "common/entities/lora"
 import {Picture} from "common/entities/picture"
 
-export function loadArgumentsFromPicture(picture: Picture, task: GenerationTaskInputData): void {
+export function getTaskInputDataFromPicture(picture: Picture, task: GenerationTaskInputData): GenerationTaskInputData {
 	const genInputData = {...task}
 	let modifiedArgs = picture.modifiedArguments
 	if(modifiedArgs){
@@ -18,8 +18,7 @@ export function loadArgumentsFromPicture(picture: Picture, task: GenerationTaskI
 		}
 		genInputData.params = {...genInputData.params, ...modifiedArgs}
 	}
-
-	loadArguments(genInputData)
+	return genInputData
 }
 
 export function loadArguments(task: GenerationTaskInputData): void {

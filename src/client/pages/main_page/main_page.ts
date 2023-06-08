@@ -25,6 +25,7 @@ import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 import {Picture, PictureWithTask} from "common/entities/picture"
 import {TaskPicture} from "client/components/task_picture/task_picture"
 import {LoraSelectionPanel} from "client/components/lora_selection_panel/lora_selection_panel"
+import {PasteArgumentsButton} from "client/components/paste_arguments_button/paste_arguments_button"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -166,7 +167,8 @@ export function MainPage(): HTMLElement {
 						onClick: () => isMenuOpen(!isMenuOpen()),
 						class: css.menuButton
 					}),
-					LoginBar()
+					LoginBar(),
+					PasteArgumentsButton()
 				]),
 				Col({class: css.propSetSelector, align: "stretch"}, [
 					Select({

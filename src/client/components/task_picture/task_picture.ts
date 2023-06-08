@@ -1,12 +1,13 @@
-import {MRBox, RBox, box, constBoxWrap, unbox} from "@nartallax/cardboard"
+import {MRBox, RBox, box, constBoxWrap, unbox, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
 import {Picture, pictureHasAttachedTask} from "common/entities/picture"
-import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
-import {loadArgumentsFromPicture} from "client/app/load_arguments"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {getTaskInputDataFromPicture} from "client/app/load_arguments"
 import {ShowImageViewerProps, showImageViewer} from "client/components/image_viewer/image_viewer"
 import {loadArguments} from "client/app/load_arguments"
+import {showTaskArgsModal} from "client/components/task_args_modal/task_args_modal"
 
 interface TaskPictureProps {
 	picture: RBox<Picture>
@@ -25,9 +26,13 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		window.open(url(), "_blank")
 	})
 
-	const copyButton = tag({class: ["icon-docs", css.iconCopy]}, [tag(["P"])])
-	copyButton.addEventListener("click", e => {
-		e.stopPropagation()
+	const getPictureArgs = (): GenerationTaskInputData => {
+		return getTaskInputDataFromPicture(props.picture(), getTask())
+	}
+
+	const haveTask = () => pictureHasAttachedTask(props.picture()) || !!unbox(props.generationTask)
+
+	const getTask = (): GenerationTaskInputData => {
 		const pic = props.picture()
 		let task: GenerationTask | undefined = unbox(props.generationTask)
 		if(pictureHasAttachedTask(pic)){
@@ -36,23 +41,44 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		if(!task){
 			throw new Error("No task to take params from")
 		}
-		loadArgumentsFromPicture(pic, task)
+		return task
+	}
+
+	const copyButton = tag({class: ["icon-docs", css.iconCopy]}, [tag(["P"])])
+	copyButton.addEventListener("click", e => {
+		e.stopPropagation()
+		loadArguments(getPictureArgs())
 	})
 
 	const copyTaskButton = tag({
 		class: ["icon-docs", css.iconCopy],
 		style: {
-			display: props.picture.map(pic => pictureHasAttachedTask(pic) ? "block" : "none")
+			display: viewBox(() => haveTask() ? "block" : "none")
 		}
 	}, [tag(["T"])])
 	copyTaskButton.addEventListener("click", e => {
 		e.stopPropagation()
-		const pic = props.picture()
-		if(!pictureHasAttachedTask(pic)){
-			throw new Error("No attached task!")
-		}
-		loadArguments(pic.task)
+		loadArguments(getTask())
 	})
+
+	const makeShowParamsButton = (isTaskOnly: boolean) => {
+		const btn = tag({
+			class: [css.iconShowParams],
+			style: {
+				display: isTaskOnly ? viewBox(() => haveTask() ? "" : "none") : ""
+			}
+		}, [
+			tag({tag: "span", class: css.cornerBracket}, ["<"]),
+			tag({tag: "span", class: css.letter}, [isTaskOnly ? "T" : "P"]),
+			tag({tag: "span", class: css.cornerBracket}, [">"])
+		])
+		btn.addEventListener("click", e => {
+			e.stopPropagation()
+			const args = isTaskOnly ? getTask() : getPictureArgs()
+			showTaskArgsModal(args)
+		})
+		return btn
+	}
 
 	const favAddTime = box(props.picture().favoritesAddTime)
 	const favoriteButton = tag({class: [
@@ -98,7 +124,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				}
 			}
 		}, [
-			tag({class: css.topRow}, [copyTaskButton, copyButton]),
+			tag({class: css.topRow}, [makeShowParamsButton(true), makeShowParamsButton(false), copyTaskButton, copyButton]),
 			tag({class: css.middleRow}, [
 				tag({class: [css.iconOpen, "icon-resize-full-alt"]})
 			]),
