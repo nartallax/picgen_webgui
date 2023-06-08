@@ -17,6 +17,7 @@ export const LoraSelectionPanel = () => {
 
 	const selectValue = box<string | null>(null)
 	const loraByIdMap = allKnownLoras.map(loras => new Map(loras.map(lora => [lora.id, lora])))
+	const loraOptions = allKnownLoras.map(allKnownLoras => allKnownLoras.map(lora => ({label: lora.name, value: lora.id})))
 
 	const result = tag({
 		style: {
@@ -32,9 +33,7 @@ export const LoraSelectionPanel = () => {
 				const selectedLoraIds = new Set(currentLoras().map(lora => lora.id))
 				return [
 					emptySelectValue,
-					...allKnownLoras()
-						.filter(lora => !selectedLoraIds.has(lora.id))
-						.map(lora => ({label: lora.name, value: lora.id}))
+					...loraOptions().filter(option => !selectedLoraIds.has(option.value))
 				]
 			})
 		}),
