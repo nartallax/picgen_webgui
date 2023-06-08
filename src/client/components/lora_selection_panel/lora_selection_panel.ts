@@ -47,6 +47,7 @@ export const LoraSelectionPanel = () => {
 				})
 				return FormField({
 					label: loraDef.prop("name"),
+					maxLabelWidth: "11rem",
 					input: NumberInput({
 						precision: 2,
 						value: selectedLora.prop("weight")

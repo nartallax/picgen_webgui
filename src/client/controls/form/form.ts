@@ -30,6 +30,7 @@ type FormFieldProps = {
 	revertable?: MRBox<boolean>
 	visible?: MRBox<boolean>
 	onDelete?: () => void
+	maxLabelWidth?: MRBox<string>
 }
 
 export const FormField = (props: FormFieldProps): HTMLElement => {
@@ -40,7 +41,12 @@ export const FormField = (props: FormFieldProps): HTMLElement => {
 			tag: "td",
 			class: css.label
 		}, [
-			tag({class: css.labelText}, [props.label]),
+			tag({
+				class: css.labelText,
+				style: {
+					maxWidth: props.maxLabelWidth
+				}
+			}, [props.label]),
 			!props.hint ? null : TooltipIcon({tooltip: props.hint})
 		]),
 		tag({
