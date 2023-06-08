@@ -1,7 +1,7 @@
 import {tag} from "@nartallax/cardboard-dom"
 import {defineControl} from "@nartallax/cardboard-dom"
 import * as css from "./form.module.scss"
-import {MRBox, WBox, constBoxWrap} from "@nartallax/cardboard"
+import {MRBox, WBox, constBoxWrap, isConstBox, isRBox, unbox} from "@nartallax/cardboard"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {TooltipIcon} from "client/controls/tooltip/tooltip"
 
@@ -40,11 +40,14 @@ export const FormField = (props: FormFieldProps): HTMLElement => {
 			tag: "td",
 			class: css.label
 		}, [
-			props.label,
+			tag({class: css.labelText}, [props.label]),
 			!props.hint ? null : TooltipIcon({tooltip: props.hint})
 		]),
 		tag({
 			tag: "td",
+			style: {
+				display: (isConstBox(props.revertable) || !isRBox(props.revertable)) && !unbox(props.revertable) ? "none" : ""
+			},
 			class: [css.revertButton, "icon-ccw", {
 				[css.hidden!]: constBoxWrap(props.revertable).map(revertable => !revertable)
 			}],
