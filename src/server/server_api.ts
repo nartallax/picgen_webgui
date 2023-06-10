@@ -211,7 +211,7 @@ export namespace ServerApi {
 			if(task.userId !== user.id){
 				throw new ApiError("validation_not_passed", `Task ${task.id} does not belong to user ${user.id}.`)
 			}
-			context.generationTask.delete(task)
+			await context.generationTask.delete(task)
 		}
 	)
 

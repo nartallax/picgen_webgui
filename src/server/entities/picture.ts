@@ -16,6 +16,8 @@ import {generateRandomIdentifier} from "common/utils/generate_random_identifier"
 import {cont} from "server/async_context"
 import {ApiError} from "common/infra_entities/api_error"
 import {getParamDefList} from "common/entities/parameter"
+import {isEnoent} from "server/utils/is_enoent"
+import {log} from "server/log"
 
 export interface ServerPicture extends Picture {
 	directLink: string | null
@@ -240,7 +242,15 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 	override async delete(picture: ServerPicture): Promise<void> {
 		if(picture.fileName){
 			const fullName = this.makeFullPicturePath(picture.fileName)
-			await Fs.rm(fullName)
+			try {
+				await Fs.rm(fullName)
+			} catch(e){
+				if(isEnoent(e)){
+					log("No picture file; skipping deletion: " + fullName)
+				} else {
+					throw e
+				}
+			}
 		}
 		return await super.delete(picture)
 	}

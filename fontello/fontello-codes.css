@@ -18,6 +18,11 @@
 .icon-ok:before { content: '\e810'; } /* '' */
 .icon-left-open-big:before { content: '\e811'; } /* '' */
 .icon-right-open-big:before { content: '\e812'; } /* '' */
+.icon-copy-single:before { content: '\e813'; } /* '' */
+.icon-copy-task:before { content: '\e814'; } /* '' */
+.icon-copy-json-single:before { content: '\e815'; } /* '' */
+.icon-copy-json-task:before { content: '\e816'; } /* '' */
+.icon-paste-json:before { content: '\e817'; } /* '' */
 .icon-upload:before { content: '\f02f'; } /* '' */
 .icon-link-ext:before { content: '\f08e'; } /* '' */
 .icon-bookmark-empty:before { content: '\f097'; } /* '' */

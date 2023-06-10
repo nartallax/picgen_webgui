@@ -264,7 +264,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		})
 
 		for(const picture of pictures){
-			cont.picture.delete(picture)
+			await cont.picture.delete(picture)
 		}
 
 		return await super.delete(task)
