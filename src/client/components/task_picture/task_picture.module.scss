@@ -83,9 +83,17 @@ $max-size: 23em;
 			flex-direction: row;
 		}
 
-		.iconShowParams, .iconCopy, .iconFavorite, .iconLink {
+		.iconShowParams, .iconCopy {
+			padding: 0.5rem;
+			font-size: 2rem;
+		}
+
+		.iconFavorite, .iconLink {
 			padding: 1rem;
 			font-size: 1.5rem;
+		}
+
+		.iconShowParams, .iconCopy, .iconFavorite, .iconLink {
 			cursor: pointer;
 			color: #ddd;
 
@@ -99,18 +107,6 @@ $max-size: 23em;
 
 		.iconFavorite {
 			color: #ffdb59;
-		}
-
-		.iconCopy {
-			position: relative;
-			
-			> * {
-				position: absolute;
-				bottom: 13px;
-				right: 20px;
-				font-weight: bold;
-				color: #fff;
-			}
 		}
 
 		.iconShowParams {

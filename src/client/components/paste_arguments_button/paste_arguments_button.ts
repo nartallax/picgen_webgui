@@ -5,7 +5,7 @@ import * as css from "./paste_arguments_button.module.scss"
 
 export const PasteArgumentsButton = () => {
 	return IconButton({
-		icon: "icon-code",
+		icon: "icon-paste-json",
 		class: css.pasteArgumentsButton,
 		onClick: async() => {
 			const args = await showTaskArgsModal()

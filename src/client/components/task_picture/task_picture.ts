@@ -44,18 +44,18 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		return task
 	}
 
-	const copyButton = tag({class: ["icon-docs", css.iconCopy]}, [tag(["P"])])
+	const copyButton = tag({class: ["icon-copy-single", css.iconCopy]})
 	copyButton.addEventListener("click", e => {
 		e.stopPropagation()
 		loadArguments(getPictureArgs())
 	})
 
 	const copyTaskButton = tag({
-		class: ["icon-docs", css.iconCopy],
+		class: ["icon-copy-task", css.iconCopy],
 		style: {
 			display: viewBox(() => haveTask() ? "block" : "none")
 		}
-	}, [tag(["T"])])
+	})
 	copyTaskButton.addEventListener("click", e => {
 		e.stopPropagation()
 		loadArguments(getTask())
@@ -63,15 +63,11 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 
 	const makeShowParamsButton = (isTaskOnly: boolean) => {
 		const btn = tag({
-			class: [css.iconShowParams],
+			class: [css.iconShowParams, `icon-copy-json-${isTaskOnly ? "task" : "single"}`],
 			style: {
 				display: isTaskOnly ? viewBox(() => haveTask() ? "" : "none") : ""
 			}
-		}, [
-			tag({tag: "span", class: css.cornerBracket}, ["<"]),
-			tag({tag: "span", class: css.letter}, [isTaskOnly ? "T" : "P"]),
-			tag({tag: "span", class: css.cornerBracket}, [">"])
-		])
+		})
 		btn.addEventListener("click", e => {
 			e.stopPropagation()
 			const args = isTaskOnly ? getTask() : getPictureArgs()
