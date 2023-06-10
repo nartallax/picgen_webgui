@@ -1,6 +1,8 @@
+$max-size: 23em;
+
 .taskPicture {
 	flex-shrink: 0;
-	height: 20em;
+	height: $max-size;
 	overflow: hidden;
 	border-radius: 0.5em;
 
@@ -15,7 +17,7 @@
 	transition: max-width 0.2s;
 
 	&.loaded {
-		max-width: 20em;
+		max-width: $max-size;
 	}
 
 	> img {
@@ -79,20 +81,19 @@
 		.bottomRow {
 			display: flex;
 			flex-direction: row;
+		}
 
+		.iconShowParams, .iconCopy, .iconFavorite, .iconLink {
+			padding: 1rem;
+			font-size: 1.5rem;
+			cursor: pointer;
+			color: #ddd;
 
-			> * {
-				padding: 1rem;
-				font-size: 2rem;
-				cursor: pointer;
-				color: #ddd;
+			opacity: 0.25;
+			transition: opacity 0.25s;
 
-				opacity: 0.25;
-				transition: opacity 0.25s;
-
-				&:hover {
-					opacity: 1;
-				}
+			&:hover {
+				opacity: 1;
 			}
 		}
 

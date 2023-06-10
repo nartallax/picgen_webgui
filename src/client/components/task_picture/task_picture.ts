@@ -20,7 +20,7 @@ interface TaskPictureProps {
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))
 
-	const linkButton = tag({class: "icon-link-ext"})
+	const linkButton = tag({class: ["icon-link-ext", css.iconLink]})
 	linkButton.addEventListener("click", e => {
 		e.stopPropagation()
 		window.open(url(), "_blank")
@@ -124,7 +124,10 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				}
 			}
 		}, [
-			tag({class: css.topRow}, [makeShowParamsButton(true), makeShowParamsButton(false), copyTaskButton, copyButton]),
+			tag({class: css.topRow}, [
+				tag([makeShowParamsButton(true), makeShowParamsButton(false)]),
+				tag([copyTaskButton, copyButton])
+			]),
 			tag({class: css.middleRow}, [
 				tag({class: [css.iconOpen, "icon-resize-full-alt"]})
 			]),
