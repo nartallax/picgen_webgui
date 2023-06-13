@@ -72,7 +72,8 @@ function ArgumentField(props: ArgumentFieldProps): HTMLElement {
 			}
 			return value !== defaultValueOfParam(props.def)
 		}),
-		onRevert: () => props.value(defaultValueOfParam(props.def))
+		onRevert: () => props.value(defaultValueOfParam(props.def)),
+		isInputOnNextLine: props.def.type === "string" && props.def.large
 	})
 }
 
@@ -93,7 +94,8 @@ function ArgumentInput(def: GenParameter, value: WBox<GenerationTaskArgument>): 
 			return TextInput({
 				value: value as WBox<string>,
 				maxLength: def.maxLength,
-				minLength: def.minLength
+				minLength: def.minLength,
+				lineCount: def.large ? 4 : undefined
 			})
 		case "picture":
 			return PictureInput({

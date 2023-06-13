@@ -12,12 +12,18 @@ type FormFieldProps = {
 	visible?: MRBox<boolean>
 	onDelete?: () => void
 	maxLabelWidth?: MRBox<string>
+	isInputOnNextLine?: boolean
 }
 
 export const FormField = (props: FormFieldProps): HTMLElement => {
 	const display = constBoxWrap(props.visible).map(visible => visible === false ? "none" : "")
 
-	return tag({class: css.formField, style: {display}}, [
+	return tag({
+		class: [css.formField, 	{
+			[css.wrappable!]: props.isInputOnNextLine
+		}],
+		style: {display}
+	}, [
 		tag({class: css.label}, [
 			tag({
 				class: css.labelText,
@@ -38,7 +44,8 @@ export const FormField = (props: FormFieldProps): HTMLElement => {
 		}),
 		tag({
 			class: [css.inputWrap, {
-				[css.withDeleteButton!]: constBoxWrap(props.onDelete).map(onDelete => !!onDelete)
+				[css.withDeleteButton!]: constBoxWrap(props.onDelete).map(onDelete => !!onDelete),
+				[css.fullWidthFullHeight!]: props.isInputOnNextLine
 			}]
 		}, [
 			props.input,

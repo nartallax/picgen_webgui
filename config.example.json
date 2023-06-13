@@ -81,7 +81,8 @@
 				"type": "string",
 				"jsonName": "exclude",
 				"uiName": "Exclude",
-				"default": ""
+				"default": "",
+				"large": true
 			}, {
 				"type": "enum",
 				"searchable": true,

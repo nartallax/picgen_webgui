@@ -61,7 +61,8 @@ export const StringGenParam = RC.struct(RC.structFields({
 	},
 	roOpt: {
 		minLength: RC.int(),
-		maxLength: RC.int()
+		maxLength: RC.int(),
+		large: RC.bool()
 	}
 }), {}, BaseGenParam)
 

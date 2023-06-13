@@ -5,6 +5,10 @@
 	flex-direction: row;
 	align-items: center;
 
+	&.wrappable {
+		flex-wrap: wrap;
+	}
+
 	.label {
 		white-space: nowrap;
 		font-size: 1.35rem;
@@ -13,7 +17,8 @@
 		flex-direction: row;
     	align-items: center;
 		padding-top: 0.2rem;
-		flex: 1 1 0;
+		flex: 0 0 auto;
+		width: 50%;
 		min-width: 0;
 
 		.labelText {
@@ -39,10 +44,14 @@
 	}
 
 	.inputWrap {
-		width: 100%;
 		position: relative;
 		flex: 1 1 0;
 		min-width: 0;
+
+		&.fullWidthFullHeight {
+			width: 100%;
+			flex-basis: auto;
+		}
 
 		> :not(.deleteButton) {
 			width: 100%;

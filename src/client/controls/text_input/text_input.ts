@@ -9,6 +9,7 @@ interface TextInputProps {
 	maxLength?: number
 	minLength?: number
 	disabled?: boolean
+	lineCount?: number
 }
 
 const defaults = {
@@ -16,16 +17,22 @@ const defaults = {
 	updateAsUserType: false,
 	maxLength: undefined,
 	minLength: undefined,
-	disabled: false
+	disabled: false,
+	lineCount: 1
 } satisfies Partial<TextInputProps>
 
 export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults, props => {
-	const input: HTMLInputElement = tag({
-		tag: "input",
+	const isTextarea = props.lineCount() === 1
+	const input: HTMLInputElement | HTMLTextAreaElement = tag({
+		tag: isTextarea ? "input" : "textarea",
 		class: css.textInput,
 		onBlur: () => props.value(input.value),
 		attrs: {
-			disabled: props.disabled
+			disabled: props.disabled,
+			rows: isTextarea ? undefined : props.lineCount
+		},
+		style: {
+			resize: isTextarea ? undefined : "none"
 		}
 	})
 
