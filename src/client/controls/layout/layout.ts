@@ -3,7 +3,7 @@ import {BoxedProps, StyleValues} from "@nartallax/cardboard-dom"
 
 export type DefaultableSpacing = "vertical" | "horisontal" | "top" | "bottom" | "left" | "right" | boolean | string
 
-const defaultSpacing = "0.25rem"
+const defaultSpacing = "0.5rem"
 
 export function resolveSpacing(padding: DefaultableSpacing | undefined): string | undefined
 export function resolveSpacing(padding: RBox<DefaultableSpacing | undefined> | undefined): RBox<string | undefined>

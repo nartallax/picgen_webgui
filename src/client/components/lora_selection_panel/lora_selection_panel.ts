@@ -1,10 +1,13 @@
 import {box, viewBox} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
-import {allKnownLoras, currentLoras} from "client/app/global_values"
+import {allKnownLoras, currentLoras, loraOrdering} from "client/app/global_values"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
+import {showLoraOrderListModal} from "client/components/lora_selection_panel/lora_order_list"
+import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
 import {Form} from "client/controls/form/form"
+import {Row} from "client/controls/layout/row_col"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {Select} from "client/controls/select/select"
 
@@ -25,18 +28,44 @@ export const LoraSelectionPanel = () => {
 		}
 	}, [BlockPanel([
 		BlockPanelHeader({header: "LoRAs"}),
-		Select({
-			value: selectValue,
-			isArgumentInput: true,
-			isSearchable: true,
-			options: viewBox(() => {
-				const selectedLoraIds = new Set(currentLoras().map(lora => lora.id))
-				return [
-					emptySelectValue,
-					...loraOptions().filter(option => !selectedLoraIds.has(option.value))
-				]
+		Row({gap: true}, [
+			Select({
+				value: selectValue,
+				isArgumentInput: true,
+				isSearchable: true,
+				options: viewBox(() => {
+					const allKnownLoraIds = new Set(allKnownLoras().map(lora => lora.id))
+					const selectedLoraIds = new Set(currentLoras().map(lora => lora.id))
+					const orderedLoraIds = loraOrdering().filter(id => !selectedLoraIds.has(id) && allKnownLoraIds.has(id))
+					const orderedLoraIdsSet = new Set(orderedLoraIds)
+					const unorderedLoraIds = allKnownLoras()
+						.filter(lora => !selectedLoraIds.has(lora.id) && !orderedLoraIdsSet.has(lora.id))
+						.map(lora => lora.id)
+						.sort()
+
+					const loraOptionsMap = new Map(
+						loraOptions().map(option => [option.value, option])
+					)
+
+					return [
+						emptySelectValue,
+						...[...orderedLoraIds, ...unorderedLoraIds].map(id => {
+							const opt = loraOptionsMap.get(id)
+							if(!opt){
+								throw new Error("No option for id " + id)
+							}
+							return opt
+						})
+					]
+				})
+			}),
+			Button({
+				iconClass: "icon-cog",
+				onclick: () => {
+					showLoraOrderListModal()
+				}
 			})
-		}),
+		]),
 		Form(currentLoras.mapArray(
 			selectedLora => selectedLora.id,
 			selectedLora => {
