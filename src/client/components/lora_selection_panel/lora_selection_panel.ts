@@ -6,7 +6,6 @@ import {BlockPanelHeader} from "client/components/block_panel_header/block_panel
 import {showLoraOrderListModal} from "client/components/lora_selection_panel/lora_order_list"
 import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
-import {Form} from "client/controls/form/form"
 import {Row} from "client/controls/layout/row_col"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {Select} from "client/controls/select/select"
@@ -66,7 +65,7 @@ export const LoraSelectionPanel = () => {
 				}
 			})
 		]),
-		Form(currentLoras.mapArray(
+		tag(currentLoras.mapArray(
 			selectedLora => selectedLora.id,
 			selectedLora => {
 				const loraDef = loraByIdMap.map(map => map.get(selectedLora().id) ?? {

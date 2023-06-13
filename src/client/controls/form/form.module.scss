@@ -1,9 +1,9 @@
-.form {
-	width: 100%;
-}
 
 .formField {
 	padding: 0.33rem 0;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
 
 	.label {
 		white-space: nowrap;
@@ -13,6 +13,8 @@
 		flex-direction: row;
     	align-items: center;
 		padding-top: 0.2rem;
+		flex: 1 1 0;
+		min-width: 0;
 
 		.labelText {
 			font-size: 1.35rem;
@@ -28,6 +30,7 @@
 		line-height: 1.5em;
 		transition: 0.25s;
 		opacity: 1;
+		flex: 0 0 auto;
 
 		&.hidden {
 			opacity: 0;
@@ -38,11 +41,10 @@
 	.inputWrap {
 		width: 100%;
 		position: relative;
+		flex: 1 1 0;
+		min-width: 0;
 
 		> :not(.deleteButton) {
-			position: absolute;
-			left: 0;
-			top: 0;
 			width: 100%;
 			max-width: 100%;
 		}

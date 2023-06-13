@@ -124,7 +124,8 @@ export const GenParameterGroup = RC.struct(RC.structFields({
 		parameters: RC.roArray(GenParameter)
 	},
 	roOpt: {
-		toggle: GenParameterGroupToggle
+		toggle: GenParameterGroupToggle,
+		split: RC.bool()
 	}
 }))
 

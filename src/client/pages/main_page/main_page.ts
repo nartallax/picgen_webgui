@@ -2,7 +2,7 @@ import {ClientApi} from "client/app/client_api"
 import {WebsocketListener} from "client/app/websocket_listener"
 import {Feed, makeSimpleFeedFetcher} from "client/controls/feed/feed"
 import {LoginBar} from "client/components/login_bar/login_bar"
-import {ParamsBlock} from "client/components/arguments_input_block/arguments_input_block"
+import {ArgumentsInputBlock} from "client/components/arguments_input_block/arguments_input_block"
 import {PromptInput} from "client/components/prompt_input/prompt_input"
 import {Select} from "client/controls/select/select"
 import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
@@ -179,7 +179,7 @@ export function MainPage(): HTMLElement {
 						value: currentParamSetName
 					})
 				]),
-				ParamsBlock({paramGroups}),
+				ArgumentsInputBlock({paramGroups}),
 				TagSearchBlock({
 					selectedContentTags: currentContentTags,
 					contentTags: allKnownContentTags,

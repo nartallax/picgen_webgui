@@ -9,14 +9,14 @@ import {BoolInput} from "client/controls/bool_input/bool_input"
 import {TextInput} from "client/controls/text_input/text_input"
 import {PictureInput} from "client/components/picture_input/picture_input"
 import {Select} from "client/controls/select/select"
-import {Form, FormField, FormHeader} from "client/controls/form/form"
+import {FormField} from "client/controls/form/form"
 import {GenerationTaskArgument, PictureArgument} from "common/entities/arguments"
 
-interface ArgumentsInputBlock {
+interface ArgumentsInputBlockProps {
 	readonly paramGroups: RBox<null | readonly GenParameterGroup[]>
 }
 
-export function ParamsBlock(props: ArgumentsInputBlock): HTMLElement {
+export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElement {
 
 	const contentItems = box([] as HTMLElement[])
 
@@ -33,7 +33,7 @@ export function ParamsBlock(props: ArgumentsInputBlock): HTMLElement {
 			const defs = group.parameters
 
 			const groupToggle = !group.toggle ? undefined : (currentArgumentBoxes[group.toggle.jsonName] as WBox<boolean>)
-			lines.push(FormHeader({header: group.uiName, toggle: groupToggle}))
+			lines.push(BlockPanelHeader({header: group.uiName, toggle: groupToggle}))
 
 			for(const def of defs){
 				const value = currentArgumentBoxes[def.jsonName]
@@ -46,7 +46,7 @@ export function ParamsBlock(props: ArgumentsInputBlock): HTMLElement {
 
 		}
 
-		return [Form(lines)]
+		return lines
 	}
 
 	const result = BlockPanel(contentItems)
