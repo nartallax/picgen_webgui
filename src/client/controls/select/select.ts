@@ -12,7 +12,6 @@ interface Props<T> {
 }
 
 export function Select<T>(props: Props<T>): HTMLElement {
-
 	const options = constBoxWrap(props.options)
 
 	function handleWindowClick(e: MouseEvent): void {

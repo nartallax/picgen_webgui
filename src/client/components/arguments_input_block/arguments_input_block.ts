@@ -49,7 +49,7 @@ export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElemen
 				result.push(BlockPanel(panelChildren))
 			}
 			return result
-		})
+		}, [props.paramGroups, currentArgumentBoxes])
 	)
 }
 
