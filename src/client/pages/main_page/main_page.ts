@@ -36,22 +36,25 @@ function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup
 	}
 
 	const defMap = new Map(defs.map(x => [x.jsonName, x]))
-	for(const name in currentArgumentBoxes){
-		const value = currentArgumentBoxes[name]!
+	const boxMap = {...currentArgumentBoxes()}
+	for(const name in boxMap){
+		const value = boxMap[name]!
 		const def = defMap.get(name)
 		if(!def || typeof(value()) !== typeof(defaultValueOfParam(def))){
-			delete currentArgumentBoxes[name]
+			delete boxMap[name]
 			continue
 		}
 	}
 
 	for(const def of defs){
-		const oldValue = currentArgumentBoxes[def.jsonName]
+		const oldValue = boxMap[def.jsonName]
 		if(oldValue){
 			continue
 		}
-		currentArgumentBoxes[def.jsonName] = localStorageBox(`genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
+		boxMap[def.jsonName] = localStorageBox(`genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
 	}
+
+	currentArgumentBoxes(boxMap)
 }
 
 export function MainPage(): HTMLElement {
@@ -79,8 +82,9 @@ export function MainPage(): HTMLElement {
 			return
 		}
 		const paramDefsByName = new Map(paramDefs.map(def => [def.jsonName, def]))
-		for(const paramName in currentArgumentBoxes){
-			const paramValue = unbox(currentArgumentBoxes[paramName])!
+		const boxMap = currentArgumentBoxes()
+		for(const paramName in boxMap){
+			const paramValue = unbox(boxMap[paramName])!
 			const def = paramDefsByName.get(paramName)
 			if(def && def.type === "picture" && isPictureArgument(paramValue) && paramValue.id === 0){
 				continue // not passed

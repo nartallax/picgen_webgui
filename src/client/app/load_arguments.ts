@@ -52,8 +52,9 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	}
 
 	const nonLoadableParamNames: string[] = []
+	const boxMap = currentArgumentBoxes()
 	for(const [key, value] of Object.entries(params)){
-		const argBox = currentArgumentBoxes[key]
+		const argBox = boxMap[key]
 		if(!argBox){
 			nonLoadableParamNames.push(key)
 			continue

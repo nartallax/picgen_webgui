@@ -17,7 +17,7 @@ export const isUserControlEnabled = box(true)
 export const uiScale = localStorageBox("userSettings.uiScale", 1)
 export const loraOrdering = localStorageBox<string[]>("userSettins.loraOrdering", [])
 
-export const currentArgumentBoxes: {[key: string]: WBox<GenerationTaskArgument>} = {}
+export const currentArgumentBoxes = box<{[key: string]: WBox<GenerationTaskArgument>}>({})
 export const currentParamSetName = localStorageBox("fixedGenArgument.selectedParamSetName", "")
 export const currentShapeTag = localStorageBox<string | null>("fixedGenArgument.prompt.shape", null)
 export const currentPrompt = localStorageBox("fixedGenArgument.prompt.prompt", "")

@@ -1,5 +1,5 @@
-import {MRBox, RBox, WBox, box, unbox} from "@nartallax/cardboard"
-import {whileMounted} from "@nartallax/cardboard-dom"
+import {MRBox, RBox, WBox, unbox, viewBox} from "@nartallax/cardboard"
+import {tag} from "@nartallax/cardboard-dom"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {GenParameter, GenParameterGroup, defaultValueOfParam} from "common/entities/parameter"
@@ -17,43 +17,40 @@ interface ArgumentsInputBlockProps {
 }
 
 export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElement {
-
-	const contentItems = box([] as HTMLElement[])
-
-	function renderItems(): HTMLElement[] {
-		const groups = unbox(props.paramGroups)
-
-		if(!groups){
-			return [BlockPanelHeader({header: "Loading..."})]
-		}
-
-		const lines: HTMLElement[] = []
-
-		for(const group of groups){
-			const defs = group.parameters
-
-			const groupToggle = !group.toggle ? undefined : (currentArgumentBoxes[group.toggle.jsonName] as WBox<boolean>)
-			lines.push(BlockPanelHeader({header: group.uiName, toggle: groupToggle}))
-
-			for(const def of defs){
-				const value = currentArgumentBoxes[def.jsonName]
-				if(!value){
-					console.error("No value is defined for parameter " + def.jsonName)
-					continue
-				}
-				lines.push(ArgumentField({def, value, visible: groupToggle}))
+	return tag(
+		viewBox(() => {
+			const groups = unbox(props.paramGroups)
+			const boxMap = currentArgumentBoxes()
+			if(!groups){
+				return [BlockPanelHeader({header: "Loading..."})]
 			}
 
-		}
+			const result: HTMLElement[] = []
+			for(const panelGroups of splitBySplitLines(groups)){
+				const panelChildren: HTMLElement[] = []
+				for(const group of panelGroups){
+					const defs = group.parameters
 
-		return lines
-	}
+					const groupToggle = !group.toggle ? undefined : (boxMap[group.toggle.jsonName] as WBox<boolean> | undefined)
+					if(group.toggle && !groupToggle){
+						continue
+					}
+					panelChildren.push(BlockPanelHeader({header: group.uiName, toggle: groupToggle}))
 
-	const result = BlockPanel(contentItems)
-
-	whileMounted(result, props.paramGroups, () => contentItems(renderItems()))
-
-	return result
+					for(const def of defs){
+						const value = boxMap[def.jsonName]
+						if(!value){
+							// can happen if boxMap is just loading
+							continue
+						}
+						panelChildren.push(ArgumentField({def, value, visible: groupToggle}))
+					}
+				}
+				result.push(BlockPanel(panelChildren))
+			}
+			return result
+		})
+	)
 }
 
 
@@ -117,4 +114,25 @@ function ArgumentInput(def: GenParameter, value: WBox<GenerationTaskArgument>): 
 				})
 			})
 	}
+}
+
+function splitBySplitLines(groups: readonly GenParameterGroup[]): GenParameterGroup[][] {
+	const result: GenParameterGroup[][] = []
+	let currentGroup: GenParameterGroup[] = []
+
+	for(const group of groups){
+		if(group.split){
+			if(currentGroup.length > 0){
+				result.push(currentGroup)
+			}
+			currentGroup = []
+		}
+		currentGroup.push(group)
+	}
+
+	if(currentGroup.length > 0){
+		result.push(currentGroup)
+	}
+
+	return result
 }
