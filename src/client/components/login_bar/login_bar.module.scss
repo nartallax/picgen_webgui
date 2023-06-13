@@ -18,9 +18,21 @@
 
 	.nickname {
 		flex-grow: 1;
+		flex-shrink: 1;
+		flex-basis: 0;
+		min-width: 0;
+
 		color: #706D6C;
 		font-size: 1.35rem;
 		line-height: 1.5em;
 		padding: 0 0.5em;
+		
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.settingsIcon {
+		margin-right: 0.35rem;
 	}
 }

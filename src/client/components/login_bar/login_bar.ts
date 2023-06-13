@@ -4,6 +4,7 @@ import {ClientApi} from "client/app/client_api"
 import {currentPage, currentUser} from "client/app/global_values"
 import {Button} from "client/controls/button/button"
 import * as css from "./login_bar.module.scss"
+import {showUserSettingsModal} from "client/components/user_settings_modal/user_settings_modal"
 
 export function LoginBar(): HTMLElement {
 
@@ -21,6 +22,13 @@ export function LoginBar(): HTMLElement {
 			}
 		}),
 		nicknameEl,
+		Button({
+			iconClass: "icon-cog",
+			class: css.settingsIcon,
+			onclick: () => {
+				showUserSettingsModal()
+			}
+		}),
 		Button({
 			iconClass: "icon-logout",
 			onclick: async() => {

@@ -30,31 +30,10 @@ const defaults = {
 } satisfies Partial<NumberInputProps>
 
 export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defaults, props => {
-	const input = tag({
-		tag: "input",
-		class: css.numberInput
-	})
 
 	const dflt = props.value()
 
-	input.addEventListener("keypress", e => {
-		const code = e.key.charCodeAt(0)
-		if((code >= zeroCode && code <= nineCode)){
-			return
-		}
-		const min = unbox(props.min)
-		if(code === minusCode && (min === undefined || min < 0)){
-			return
-		}
-		if(!unbox(props.int) && (code === dotCode || code === commaCode)){
-			return
-		}
-		e.preventDefault()
-	})
-
-	input.addEventListener("blur", () => {
-		const valueStr = input.value
-		let valueNum = parseFloat(valueStr.replace(/,/g, "."))
+	const fixValue = (valueNum: number) => {
 		if(Number.isNaN(valueNum)){
 			valueNum = dflt
 		}
@@ -78,9 +57,54 @@ export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defa
 			valueNum = Math.round(valueNum / step) * step
 		}
 
+		return valueNum
+	}
+
+	const fixAndUpdateValue = () => {
+		const valueStr = input.value
+		let valueNum = parseFloat(valueStr.replace(/,/g, "."))
+		valueNum = fixValue(valueNum)
 		input.value = formatToPrecision(valueNum, unbox(props.precision))
 		props.value(valueNum)
+	}
+
+	const tryUpdateValueWithoutFixing = () => {
+		const valueStr = input.value
+		const valueNum = parseFloat(valueStr.replace(/,/g, "."))
+		const fixedValue = fixValue(valueNum)
+		if(formatToPrecision(fixedValue, unbox(props.precision)) === valueStr){
+			props.value(valueNum)
+		}
+	}
+
+	const input = tag({
+		tag: "input",
+		class: css.numberInput,
+		onKeydown: tryUpdateValueWithoutFixing,
+		onKeyup: tryUpdateValueWithoutFixing,
+		onInput: tryUpdateValueWithoutFixing,
+		onChange: tryUpdateValueWithoutFixing
 	})
+
+	input.addEventListener("keypress", e => {
+		if(e.key === "Enter"){
+			fixAndUpdateValue()
+		}
+		const code = e.key.charCodeAt(0)
+		if((code >= zeroCode && code <= nineCode)){
+			return
+		}
+		const min = unbox(props.min)
+		if(code === minusCode && (min === undefined || min < 0)){
+			return
+		}
+		if(!unbox(props.int) && (code === dotCode || code === commaCode)){
+			return
+		}
+		e.preventDefault()
+	})
+
+	input.addEventListener("blur", fixAndUpdateValue)
 
 	whileMounted(input, props.value, v => {
 		input.value = formatToPrecision(v, unbox(props.precision))

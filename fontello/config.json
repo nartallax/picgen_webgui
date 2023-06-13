@@ -151,12 +151,6 @@
       "src": "fontawesome"
     },
     {
-      "uid": "b6f32db98a3de777f5ae3005191b1831",
-      "css": "code",
-      "code": 59400,
-      "src": "entypo"
-    },
-    {
       "uid": "c698d185315f6680bbc5652fd8301dbe",
       "css": "copy-single",
       "code": 59411,
@@ -225,6 +219,12 @@
       "search": [
         "paste-json"
       ]
+    },
+    {
+      "uid": "e99461abfef3923546da8d745372c995",
+      "css": "cog",
+      "code": 59400,
+      "src": "fontawesome"
     }
   ]
 }

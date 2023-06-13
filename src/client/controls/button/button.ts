@@ -6,6 +6,7 @@ interface ButtonProps {
 	onclick(): void | Promise<void>
 	text?: string | null
 	iconClass?: string | null
+	class?: string | null
 	variant?: "normal" | "small" | "big"
 	moreHPadding?: boolean
 	isDisabled?: boolean
@@ -34,7 +35,7 @@ export const Button = defineControl<ButtonProps, typeof defaults>(defaults, prop
 
 	return tag({
 		tag: "button",
-		class: [css.button, props.iconClass, css[props.variant()], {
+		class: [css.button, props.iconClass, props.class, css[props.variant()], {
 			[css.disabled!]: viewBox(() => clickIsActive() || props.isDisabled()),
 			[css.moreHPadding!]: viewBox(() => props.moreHPadding() ?? !!props.text())
 		}],
