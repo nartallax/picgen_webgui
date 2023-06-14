@@ -92,10 +92,12 @@ export function MainPage(): HTMLElement {
 			paramValuesForApi[paramName] = paramValue
 		}
 		if(currentLoras().length > 0){
+			// TODO: cringe
 			paramValuesForApi["loras"] = currentLoras()
 		}
+		// TODO: cringe
+		paramValuesForApi["prompt"] = fullPrompt
 		await ClientApi.createGenerationTask({
-			prompt: fullPrompt,
 			paramSetName: currentParamSetName(),
 			arguments: paramValuesForApi
 		})

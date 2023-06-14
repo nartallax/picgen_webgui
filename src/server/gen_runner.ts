@@ -142,10 +142,7 @@ export class GenRunner {
 	}
 
 	private makeCommand(task: ServerGenerationTaskInputData): {bin: string, params: readonly string[], inputJson: string} {
-		const json = JSON.stringify({
-			prompt: task.prompt,
-			...task.arguments
-		})
+		const json = JSON.stringify(task.arguments)
 
 		const paramSet = this.config.parameterSets.find(set => set.internalName === task.paramSetName)
 		if(!paramSet){

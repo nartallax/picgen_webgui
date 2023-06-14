@@ -9,13 +9,8 @@ import {Picture} from "common/entities/picture"
 
 export function getTaskInputDataFromPicture(picture: Picture, task: GenerationTaskInputData): GenerationTaskInputData {
 	const genInputData = {...task}
-	let modifiedArgs = picture.modifiedArguments
+	const modifiedArgs = picture.modifiedArguments
 	if(modifiedArgs){
-		if("prompt" in modifiedArgs){ // TODO: cringe
-			genInputData.prompt = modifiedArgs.prompt + ""
-			modifiedArgs = {...modifiedArgs}
-			delete modifiedArgs.prompt
-		}
 		genInputData.arguments = {...genInputData.arguments, ...modifiedArgs}
 	}
 	return genInputData
@@ -31,8 +26,9 @@ export function loadArguments(task: GenerationTaskInputData): void {
 		return
 	}
 
-
-	const prompt = decomposePrompt(task.prompt, allKnownShapeTags() ?? [], Object.keys(allKnownContentTags() ?? {}))
+	const promptStr = (task.arguments["prompt"] + "") ?? "" // TODO: cringe
+	const prompt = decomposePrompt(promptStr, allKnownShapeTags() ?? [], Object.keys(allKnownContentTags() ?? {}))
+	delete task.arguments["prompt"]
 
 	currentParamSetName(task.paramSetName)
 	currentShapeTag(prompt.shape)

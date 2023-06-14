@@ -12,8 +12,7 @@ export async function showTaskArgsModal(args?: GenerationTaskInputData): Promise
 		// args may contain some other fields, which are undesireable to show
 		const purifiedArgs: GenerationTaskInputData = {
 			arguments: args.arguments,
-			paramSetName: args.paramSetName,
-			prompt: args.prompt
+			paramSetName: args.paramSetName
 		}
 		text = JSON.stringify(purifiedArgs)
 	}
@@ -83,6 +82,12 @@ export async function showTaskArgsModal(args?: GenerationTaskInputData): Promise
 			if("params" in newArgsRaw && !("arguments" in newArgsRaw)){
 				newArgsRaw["arguments"] = newArgsRaw["params"]
 				delete newArgsRaw["params"]
+			}
+
+			// legacy: prompt used to be separate value
+			if("prompt" in newArgsRaw && !("prompt" in newArgs.arguments)){
+				newArgs.arguments["prompt"] = newArgsRaw["prompt"]
+				delete newArgsRaw["prompt"]
 			}
 
 			const validator = RCV.getValidatorBuilder().build(GenerationTaskInputData)

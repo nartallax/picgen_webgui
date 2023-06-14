@@ -90,7 +90,8 @@ export class WebsocketListener {
 			case "task_prompt_updated":
 				this.updateTaskById(
 					notification.taskId,
-					task => ({...task, prompt: notification.prompt})
+					// TODO: cringe
+					task => ({...task, arguments: {...task.arguments, prompt: notification.prompt}})
 				)
 				break
 			case "task_admin_notification":

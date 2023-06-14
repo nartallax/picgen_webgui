@@ -306,7 +306,8 @@ export class TaskQueueController {
 			}),
 
 			onPromptUpdated: prompt => {
-				update(() => task.prompt = prompt)
+				// TODO: cringe
+				update(() => task.arguments["prompt"] = prompt)
 				sendTaskNotification({
 					type: "task_prompt_updated",
 					taskId: task.id,

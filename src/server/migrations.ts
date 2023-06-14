@@ -279,6 +279,30 @@ export const migrations: Migration[] = [
 			alter table "generationTasks"
 			rename column "params" TO "arguments";
 		`)
+	}},
+
+	{name: "00017", handler: async db => {
+		const taskArgsAndIds = await db.query(`
+			select "id", "arguments", "prompt" from "generationTasks";
+		`) as {id: number, arguments: string, prompt: string}[]
+
+		for(const task of taskArgsAndIds){
+			try {
+				const argsObj = JSON.parse(task.arguments)
+				argsObj["prompt"] = task.prompt
+				const updatedArguments = JSON.stringify(argsObj)
+				log(`Updating task #${task.id}`)
+				await db.run(`
+					update "generationTasks" set "arguments" = ? where id = ?
+				`, [updatedArguments, task.id])
+			} catch(e){
+				log(`Failed to update task #${task.id}: ${e}. Its prompt was ${JSON.stringify(task.prompt)}. Prompt dropped.`)
+			}
+		}
+
+		await db.run(`
+			alter table "generationTasks" drop column "prompt";
+		`)
 	}}
 
 ]

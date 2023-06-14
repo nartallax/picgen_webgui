@@ -171,7 +171,6 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 						const task = props.task()
 						ClientApi.createGenerationTask({
 							arguments: task.arguments,
-							prompt: task.prompt,
 							paramSetName: task.paramSetName
 						})
 					})
@@ -201,7 +200,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				}
 			}, [picturesWrap]),
 			tag({class: css.footer}, [
-				tag({class: css.prompt}, [props.task.map(task => task.prompt)]),
+				tag({class: css.prompt}, [props.task.map(task => (task.arguments["prompt"] + "") ?? "")]),
 				tag({
 					class: [css.useArgumentsButton, "icon-docs"],
 					onClick: limitClickRate(function() {

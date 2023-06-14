@@ -16,7 +16,6 @@ export function taskHasPicturesAttached(task: GenerationTask): task is Generatio
 export type GenerationTaskInputData = RC.Value<typeof GenerationTaskInputData>
 export const GenerationTaskInputData = RC.struct(RC.structFields({
 	normal: {
-		prompt: RC.string(),
 		paramSetName: RC.string(),
 		arguments: GenerationTaskArgsObject
 	}
