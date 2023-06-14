@@ -107,10 +107,14 @@ export class DbController {
 				continue
 			}
 
+			log(`Running migration ${migration.name}...`)
+
 			await this.inTransaction(async conn => {
 				await Promise.resolve(migration.handler(conn))
 				await conn.run("insert into migrations(name, time) values (?, ?)", [migration.name, unixtime()])
 			})
+
+			log(`Migration ${migration.name} completed successfully.`)
 		}
 	}
 }

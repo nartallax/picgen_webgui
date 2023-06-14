@@ -170,7 +170,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					onClick: limitClickRate(() => {
 						const task = props.task()
 						ClientApi.createGenerationTask({
-							params: task.params,
+							arguments: task.arguments,
 							prompt: task.prompt,
 							paramSetName: task.paramSetName
 						})

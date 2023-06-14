@@ -16,7 +16,7 @@ export function getTaskInputDataFromPicture(picture: Picture, task: GenerationTa
 			modifiedArgs = {...modifiedArgs}
 			delete modifiedArgs.prompt
 		}
-		genInputData.params = {...genInputData.params, ...modifiedArgs}
+		genInputData.arguments = {...genInputData.arguments, ...modifiedArgs}
 	}
 	return genInputData
 }
@@ -39,7 +39,7 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	currentPrompt(prompt.body)
 	currentContentTags(prompt.content)
 
-	const params = {...task.params}
+	const params = {...task.arguments}
 	if("loras" in params){
 		currentLoras([...params["loras"] as LoraArgument[]])
 		delete params["loras"]

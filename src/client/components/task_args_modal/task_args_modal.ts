@@ -9,9 +9,9 @@ import {GenerationTaskInputData} from "common/entities/generation_task"
 export async function showTaskArgsModal(args?: GenerationTaskInputData): Promise<GenerationTaskInputData | null> {
 	let text = ""
 	if(args){
-	// args may contain some other fields, which are undesireable to show
+		// args may contain some other fields, which are undesireable to show
 		const purifiedArgs: GenerationTaskInputData = {
-			params: args.params,
+			arguments: args.arguments,
 			paramSetName: args.paramSetName,
 			prompt: args.prompt
 		}
@@ -76,7 +76,15 @@ export async function showTaskArgsModal(args?: GenerationTaskInputData): Promise
 		}
 		try {
 			const newText = textArea.value
-			const newArgs: GenerationTaskInputData = JSON.parse(newText)
+			const newArgsRaw = JSON.parse(newText)
+			const newArgs: GenerationTaskInputData = newArgsRaw
+
+			// legacy: "arguments" was named "params" before
+			if("params" in newArgsRaw && !("arguments" in newArgsRaw)){
+				newArgsRaw["arguments"] = newArgsRaw["params"]
+				delete newArgsRaw["params"]
+			}
+
 			const validator = RCV.getValidatorBuilder().build(GenerationTaskInputData)
 			validator(newArgs)
 			return newArgs

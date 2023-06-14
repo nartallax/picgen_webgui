@@ -17,7 +17,7 @@ async function main() {
 	const parameters = JSON.parse(Process.argv[2] || "{}")
 	// arbitrary text logs go into stderr
 	// stderr logs can be seen in bot's own stderr
-	Process.stderr.write("Got parameters! " + JSON.stringify(parameters) + "\n")
+	Process.stderr.write("Got arguments! " + JSON.stringify(parameters) + "\n")
 
 	// this is how you can update prompt
 	// this can break tag parsing when loading prompt for reuse; not a fatality, but still unpleasant

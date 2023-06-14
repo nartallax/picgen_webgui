@@ -97,7 +97,7 @@ export function MainPage(): HTMLElement {
 		await ClientApi.createGenerationTask({
 			prompt: fullPrompt,
 			paramSetName: currentParamSetName(),
-			params: paramValuesForApi
+			arguments: paramValuesForApi
 		})
 	}
 

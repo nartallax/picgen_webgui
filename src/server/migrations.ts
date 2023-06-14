@@ -272,6 +272,13 @@ export const migrations: Migration[] = [
 		await db.run(`
 			alter table "generationTasks" drop column "hidden";
 		`)
+	}},
+
+	{name: "00016", handler: async db => {
+		await db.run(`
+			alter table "generationTasks"
+			rename column "params" TO "arguments";
+		`)
 	}}
 
 ]

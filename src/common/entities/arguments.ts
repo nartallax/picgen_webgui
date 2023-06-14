@@ -13,6 +13,7 @@ export const PictureArgument = RC.struct(RC.structFields({
 }))
 
 export function isPictureArgument(x: GenerationTaskArgument): x is PictureArgument {
+	// TODO: rewrite to validator
 	return typeof(x) === "object" && x !== null && typeof((x as PictureArgument).salt) === "number"
 }
 

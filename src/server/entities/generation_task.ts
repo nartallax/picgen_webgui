@@ -6,8 +6,8 @@ import {GenerationTask, GenerationTaskInputData, GenerationTaskStatus} from "com
 import {GenParameter, GenerationParameterSet, PictureGenParam, getParamDefList} from "common/entities/parameter"
 import {isPictureArgument} from "common/entities/arguments"
 
-interface DbGenerationTask extends Omit<GenerationTask, "params" | "status"> {
-	params: string
+interface DbGenerationTask extends Omit<GenerationTask, "arguments" | "status"> {
+	arguments: string
 	status: GenerationTaskStatus
 }
 
@@ -18,8 +18,8 @@ interface ServerPictureArgument {
 
 type ServerGenerationTaskArgument = number | boolean | string | ServerPictureArgument
 
-export interface ServerGenerationTaskInputData extends Omit<GenerationTaskInputData, "params"> {
-	params: {[key: string]: ServerGenerationTaskArgument}
+export interface ServerGenerationTaskInputData extends Omit<GenerationTaskInputData, "arguments"> {
+	arguments: {[key: string]: ServerGenerationTaskArgument}
 }
 
 export function getServerGenParamDefault(def: GenParameter): ServerGenerationTaskArgument | undefined {
@@ -35,7 +35,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	protected override fieldFromDb<K extends keyof DbGenerationTask & keyof GenerationTask & string>(field: K, value: DbGenerationTask[K]): unknown {
 		switch(field){
 			case "status": return GenerationTaskStatus[value as DbGenerationTask["status"]] // TODO: cringe
-			case "params": return JSON.parse(value as DbGenerationTask["params"])
+			case "arguments": return JSON.parse(value as DbGenerationTask["arguments"])
 			default: return value
 		}
 	}
@@ -43,7 +43,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	protected fieldToDb<K extends keyof DbGenerationTask & keyof GenerationTask & string>(field: K, value: GenerationTask[K]): unknown {
 		switch(field){
 			case "status": return GenerationTaskStatus[value as GenerationTask["status"]]
-			case "params": return JSON.stringify(value as GenerationTask["params"])
+			case "arguments": return JSON.stringify(value as GenerationTask["arguments"])
 			default: return value
 		}
 	}
@@ -87,31 +87,31 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		const paramDefs = this.getParams(origInputData.paramSetName)
 
 		for(const def of paramDefs){
-			const paramValue = origInputData.params[def.jsonName]
-			if(paramValue === undefined){
+			const arg = origInputData.arguments[def.jsonName]
+			if(arg === undefined){
 				if(def.type !== "picture"){
 					const dflt = getServerGenParamDefault(def)
 					if(dflt === undefined){
 						// should never happen; probably will be caught at validation
-						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} is absent`)
+						throw new ApiError("validation_not_passed", `Generation argument ${def.jsonName} is absent`)
 					}
-					resultInputData.params[def.jsonName] = dflt
+					resultInputData.arguments[def.jsonName] = dflt
 				}
 				continue
 			}
 
 			if(def.type === "picture"){
-				if(!isPictureArgument(paramValue)){
-					throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a description of picture; it is ${paramValue} now.`)
+				if(!isPictureArgument(arg)){
+					throw new ApiError("validation_not_passed", `Generation argument ${def.jsonName} should be a description of picture; it is ${JSON.stringify(arg)} now.`)
 				}
-				const pic = await context.picture.getById(paramValue.id)
+				const pic = await context.picture.getById(arg.id)
 				const {path: picturePath, info: pictureInfo} = await context.picture.getPicturePathForGenerationRun(pic)
 				const newParamValue: ServerPictureArgument = {
 					picture: picturePath
 				}
-				resultInputData.params[def.jsonName] = newParamValue
-				if(paramValue.mask){
-					newParamValue.mask = await context.picture.getMaskPathForGenerationRun(paramValue.mask, pictureInfo)
+				resultInputData.arguments[def.jsonName] = newParamValue
+				if(arg.mask){
+					newParamValue.mask = await context.picture.getMaskPathForGenerationRun(arg.mask, pictureInfo)
 				}
 			}
 		}
@@ -126,7 +126,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 			if(def.type !== "picture"){
 				continue
 			}
-			const paramValue = inputData.params[def.jsonName]
+			const paramValue = inputData.arguments[def.jsonName]
 			if(paramValue === undefined){
 				continue
 			}
@@ -159,7 +159,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 		const context = this.getContext()
 		const paramDefs = this.getParams(inputData.paramSetName)
 		for(const def of paramDefs){
-			const argument = inputData.params[def.jsonName]
+			const argument = inputData.arguments[def.jsonName]
 			if(argument === undefined){
 				if(getServerGenParamDefault(def) !== undefined){
 					continue // parameter not passed, whatever, we can live with it

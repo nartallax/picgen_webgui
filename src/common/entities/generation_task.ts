@@ -18,7 +18,7 @@ export const GenerationTaskInputData = RC.struct(RC.structFields({
 	normal: {
 		prompt: RC.string(),
 		paramSetName: RC.string(),
-		params: GenerationTaskArgsObject
+		arguments: GenerationTaskArgsObject
 	}
 }))
 
