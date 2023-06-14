@@ -1,3 +1,4 @@
+import {GenerationTaskArgument} from "common/entities/arguments"
 import {GenerationTask} from "common/entities/generation_task"
 import {LoraDescription} from "common/entities/lora"
 import {Picture} from "common/entities/picture"
@@ -8,7 +9,7 @@ export interface ApiNotificationWrap {
 
 export type ApiNotification = TaskMessageNotification
 | TaskExpectedPictureCountKnownNotification
-| TaskPromptUpdatedNotification
+| TaskArgumentUpdatedNotification
 | TaskGeneratedPictureNotification
 | TaskFinishedNotification
 | TaskStartedNotification
@@ -36,10 +37,11 @@ export interface TaskExpectedPictureCountKnownNotification {
 	expectedPictureCount: number
 }
 
-export interface TaskPromptUpdatedNotification {
-	type: "task_prompt_updated"
+export interface TaskArgumentUpdatedNotification {
+	type: "task_argument_updated"
 	taskId: number
-	prompt: string
+	name: string
+	value: GenerationTaskArgument
 }
 
 export interface TaskGeneratedPictureNotification {

@@ -305,13 +305,13 @@ export class TaskQueueController {
 				})
 			}),
 
-			onPromptUpdated: prompt => {
+			onArgumentUpdated: (name, value) => {
 				// TODO: cringe
-				update(() => task.arguments["prompt"] = prompt)
+				update(() => task.arguments[name] = value)
 				sendTaskNotification({
-					type: "task_prompt_updated",
+					type: "task_argument_updated",
 					taskId: task.id,
-					prompt: prompt
+					name, value
 				})
 			},
 

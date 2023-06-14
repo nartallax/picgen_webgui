@@ -8,8 +8,9 @@ import {ApiError} from "common/infra_entities/api_error"
 import {ServerGenerationTaskInputData} from "server/entities/generation_task"
 import {GenerationTask} from "common/entities/generation_task"
 import {Picture} from "common/entities/picture"
+import {GenerationTaskArgument} from "common/entities/arguments"
 
-type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | UpdatedPromptLine | TimeLeftLine
+type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | UpdatedArgumentLine | TimeLeftLine
 
 interface GeneratedFileLine {
 	generatedPicture: string
@@ -42,11 +43,12 @@ function isExpectedPicturesLine(line: OutputLine): line is ExpectedPicturesLine 
 	return typeof((line as ExpectedPicturesLine).willGenerateCount) === "number"
 }
 
-interface UpdatedPromptLine {
-	updatedPrompt: string
+interface UpdatedArgumentLine {
+	updateArgument: string
+	value: GenerationTaskArgument
 }
-function isUpdatedPromptLine(line: OutputLine): line is UpdatedPromptLine {
-	return typeof((line as UpdatedPromptLine).updatedPrompt) === "string"
+function isUpdatedArgumentLine(line: OutputLine): line is UpdatedArgumentLine {
+	return typeof((line as UpdatedArgumentLine).updateArgument) === "string"
 }
 
 interface TimeLeftLine {
@@ -57,7 +59,7 @@ function isTimeLeftLine(line: OutputLine): line is TimeLeftLine {
 }
 
 export interface GenRunnerCallbacks {
-	onPromptUpdated(newPrompt: string): void
+	onArgumentUpdated(name: string, value: GenerationTaskArgument): void
 	onFileProduced(path: string, modifiedArguments: Picture["modifiedArguments"]): void
 	onExpectedPictureCountKnown(expectedPictureCount: number): void
 	onMessage(message: string, displayFor: number | null): void
@@ -128,8 +130,8 @@ export class GenRunner {
 					await this.onFileProduced(line, line.modifiedArguments ?? null)
 				} else if(isExpectedPicturesLine(line)){
 					this.callbacks.onExpectedPictureCountKnown(line.willGenerateCount)
-				} else if(isUpdatedPromptLine(line)){
-					this.callbacks.onPromptUpdated(line.updatedPrompt)
+				} else if(isUpdatedArgumentLine(line)){
+					this.callbacks.onArgumentUpdated(line.updateArgument, line.value)
 				} else if(isTimeLeftLine(line)){
 					this.callbacks.onTimeLeftKnown(line.timeLeft)
 				} else {
