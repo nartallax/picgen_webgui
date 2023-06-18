@@ -5,8 +5,7 @@ export interface JsonFileListItemDescription extends JsonFileListItemDescription
 }
 
 export interface JsonFileList {
-	readonly paramSetName: string
-	readonly paramName: string
+	readonly directory: string
 	readonly items: readonly JsonFileListItemDescription[]
 }
 
@@ -27,7 +26,3 @@ export const JsonFileListArgument = RC.roStruct({
 	// TODO: cringe
 	weight: RC.number()
 })
-
-export function makeJsonFileListName(paramSetName: string, paramName: string): string {
-	return paramSetName + "." + paramName
-}

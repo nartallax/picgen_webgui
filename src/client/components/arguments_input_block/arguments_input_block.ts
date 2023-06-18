@@ -67,7 +67,6 @@ function ArgumentField(props: ArgumentFieldProps): HTMLElement {
 	if(props.def.type === "json_file_list"){
 		return JsonFileListInput({
 			def: props.def,
-			paramSetName: props.paramSet.internalName,
 			value: props.value as WBox<JsonFileListArgument[]>
 		})
 	} else {

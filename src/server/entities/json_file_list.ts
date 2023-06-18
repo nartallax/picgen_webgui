@@ -1,4 +1,4 @@
-import {JsonFileList, JsonFileListItemDescription, JsonFileListItemDescriptionFile, makeJsonFileListName} from "common/entities/json_file_list"
+import {JsonFileList, JsonFileListItemDescription, JsonFileListItemDescriptionFile} from "common/entities/json_file_list"
 import {config} from "server/config"
 import {promises as Fs} from "fs"
 import * as Path from "path"
@@ -8,13 +8,14 @@ import {UserlessContextFactory} from "server/request_context"
 import {RunOnlyOneAtTimeFn, runOnlyOneAtTime} from "common/utils/run_only_one_at_time"
 import {log} from "server/log"
 import {JsonFileListGenParam} from "common/entities/parameter"
+import {md5} from "common/utils/md5"
 
 const jsonListItemFileValidator = RCV.getValidatorBuilder().build(JsonFileListItemDescriptionFile)
 
 type ListDescription = {
-	name: string
 	paramSetName: string
 	paramName: string
+	id: string
 	directory: string
 	siblingExt?: string
 }
@@ -39,30 +40,29 @@ export class JSONFileListController {
 					list.values = await this.readFiles(listDescription.directory, listDescription.siblingExt)
 				})
 			}
-			return [list.name, list]
+			return [list.id, list]
 		}))
 	}
 
 	private getListDescriptions(): ListDescription[] {
-		const allLists = config.parameterSets.flatMap(paramSet =>
+		return config.parameterSets.flatMap(paramSet =>
 			paramSet.parameterGroups.flatMap(group =>
 				group.parameters
 					.filter((param): param is JsonFileListGenParam => param.type === "json_file_list")
-					.map(param => ({
-						name: makeJsonFileListName(paramSet.internalName, param.jsonName),
-						paramSetName: paramSet.internalName,
-						paramName: param.jsonName,
-						directory: param.directory,
-						siblingExt: param.siblingFileExtension
-					}))
+					.map(param => {
+						const relDir = Path.relative(".", param.directory)
+						const dirHash = md5(relDir)
+						param.directory = dirHash
+						return {
+							paramSetName: paramSet.internalName,
+							paramName: param.jsonName,
+							directory: relDir,
+							id: dirHash,
+							siblingExt: param.siblingFileExtension
+						}
+					})
 			)
 		)
-
-		const uniqLists = [...new Map(allLists.map(list =>
-			[makeJsonFileListName(list.paramSetName, list.paramName), list]
-		)).values()]
-
-		return uniqLists
 	}
 
 	async start(): Promise<void> {
@@ -81,19 +81,9 @@ export class JSONFileListController {
 		}
 	}
 
-	getList(paramSetName: string, paramName: string): readonly JsonFileListItemDescription[] {
-		const name = makeJsonFileListName(paramSetName, paramName)
-		const list = this.lists.get(name)
-		if(!list){
-			throw new Error(`There is no json file list for paramSetName = ${paramSetName} and paramName = ${paramName}`)
-		}
-		return list.values
-	}
-
 	getAllLists(): readonly JsonFileList[] {
 		return [...this.lists.values()].map(list => ({
-			paramSetName: list.paramSetName,
-			paramName: list.paramName,
+			directory: list.id,
 			items: list.values
 		}))
 	}
@@ -102,7 +92,6 @@ export class JSONFileListController {
 		if(list.watcher){
 			return
 		}
-		// TODO: shared watchers, in case some lists refer to same directory
 		list.watcher = watch(
 			list.directory,
 			{filter: /.json$/i, recursive: false, delay: 100, persistent: false},
@@ -118,8 +107,7 @@ export class JSONFileListController {
 				this.contextFactory(context => {
 					context.websockets.sendToAll({
 						type: "json_file_list_update",
-						paramSetName: list.paramSetName,
-						paramName: list.paramName,
+						directory: list.directory,
 						items: list.values
 					})
 				})

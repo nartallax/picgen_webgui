@@ -76,7 +76,6 @@ export interface TaskEstimatedDurationKnownNotification {
 
 export interface JsonFileListUpdateNotification {
 	type: "json_file_list_update"
-	paramSetName: string
-	paramName: string
+	directory: string
 	items: readonly JsonFileListItemDescription[]
 }

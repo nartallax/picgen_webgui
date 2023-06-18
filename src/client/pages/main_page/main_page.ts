@@ -25,7 +25,7 @@ import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 import {Picture, PictureWithTask} from "common/entities/picture"
 import {TaskPicture} from "client/components/task_picture/task_picture"
 import {PasteArgumentsButton} from "client/components/paste_arguments_button/paste_arguments_button"
-import {JsonFileListItemDescription, makeJsonFileListName} from "common/entities/json_file_list"
+import {JsonFileListItemDescription} from "common/entities/json_file_list"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -211,7 +211,7 @@ export function MainPage(): HTMLElement {
 
 		const jsonListsMap: Record<string, readonly JsonFileListItemDescription[]> = {}
 		for(const list of jsonFileLists){
-			jsonListsMap[makeJsonFileListName(list.paramSetName, list.paramName)] = list.items
+			jsonListsMap[list.directory] = list.items
 		}
 		allKnownJsonFileLists(jsonListsMap)
 

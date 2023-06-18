@@ -110,12 +110,14 @@ export const EnumGenParam = RC.struct(RC.structFields({
 export type JsonFileListGenParam = RC.Value<typeof JsonFileListGenParam>
 export const JsonFileListGenParam = RC.struct(RC.structFields({
 	ro: {
-		type: RC.constant("json_file_list"),
-		directory: RC.string()
+		type: RC.constant("json_file_list")
 	},
 	roOpt: {
 		siblingFileExtension: RC.string(),
 		inputInvitation: RC.string()
+	},
+	normal: {
+		directory: RC.string()
 	}
 }), {}, BaseGenParam)
 

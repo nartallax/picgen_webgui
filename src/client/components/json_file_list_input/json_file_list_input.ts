@@ -7,18 +7,17 @@ import {FormField} from "client/controls/form/form"
 import {Row} from "client/controls/layout/row_col"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {Select} from "client/controls/select/select"
-import {JsonFileListArgument, makeJsonFileListName} from "common/entities/json_file_list"
+import {JsonFileListArgument} from "common/entities/json_file_list"
 import {JsonFileListGenParam} from "common/entities/parameter"
 
 type Props = {
-	paramSetName: string
 	def: JsonFileListGenParam
 	value: WBox<JsonFileListArgument[]>
 }
 
 export const JsonFileListInput = (props: Props) => {
 
-	const listName = makeJsonFileListName(props.paramSetName, props.def.jsonName)
+	const listName = props.def.directory
 
 	const emptySelectValue = {
 		label: props.def.inputInvitation ?? "Select item...",

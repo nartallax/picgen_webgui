@@ -8,18 +8,17 @@ import {TextBlock} from "client/controls/text_block/text_block"
 import {TreeView, TreeViewNode} from "client/controls/tree_view/tree_view"
 import * as css from "./json_file_list_input.module.scss"
 import {Button} from "client/controls/button/button"
-import {JsonFileListItemDescription, makeJsonFileListName} from "common/entities/json_file_list"
+import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {JsonFileListGenParam} from "common/entities/parameter"
 
 type Props = {
-	paramSetName: string
 	def: JsonFileListGenParam
 }
 
 export const showJsonFileListOrderModal = (props: Props): Modal => {
 
-	const listName = makeJsonFileListName(props.paramSetName, props.def.jsonName)
+	const listName = props.def.directory
 
 	const allItems = allKnownJsonFileLists
 		.prop(listName)

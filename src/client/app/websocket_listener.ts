@@ -3,7 +3,6 @@ import {allKnownJsonFileLists} from "client/app/global_values"
 import {Event} from "client/base/event"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
-import {makeJsonFileListName} from "common/entities/json_file_list"
 import {ApiNotification} from "common/infra_entities/notifications"
 
 export const onAdminTaskUpdate = new Event<GenerationTask>()
@@ -117,9 +116,8 @@ export class WebsocketListener {
 				)
 				break
 			case "json_file_list_update": {
-				const name = makeJsonFileListName(notification.paramSetName, notification.paramName)
 				const newMap = {...allKnownJsonFileLists()}
-				newMap[name] = notification.items
+				newMap[notification.directory] = notification.items
 				allKnownJsonFileLists(newMap)
 				break
 			}
