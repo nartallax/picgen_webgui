@@ -1,3 +1,4 @@
 {
-	"name": "Lora D"
+	"name": "Lora D",
+	"triggerWords": ["trigger", "words"]
 }

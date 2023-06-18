@@ -87,7 +87,7 @@ export const JsonFileListInput = (props: Props) => {
 						precision: 2,
 						value: selectedItem.prop("weight")
 					}),
-					hint: tag([
+					hint: (itemDef().triggerWords ?? []).length < 1 && !itemDef().description ? undefined : tag([
 						tag({class: [css.hintDescription, {
 							[css.hidden!]: itemDef.prop("description").map(desc => !desc),
 							[css.bottomMargin!]: itemDef.prop("triggerWords").map(triggers => triggers && triggers.length > 0)
