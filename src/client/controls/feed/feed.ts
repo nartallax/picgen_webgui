@@ -29,9 +29,7 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 
 	const result = tag({
 		class: [css.feed, props.class],
-		onScroll: e => {
-			console.log(e)
-			console.log(result.scrollTop)
+		onScroll: () => {
 			scrollToTopVisible(result.scrollTop >= 100)
 		}
 	}, [
@@ -53,9 +51,7 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	if(props.scrollToTopButton){
 		makeOverlayItem({
 			body: tag({
-				class: [css.scrollToTopButton, "icon-up-open", {
-					[css.visible!]: scrollToTopVisible
-				}],
+				class: [css.scrollToTopButton, "icon-up-open"],
 				onClick: () => {
 					scroller.set(0)
 				}
