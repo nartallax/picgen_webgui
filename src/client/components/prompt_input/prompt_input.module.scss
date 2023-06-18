@@ -33,22 +33,23 @@
 	}
 
 	.generateButton {
-		position: absolute;
-		right: 0;
-		top: -0.08em;
-		font-size: 2.5rem;
-		width: 1.6em;
-		height: 1.6em;
-		border-radius: 10em;
 		cursor: pointer;
 		color: #fff;
 		background: #a0c2a5;
+		border-radius: 10em;
 		transition: 0.25s;
-		line-height: 1.5em;
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		font-size: 1.35rem;
+		width: 2.6em;
 
 		&:before {
 			position: relative;
 			left: 2px;
+			margin: 0;
+			font-size: 2rem;
 		}
 
 	}
