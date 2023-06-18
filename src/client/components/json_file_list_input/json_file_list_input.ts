@@ -1,6 +1,6 @@
 import {WBox, box, viewBox} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
-import {allKnownJsonFileLists, jsonFileListOrdering} from "client/app/global_values"
+import {allKnownJsonFileLists, currentPrompt, jsonFileListOrdering} from "client/app/global_values"
 import {showJsonFileListOrderModal} from "client/components/json_file_list_input/json_file_list_ordering"
 import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
@@ -9,6 +9,7 @@ import {NumberInput} from "client/controls/number_input/number_input"
 import {Select} from "client/controls/select/select"
 import {JsonFileListArgument} from "common/entities/json_file_list"
 import {JsonFileListGenParam} from "common/entities/parameter"
+import * as css from "./json_file_list_input.module.scss"
 
 type Props = {
 	def: JsonFileListGenParam
@@ -86,10 +87,21 @@ export const JsonFileListInput = (props: Props) => {
 						precision: 2,
 						value: selectedItem.prop("weight")
 					}),
-					hint: itemDef.map(item => [
-						item.description,
-						!item.triggerWords ? "" : item.triggerWords.join(", ")
-					].filter(x => !!x).join("\n\n")),
+					hint: tag([
+						tag({class: [css.hintDescription, {
+							[css.hidden!]: itemDef.prop("description").map(desc => !desc),
+							[css.bottomMargin!]: itemDef.prop("triggerWords").map(triggers => triggers && triggers.length > 0)
+						}]}, [itemDef.prop("description")]),
+						tag({
+							class: [css.hintTriggerList]
+						}, itemDef.prop("triggerWords").map(triggers => triggers ?? []).mapArray(
+							word => word,
+							word => tag({
+								class: css.hintTrigger,
+								onClick: () => currentPrompt(word() + " " + currentPrompt())
+							}, [word])
+						))
+					]),
 					revertable: false,
 					onDelete: () => {
 						props.value(props.value().filter(item => item.id !== selectedItem().id))

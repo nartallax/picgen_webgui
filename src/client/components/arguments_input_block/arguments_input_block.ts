@@ -1,5 +1,5 @@
 import {MRBox, RBox, WBox, unbox, viewBox} from "@nartallax/cardboard"
-import {tag} from "@nartallax/cardboard-dom"
+import {localStorageBox, tag} from "@nartallax/cardboard-dom"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {GenParameter, GenParameterGroup, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
@@ -33,7 +33,11 @@ export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElemen
 				for(const group of panelGroups){
 					const defs = group.parameters
 
-					const groupToggle = !group.toggle ? undefined : (boxMap[group.toggle.jsonName] as WBox<boolean> | undefined)
+					const groupToggle = !group.toggle
+						? undefined
+						: typeof(group.toggle.jsonName) !== "string"
+							? localStorageBox<boolean>("namelessGroupToggle." + props.paramSet().internalName + "." + group.uiName, group.toggle.default)
+							: (boxMap[group.toggle.jsonName] as WBox<boolean> | undefined)
 					if(group.toggle && !groupToggle){
 						continue
 					}

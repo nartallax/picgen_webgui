@@ -131,7 +131,7 @@
 			}]
 		}, {
 			"uiName": "Test",
-			"split": true,
+			"toggle": {"default": true},
 			"parameters": [{
 				"type": "bool",
 				"jsonName": "test_scale",

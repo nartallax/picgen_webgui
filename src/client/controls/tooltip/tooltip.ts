@@ -1,13 +1,13 @@
-import {defineControl, tag} from "@nartallax/cardboard-dom"
+import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./tooltip.module.scss"
 import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
-import {box, constBoxWrap} from "@nartallax/cardboard"
+import {MRBox, box, constBoxWrap} from "@nartallax/cardboard"
 
 interface TooltipIconProps {
-	tooltip: string | undefined
+	tooltip: HTMLElement | MRBox<string | undefined>
 }
 
-export const TooltipIcon = defineControl<TooltipIconProps>(props => {
+export const TooltipIcon = (props: TooltipIconProps): HTMLElement => {
 
 	const overlayItemVisible = box(false)
 
@@ -34,4 +34,4 @@ export const TooltipIcon = defineControl<TooltipIconProps>(props => {
 
 	return tooltipIcon
 
-})
+}

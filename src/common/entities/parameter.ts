@@ -127,10 +127,14 @@ export const GenParameter = RC.union([
 ])
 
 export type GenParameterGroupToggle = RC.Value<typeof GenParameterGroupToggle>
-export const GenParameterGroupToggle = RC.roStruct({
-	jsonName: RC.string(),
-	default: RC.bool()
-})
+export const GenParameterGroupToggle = RC.struct(RC.structFields({
+	ro: {
+		default: RC.bool()
+	},
+	roOpt: {
+		jsonName: RC.string()
+	}
+}))
 
 export type GenParameterGroup = RC.Value<typeof GenParameterGroup>
 export const GenParameterGroup = RC.struct(RC.structFields({

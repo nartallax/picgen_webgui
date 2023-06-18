@@ -23,3 +23,29 @@
 	flex-grow: 1;
 	margin: 0.25rem;
 }
+
+.hintDescription {
+	&.hidden {
+		display: none;
+	}
+
+	&.bottomMargin {
+		margin-bottom: 1.5rem;
+	}
+}
+
+.hintTriggerList {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+
+	.hintTrigger {
+		margin-right: 0.5em;
+		cursor: pointer;
+		text-decoration: underline;
+		&:not(:last-child):after {
+			content: ","
+		}
+	}
+}

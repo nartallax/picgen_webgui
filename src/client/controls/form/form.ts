@@ -6,7 +6,7 @@ import {TooltipIcon} from "client/controls/tooltip/tooltip"
 type FormFieldProps = {
 	label: MRBox<string>
 	input: HTMLElement
-	hint?: MRBox<string | undefined>
+	hint?: HTMLElement | MRBox<string | undefined>
 	onRevert?: () => void
 	revertable?: MRBox<boolean>
 	visible?: MRBox<boolean>
