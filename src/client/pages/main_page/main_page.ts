@@ -181,13 +181,15 @@ export function MainPage(): HTMLElement {
 						value: currentParamSetName
 					})
 				]),
-				ArgumentsInputBlock({paramSet: selectedParamSet}),
-				TagSearchBlock({
-					selectedContentTags: currentContentTags,
-					contentTags: allKnownContentTags,
-					visibleTagLimit: 10
-				}),
-				AdminButtons()
+				tag({class: css.settingsColumnScrollablePart}, [
+					ArgumentsInputBlock({paramSet: selectedParamSet}),
+					TagSearchBlock({
+						selectedContentTags: currentContentTags,
+						contentTags: allKnownContentTags,
+						visibleTagLimit: 10
+					}),
+					AdminButtons()
+				])
 			])
 		])
 	])

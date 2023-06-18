@@ -24,6 +24,12 @@
 
 .positioningWrap {
 	transition: transform 0.1s linear;
+
+	display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    height: 100%;
 }
 
 @media screen and (max-width: $mobile-breakpoint) {
