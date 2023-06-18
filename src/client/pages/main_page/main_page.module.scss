@@ -28,9 +28,6 @@ body {
 		.settingsColumnScrollablePart {
 			overflow-y: auto;
 			flex: 1 1 0;
-			// this padding just to ensure user that he's scrolled to the very bottom
-			padding-bottom: 10rem;
-			mask-image: linear-gradient(to top, rgba(0,0,0,0) 0, rgba(0,0,0,1) 3rem, rgba(0,0,0,1) 100%);
 		}
 	}
 	
@@ -62,7 +59,6 @@ body {
     flex-basis: 0;
     min-height: 0px;
     overflow-y: auto;
-	mask-image: linear-gradient(to top, rgba(0,0,0,0) 0, rgba(0,0,0,1) 3rem, rgba(0,0,0,1) 100%);
 }
 
 .pageRoot[data-hide-some-scrollbars="true"] {
