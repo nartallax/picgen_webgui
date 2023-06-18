@@ -136,6 +136,7 @@ export function MainPage(): HTMLElement {
 				class: css.mainPageSwitchPanel,
 				routes: {
 					favorites: () => Feed({
+						scrollToTopButton: true,
 						class: css.mainPageFeed,
 						containerClass: css.favoritesFeed,
 						getId: picture => picture.id,
@@ -152,6 +153,7 @@ export function MainPage(): HTMLElement {
 						})
 					}),
 					tasks: () => Feed({
+						scrollToTopButton: true,
 						getId: task => task.id,
 						loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
 							fetch: ClientApi.listTasks,

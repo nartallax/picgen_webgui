@@ -4,6 +4,7 @@ import {VisibilityNotifier} from "client/controls/visibility_notifier/visibility
 import * as css from "./feed.module.scss"
 import {IdentifiedEntity} from "server/dao"
 import {BinaryQueryCondition, SimpleListQueryParams} from "common/infra_entities/query"
+import {SoftValueChanger} from "client/base/soft_value_changer"
 
 interface FeedProps<T> {
 	values?: WBox<T[]>
@@ -13,6 +14,7 @@ interface FeedProps<T> {
 	bottomLoadingPlaceholder?: HTMLElement
 	class?: string
 	containerClass?: string
+	scrollToTopButton?: boolean
 }
 
 export function Feed<T>(props: FeedProps<T>): HTMLElement {
@@ -22,15 +24,38 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	let isLoadingNow = false
 	const bottomPlaceholder = props.bottomLoadingPlaceholder ?? tag(["Loading..."])
 
-	const result = tag({class: [css.feed, props.class]}, [
+	const scrollToTopVisible = box(false)
+
+	const result = tag({
+		class: [css.feed, props.class],
+		onScroll: e => {
+			console.log(e)
+			console.log(result.scrollTop)
+			scrollToTopVisible(result.scrollTop >= 100)
+		}
+	}, [
 		tag({
 			class: [css.feedItemsContainer, props.containerClass]
 		}, values.mapArray(props.getId, props.renderElement)),
+		!props.scrollToTopButton ? null : tag({
+			class: [css.scrollToTopButton, "icon-up-open", {
+				[css.visible!]: scrollToTopVisible
+			}],
+			onClick: () => {
+				scroller.set(0)
+			}
+		}),
 		VisibilityNotifier({
 			isOnScreen: isBottomVisible,
 			hide: reachedEndOfFeed
 		}, [bottomPlaceholder])
 	])
+
+	const scroller = new SoftValueChanger({
+		timeMs: 250,
+		getValue: () => result.scrollTop,
+		setValue: v => result.scrollTop = v
+	})
 
 	async function loadNext(): Promise<void> {
 		let currentValues = values()
