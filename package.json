@@ -11,7 +11,7 @@
     "release:client": "./node_modules/.bin/parcel build --target client_release --no-cache && mv dist/client_release target/static",
     "release:server": "./node_modules/.bin/parcel build --target server_release --no-cache && mv dist/server_release/server_main.js target/server.js",
     "release:packagejson": "cp package.json target && cp package-lock.json target",
-    "release:supplementals": "mkdir target/supplemental && cp picture_generator_example.js target/supplemental && cp config.example.json target/supplemental && cp shape_tags.json target/supplemental && cp content_tags.json target/supplemental && cp README.md target/supplemental",
+    "release:supplementals": "mkdir target/supplemental && cp picture_generator_example.js target/supplemental && cp config.example.json target/supplemental && cp shape_tags.json target/supplemental && cp README.md target/supplemental",
     "release:package": "cd target && zip -r `date +\"picgen_webgui.%Y_%m_%d_%H_%M_%S.zip\"` ./* && echo \"Done; result is\" `ls *.zip` && cd ..",
     "dev": "npm run typecheck && npm run dev:client & npm run dev:server & wait",
     "dev:client": "./node_modules/.bin/parcel serve --target client_dev --no-cache --no-hmr --port 24658",
