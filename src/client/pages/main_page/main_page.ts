@@ -13,7 +13,7 @@ import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownJsonFileLists} from "client/app/global_values"
+import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownJsonFileLists, hideSomeScrollbars} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
@@ -103,7 +103,12 @@ export function MainPage(): HTMLElement {
 
 	const selectedTab = box<"tasks" | "favorites">("tasks")
 
-	const result = tag({class: css.pageRoot}, [
+	const result = tag({
+		class: css.pageRoot,
+		attrs: {
+			"data-hide-some-scrollbars": hideSomeScrollbars.map(hide => hide ? "true" : "false")
+		}
+	}, [
 		tag({class: css.generationColumn}, [
 			Row({align: "start", gap: true, padding: "bottom"}, [
 				IconButton({

@@ -1,4 +1,5 @@
-import {uiScale} from "client/app/global_values"
+import {hideSomeScrollbars, uiScale} from "client/app/global_values"
+import {BoolInput} from "client/controls/bool_input/bool_input"
 import {FormField} from "client/controls/form/form"
 import {showModal} from "client/controls/modal_base/modal"
 import {Modal} from "client/controls/modal_base/modal_base"
@@ -7,7 +8,7 @@ import {NumberInput} from "client/controls/number_input/number_input"
 export const showUserSettingsModal = (): Modal => {
 	const modal = showModal({
 		title: "User settings",
-		width: "25rem"
+		width: "35rem"
 	}, [
 		FormField({
 			input: NumberInput({
@@ -17,8 +18,14 @@ export const showUserSettingsModal = (): Modal => {
 				precision: 2
 			}),
 			label: "UI scale",
-			revertable: true,
+			revertable: uiScale.map(scale => scale !== 1),
 			onRevert: () => uiScale(1)
+		}),
+		FormField({
+			input: BoolInput({value: hideSomeScrollbars}),
+			label: "Hide some scrollbars",
+			revertable: hideSomeScrollbars,
+			onRevert: () => hideSomeScrollbars(false)
 		})
 	])
 

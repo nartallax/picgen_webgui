@@ -16,6 +16,7 @@ export const isUserControlEnabled = box(true)
 
 export const uiScale = localStorageBox("userSettings.uiScale", 1)
 export const jsonFileListOrdering = localStorageBox<Record<string, string[]>>("userSettings.jsonFileListOrdering", {})
+export const hideSomeScrollbars = localStorageBox<boolean>("userSettings.hideSomeScrollbars", false)
 
 export const currentArgumentBoxes = box<{[key: string]: WBox<GenerationTaskArgument>}>({})
 export const currentParamSetName = localStorageBox("fixedGenArgument.selectedParamSetName", "")
