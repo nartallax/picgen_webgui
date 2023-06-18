@@ -11,7 +11,7 @@ import type {TaskQueueController} from "server/task_queue_controller"
 import {CompletePictureDAO, UserlessPictureDAO} from "server/entities/picture"
 import {logError} from "server/log"
 import type {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
-import type {LoraController} from "server/entities/lora"
+import type {JSONFileListController} from "server/entities/json_file_list"
 
 export interface ContextStaticProps {
 	config: Config
@@ -20,7 +20,7 @@ export interface ContextStaticProps {
 	defaultToHttps: boolean
 	db(): DbController
 	taskQueue(): TaskQueueController
-	lora(): LoraController
+	jsonFileList(): JSONFileListController
 }
 
 export class UserlessContext {
@@ -39,7 +39,7 @@ export class UserlessContext {
 		readonly config: Config,
 		readonly dbController: DbController,
 		readonly taskQueue: TaskQueueController,
-		readonly lora: LoraController
+		readonly jsonFileList: JSONFileListController
 	) {}
 
 	onClosed(handler: () => void): void {
@@ -87,9 +87,9 @@ export class RequestContext extends UserlessContext {
 		config: Config,
 		dbController: DbController,
 		taskQueue: TaskQueueController,
-		lora: LoraController
+		jsonFileList: JSONFileListController
 	) {
-		super(discordApi, db, websockets, config, dbController, taskQueue, lora)
+		super(discordApi, db, websockets, config, dbController, taskQueue, jsonFileList)
 	}
 
 	static makeUserlessFactory(baseProps: ContextStaticProps): UserlessContextFactory {
@@ -100,7 +100,7 @@ export class RequestContext extends UserlessContext {
 			baseProps.config,
 			baseProps.db(),
 			baseProps.taskQueue(),
-			baseProps.lora()
+			baseProps.jsonFileList()
 		), runner)
 	}
 
@@ -123,7 +123,7 @@ export class RequestContext extends UserlessContext {
 				baseProps.config,
 				baseProps.db(),
 				baseProps.taskQueue(),
-				baseProps.lora()
+				baseProps.jsonFileList()
 			), runner)
 		}
 	}

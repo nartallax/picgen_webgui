@@ -11,7 +11,7 @@ import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import {RequestContext} from "server/request_context"
 import {unixtime} from "server/utils/unixtime"
-import {LoraDescription} from "common/entities/lora"
+import {JsonFileList} from "common/entities/json_file_list"
 
 async function adminCont(): Promise<RequestContext> {
 	const context = cont()
@@ -348,10 +348,10 @@ export namespace ServerApi {
 		}
 	)
 
-	export const getAvailableLoras = RCV.validatedFunction(
+	export const getAllJsonFileLists = RCV.validatedFunction(
 		[],
-		async(): Promise<readonly LoraDescription[]> => {
-			return cont().lora.getLoras()
+		async(): Promise<readonly JsonFileList[]> => {
+			return cont().jsonFileList.getAllLists()
 		}
 	)
 

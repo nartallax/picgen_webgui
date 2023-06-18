@@ -5,7 +5,7 @@ import {LoginPage} from "client/pages/login_page/login_page"
 import {MainPage} from "client/pages/main_page/main_page"
 import {NotAllowedPage} from "client/pages/not_allowed_page/not_allowed_page"
 import {GenerationTaskArgument} from "common/entities/arguments"
-import {LoraDescription, LoraArgument} from "common/entities/lora"
+import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {GenerationParameterSet} from "common/entities/parameter"
 import {User} from "common/entities/user"
 
@@ -15,19 +15,18 @@ export const currentPage = box<PageName>("loading")
 export const isUserControlEnabled = box(true)
 
 export const uiScale = localStorageBox("userSettings.uiScale", 1)
-export const loraOrdering = localStorageBox<string[]>("userSettins.loraOrdering", [])
+export const jsonFileListOrdering = localStorageBox<Record<string, string[]>>("userSettings.jsonFileListOrdering", {})
 
 export const currentArgumentBoxes = box<{[key: string]: WBox<GenerationTaskArgument>}>({})
 export const currentParamSetName = localStorageBox("fixedGenArgument.selectedParamSetName", "")
 export const currentShapeTag = localStorageBox<string | null>("fixedGenArgument.prompt.shape", null)
 export const currentPrompt = localStorageBox("fixedGenArgument.prompt.prompt", "")
 export const currentContentTags = localStorageBox<readonly string[]>("fixedGenArgument.prompt.content", [])
-export const currentLoras = localStorageBox<LoraArgument[]>("fixedGenArgument.lores", []) // yup, lores not loras. legacy.
 
 export const allKnownContentTags = box<null | {readonly [tagContent: string]: readonly string[]}>(null)
 export const allKnownShapeTags = box<null | readonly string[]>(null)
 export const allKnownParamSets = box<GenerationParameterSet[]>([])
-export const allKnownLoras = box<readonly LoraDescription[]>([])
+export const allKnownJsonFileLists = box<{readonly [name: string]: readonly JsonFileListItemDescription[]}>({})
 
 export type PageName = keyof typeof _pages
 

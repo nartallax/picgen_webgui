@@ -1,6 +1,6 @@
 import {GenerationTaskArgument} from "common/entities/arguments"
 import {GenerationTask} from "common/entities/generation_task"
-import {LoraDescription} from "common/entities/lora"
+import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {Picture} from "common/entities/picture"
 
 export interface ApiNotificationWrap {
@@ -16,7 +16,7 @@ export type ApiNotification = TaskMessageNotification
 | TaskCreatedNotification
 | TaskAdminNotification
 | TaskEstimatedDurationKnownNotification
-| LoraDescriptionUpdateNotification
+| JsonFileListUpdateNotification
 
 export interface TaskAdminNotification {
 	type: "task_admin_notification"
@@ -74,7 +74,9 @@ export interface TaskEstimatedDurationKnownNotification {
 	estimatedDuration: number
 }
 
-export interface LoraDescriptionUpdateNotification {
-	type: "lora_description_update"
-	newLoraDescriptions: readonly LoraDescription[]
+export interface JsonFileListUpdateNotification {
+	type: "json_file_list_update"
+	paramSetName: string
+	paramName: string
+	items: readonly JsonFileListItemDescription[]
 }

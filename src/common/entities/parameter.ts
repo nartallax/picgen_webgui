@@ -107,9 +107,21 @@ export const EnumGenParam = RC.struct(RC.structFields({
 	}
 }), {}, BaseGenParam)
 
+export type JsonFileListGenParam = RC.Value<typeof JsonFileListGenParam>
+export const JsonFileListGenParam = RC.struct(RC.structFields({
+	ro: {
+		type: RC.constant("json_file_list"),
+		directory: RC.string()
+	},
+	roOpt: {
+		siblingFileExtension: RC.string(),
+		inputInvitation: RC.string()
+	}
+}), {}, BaseGenParam)
+
 export type GenParameter = RC.Value<typeof GenParameter>
 export const GenParameter = RC.union([
-	FloatGenParam, IntGenParam, StringGenParam, BoolGenParam, PictureGenParam, EnumGenParam
+	FloatGenParam, IntGenParam, StringGenParam, BoolGenParam, PictureGenParam, EnumGenParam, JsonFileListGenParam
 ])
 
 export type GenParameterGroupToggle = RC.Value<typeof GenParameterGroupToggle>
@@ -154,6 +166,8 @@ export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle)
 				return opt
 			}
 		}
+		case "json_file_list":
+			return []
 		default: return def.default
 	}
 }

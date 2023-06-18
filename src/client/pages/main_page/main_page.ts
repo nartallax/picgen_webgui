@@ -11,9 +11,9 @@ import {box, unbox, viewBox} from "@nartallax/cardboard"
 import {isInDOM, localStorageBox, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
-import {GenParameter, GenParameterGroup, GenParameterGroupToggle, defaultValueOfParam} from "common/entities/parameter"
+import {GenParameter, GenParameterGroup, GenParameterGroupToggle, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownLoras, currentLoras} from "client/app/global_values"
+import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownJsonFileLists} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
@@ -24,8 +24,8 @@ import {Tabs} from "client/controls/tabs/tabs"
 import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 import {Picture, PictureWithTask} from "common/entities/picture"
 import {TaskPicture} from "client/components/task_picture/task_picture"
-import {LoraSelectionPanel} from "client/components/lora_selection_panel/lora_selection_panel"
 import {PasteArgumentsButton} from "client/components/paste_arguments_button/paste_arguments_button"
+import {JsonFileListItemDescription, makeJsonFileListName} from "common/entities/json_file_list"
 
 function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
 	const defs: (GenParameter | GenParameterGroupToggle)[] = flatten(groups.map(group => group.parameters))
@@ -62,11 +62,11 @@ export function MainPage(): HTMLElement {
 	const selectedParamSet = viewBox(() => {
 		const paramSetName = currentParamSetName()
 		const paramSets = allKnownParamSets()
-		const selectedSet = paramSets.find(set => set.internalName === paramSetName)
-		return selectedSet
+		const selectedSet = paramSets.find(set => set.internalName === paramSetName) ?? paramSets[0]
+		return selectedSet ?? paramSets[0] ?? GenerationParameterSet.getValue()
 	})
 
-	const paramGroups = selectedParamSet.map(set => set?.parameterGroups ?? [])
+	const paramGroups = selectedParamSet.map(set => set.parameterGroups)
 	const knownTasks = box([] as GenerationTaskWithPictures[])
 	let websocket: WebsocketListener | null = null
 
@@ -90,10 +90,6 @@ export function MainPage(): HTMLElement {
 				continue // not passed
 			}
 			paramValuesForApi[paramName] = paramValue
-		}
-		if(currentLoras().length > 0){
-			// TODO: cringe
-			paramValuesForApi["loras"] = currentLoras()
 		}
 		// TODO: cringe
 		paramValuesForApi["prompt"] = fullPrompt
@@ -185,13 +181,12 @@ export function MainPage(): HTMLElement {
 						value: currentParamSetName
 					})
 				]),
-				ArgumentsInputBlock({paramGroups}),
+				ArgumentsInputBlock({paramSet: selectedParamSet}),
 				TagSearchBlock({
 					selectedContentTags: currentContentTags,
 					contentTags: allKnownContentTags,
 					visibleTagLimit: 10
 				}),
-				LoraSelectionPanel(),
 				AdminButtons()
 			])
 		])
@@ -207,14 +202,18 @@ export function MainPage(): HTMLElement {
 	});
 
 	(async() => {
-		const [paramSets, contentTags, shapeTags, loras] = await Promise.all([
+		const [paramSets, contentTags, shapeTags, jsonFileLists] = await Promise.all([
 			ClientApi.getGenerationParameterSets(),
 			ClientApi.getContentTags(),
 			ClientApi.getShapeTags(),
-			ClientApi.getAvailableLoras()
+			ClientApi.getAllJsonFileLists()
 		])
 
-		allKnownLoras(loras)
+		const jsonListsMap: Record<string, readonly JsonFileListItemDescription[]> = {}
+		for(const list of jsonFileLists){
+			jsonListsMap[makeJsonFileListName(list.paramSetName, list.paramName)] = list.items
+		}
+		allKnownJsonFileLists(jsonListsMap)
 
 		websocket = new WebsocketListener(knownTasks)
 		if(isInDOM(result)){

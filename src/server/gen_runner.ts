@@ -48,6 +48,7 @@ interface UpdatedArgumentLine {
 	value: GenerationTaskArgument
 }
 function isUpdatedArgumentLine(line: OutputLine): line is UpdatedArgumentLine {
+	// TODO: validate value and name here
 	return typeof((line as UpdatedArgumentLine).updateArgument) === "string"
 }
 

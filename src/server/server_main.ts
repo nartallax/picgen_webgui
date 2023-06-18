@@ -12,7 +12,7 @@ import {ServerApi} from "server/server_api"
 import {errToString} from "server/utils/err_to_string"
 import {ApiNotification, ApiNotificationWrap} from "common/infra_entities/notifications"
 import {ServerUser} from "server/entities/user"
-import {LoraController} from "server/entities/lora"
+import {JSONFileListController} from "server/entities/json_file_list"
 
 export async function main() {
 	try {
@@ -33,7 +33,7 @@ async function mainInternal(): Promise<void> {
 		defaultToHttps: config.haveHttps,
 		websocketServer: () => websocketServer,
 		taskQueue: () => taskQueue,
-		lora: () => lora
+		jsonFileList: () => jsonFileLists
 	}
 
 	process.on("uncaughtException", err => {
@@ -71,12 +71,12 @@ async function mainInternal(): Promise<void> {
 
 	const taskQueue = new TaskQueueController(userlessContextFactory)
 
-	const lora = new LoraController(userlessContextFactory)
+	const jsonFileLists = new JSONFileListController(userlessContextFactory)
 
 	initAsyncContext("picgen-gui")
 
 	await taskQueue.init()
-	await lora.start()
+	await jsonFileLists.start()
 	const port = await server.start()
 	log(`Server started at ${config.haveHttps ? "https" : "http"}://${config.httpHost || "localhost"}:${port}/`)
 
@@ -134,10 +134,10 @@ async function mainInternal(): Promise<void> {
 		}
 
 		try {
-			await Promise.resolve(lora.stop())
-			log("Lora watcher stopped.")
+			await Promise.resolve(jsonFileLists.stop())
+			log("JSON file list watcher stopped.")
 		} catch(e){
-			log("Failed to properly stop lora watcher: " + e)
+			log("Failed to properly stop JSON file list watcher: " + e)
 		}
 
 		log("Shutdown sequence is completed.")

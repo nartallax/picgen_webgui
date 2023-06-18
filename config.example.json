@@ -13,10 +13,6 @@
 		"shapeTagsFile": "./shape_tags.json",
 		"contentTagsFile": "./content_tags.json"
 	},
-	"loras": {
-		"directory": "./loras",
-		"loraFileExtension": ".safetensors"
-	},
 	"parameterSets": [{
 		"uiName": "Picture generation",
 		"internalName": "default",
@@ -148,7 +144,18 @@
 				"uiName": "Test Steps",
 				"default": false
 			}]
-		}]
+		}, {
+			"uiName": "LoRAs",
+			"split": true,
+			"parameters": [{
+				"type": "json_file_list",
+				"directory": "./loras",
+				"siblingFileExtension": ".safetensors",
+				"inputInvitation": "Select LoRA...",
+				"uiName": "LoRAs",
+				"jsonName": "loras"
+			}]
+	}]
 	}, {
 		"uiName": "Inpaint",
 		"internalName": "inpaint",

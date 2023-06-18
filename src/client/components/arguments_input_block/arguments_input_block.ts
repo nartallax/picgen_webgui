@@ -2,7 +2,7 @@ import {MRBox, RBox, WBox, unbox, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
-import {GenParameter, GenParameterGroup, defaultValueOfParam} from "common/entities/parameter"
+import {GenParameter, GenParameterGroup, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
 import {currentArgumentBoxes} from "client/app/global_values"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {BoolInput} from "client/controls/bool_input/bool_input"
@@ -11,15 +11,17 @@ import {PictureInput} from "client/components/picture_input/picture_input"
 import {Select} from "client/controls/select/select"
 import {FormField} from "client/controls/form/form"
 import {GenerationTaskArgument, PictureArgument} from "common/entities/arguments"
+import {JsonFileListInput} from "client/components/json_file_list_input/json_file_list_input"
+import {JsonFileListArgument} from "common/entities/json_file_list"
 
 interface ArgumentsInputBlockProps {
-	readonly paramGroups: RBox<null | readonly GenParameterGroup[]>
+	readonly paramSet: RBox<GenerationParameterSet>
 }
 
 export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElement {
 	return tag(
 		viewBox(() => {
-			const groups = unbox(props.paramGroups)
+			const groups = unbox(props.paramSet().parameterGroups)
 			const boxMap = currentArgumentBoxes()
 			if(!groups){
 				return [BlockPanelHeader({header: "Loading..."})]
@@ -43,13 +45,13 @@ export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElemen
 							// can happen if boxMap is just loading
 							continue
 						}
-						panelChildren.push(ArgumentField({def, value, visible: groupToggle}))
+						panelChildren.push(ArgumentField({def, value, visible: groupToggle, paramSet: props.paramSet()}))
 					}
 				}
 				result.push(BlockPanel(panelChildren))
 			}
 			return result
-		}, [props.paramGroups, currentArgumentBoxes])
+		}, [props.paramSet, currentArgumentBoxes])
 	)
 }
 
@@ -58,23 +60,32 @@ type ArgumentFieldProps = {
 	def: GenParameter
 	value: WBox<GenerationTaskArgument>
 	visible?: MRBox<boolean>
+	paramSet: GenerationParameterSet
 }
 
 function ArgumentField(props: ArgumentFieldProps): HTMLElement {
-	return FormField({
-		label: props.def.uiName,
-		hint: props.def.tooltip,
-		input: ArgumentInput(props.def, props.value),
-		visible: props.visible,
-		revertable: props.value.map(value => {
-			if(props.def.type === "picture"){
-				return (value as PictureArgument).id !== 0
-			}
-			return value !== defaultValueOfParam(props.def)
-		}),
-		onRevert: () => props.value(defaultValueOfParam(props.def)),
-		isInputOnNextLine: props.def.type === "string" && props.def.large
-	})
+	if(props.def.type === "json_file_list"){
+		return JsonFileListInput({
+			def: props.def,
+			paramSetName: props.paramSet.internalName,
+			value: props.value as WBox<JsonFileListArgument[]>
+		})
+	} else {
+		return FormField({
+			label: props.def.uiName,
+			hint: props.def.tooltip,
+			input: ArgumentInput(props.def, props.value),
+			visible: props.visible,
+			revertable: props.value.map(value => {
+				if(props.def.type === "picture"){
+					return (value as PictureArgument).id !== 0
+				}
+				return value !== defaultValueOfParam(props.def)
+			}),
+			onRevert: () => props.value(defaultValueOfParam(props.def)),
+			isInputOnNextLine: props.def.type === "string" && props.def.large
+		})
+	}
 }
 
 function ArgumentInput(def: GenParameter, value: WBox<GenerationTaskArgument>): HTMLElement {
@@ -115,6 +126,9 @@ function ArgumentInput(def: GenParameter, value: WBox<GenerationTaskArgument>): 
 					}
 				})
 			})
+		case "json_file_list":
+			throw new Error("Should have been processed in parent component")
+
 	}
 }
 
