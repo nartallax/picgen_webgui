@@ -1,13 +1,11 @@
 import {RBox, WBox} from "@nartallax/cardboard"
 import {tag, whileMounted} from "@nartallax/cardboard-dom"
 import {SelectSearch} from "client/controls/select_search/select_search"
-import {TagList} from "client/controls/tag_list/tag_list"
 import * as css from "./prompt_input.module.scss"
 
 interface PromptInputProps {
 	shapeValues: RBox<null | readonly string[]>
 	shapeValue: WBox<string | null>
-	selectedContentTags: WBox<readonly string[]>
 	promptValue: WBox<string>
 	startGeneration(): void
 }
@@ -40,11 +38,7 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 				class: [css.generateButton, "icon-brush"],
 				onClick: props.startGeneration // TODO: falloff to prevent doubleclicking
 			})
-		]),
-		TagList({
-			values: props.selectedContentTags,
-			center: true
-		})
+		])
 	])
 
 	whileMounted(result, props.promptValue, v => input.value = v)

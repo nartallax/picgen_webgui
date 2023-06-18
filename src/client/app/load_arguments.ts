@@ -1,5 +1,5 @@
 import {WBox} from "@nartallax/cardboard"
-import {allKnownContentTags, allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentContentTags, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
+import {allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
 import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTaskArgument} from "common/entities/arguments"
@@ -28,13 +28,12 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	const args = {...task.arguments}
 
 	const promptStr = (args["prompt"] + "") ?? "" // TODO: cringe
-	const prompt = decomposePrompt(promptStr, allKnownShapeTags() ?? [], Object.keys(allKnownContentTags() ?? {}))
+	const prompt = decomposePrompt(promptStr, allKnownShapeTags() ?? [])
 	delete args["prompt"]
 
 	currentParamSetName(task.paramSetName)
 	currentShapeTag(prompt.shape)
 	currentPrompt(prompt.body)
-	currentContentTags(prompt.content)
 
 
 	// legacy naming

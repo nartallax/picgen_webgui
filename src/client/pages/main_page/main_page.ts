@@ -5,7 +5,6 @@ import {LoginBar} from "client/components/login_bar/login_bar"
 import {ArgumentsInputBlock} from "client/components/arguments_input_block/arguments_input_block"
 import {PromptInput} from "client/components/prompt_input/prompt_input"
 import {Select} from "client/controls/select/select"
-import {TagSearchBlock} from "client/controls/tag_search_block/tag_search_block"
 import {TaskPanel} from "client/components/task_panel/task_panel"
 import {box, unbox, viewBox} from "@nartallax/cardboard"
 import {isInDOM, localStorageBox, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
@@ -13,7 +12,7 @@ import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentArgumentBoxes, allKnownContentTags, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, currentContentTags, allKnownJsonFileLists, hideSomeScrollbars} from "client/app/global_values"
+import {currentArgumentBoxes, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
@@ -73,8 +72,7 @@ export function MainPage(): HTMLElement {
 	const startGeneration = async() => {
 		const fullPrompt = composePrompt({
 			shape: currentShapeTag(),
-			body: currentPrompt(),
-			content: currentContentTags()
+			body: currentPrompt()
 		})
 		const paramValuesForApi = {} as Record<string, GenerationTaskArgument>
 		const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
@@ -118,7 +116,6 @@ export function MainPage(): HTMLElement {
 				}),
 				PromptInput({
 					promptValue: currentPrompt,
-					selectedContentTags: currentContentTags,
 					shapeValue: currentShapeTag,
 					shapeValues: allKnownShapeTags,
 					startGeneration: startGeneration
@@ -190,11 +187,6 @@ export function MainPage(): HTMLElement {
 				]),
 				tag({class: css.settingsColumnScrollablePart}, [
 					ArgumentsInputBlock({paramSet: selectedParamSet}),
-					TagSearchBlock({
-						selectedContentTags: currentContentTags,
-						contentTags: allKnownContentTags,
-						visibleTagLimit: 10
-					}),
 					AdminButtons()
 				])
 			])
@@ -211,9 +203,8 @@ export function MainPage(): HTMLElement {
 	});
 
 	(async() => {
-		const [paramSets, contentTags, shapeTags, jsonFileLists] = await Promise.all([
+		const [paramSets, shapeTags, jsonFileLists] = await Promise.all([
 			ClientApi.getGenerationParameterSets(),
-			ClientApi.getContentTags(),
 			ClientApi.getShapeTags(),
 			ClientApi.getAllJsonFileLists()
 		])
@@ -245,7 +236,6 @@ export function MainPage(): HTMLElement {
 			}
 		}
 
-		allKnownContentTags(contentTags)
 	})()
 
 	return result

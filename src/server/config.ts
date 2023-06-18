@@ -8,7 +8,6 @@ interface AuxConfigFilesData {
 	readonly discordClientSecret: string
 	readonly tags: {
 		readonly shape: readonly string[]
-		readonly content: {readonly [tagContent: string]: readonly string[]}
 	}
 }
 
@@ -29,8 +28,7 @@ const ConfigFile = RC.struct(RC.structFields({
 		dbFilePath: RC.string(),
 		parameterSets: RC.roArray(GenerationParameterSet),
 		tags: RC.struct(RC.structFields({ro: {
-			shapeTagsFile: RC.string(),
-			contentTagsFile: RC.string()
+			shapeTagsFile: RC.string()
 		}}))
 	},
 	roOpt: {
@@ -56,10 +54,9 @@ export async function loadConfig(): Promise<void> {
 	const newConfig: ConfigFile = JSON.parse(await Fs.readFile(args.paramsConfig, "utf-8"))
 	configFileValidator(newConfig)
 
-	const [discordClientSecret, shapeTagsJson, contentTagsJson] = await Promise.all([
+	const [discordClientSecret, shapeTagsJson] = await Promise.all([
 		Fs.readFile(newConfig.discordClientSecretFile, "utf-8"),
-		Fs.readFile(newConfig.tags.shapeTagsFile, "utf-8"),
-		Fs.readFile(newConfig.tags.contentTagsFile, "utf-8")
+		Fs.readFile(newConfig.tags.shapeTagsFile, "utf-8")
 	])
 
 	config = {
@@ -68,7 +65,6 @@ export async function loadConfig(): Promise<void> {
 		discordClientSecret: discordClientSecret.trim(),
 		tags: {
 			...newConfig.tags,
-			content: JSON.parse(contentTagsJson),
 			shape: JSON.parse(shapeTagsJson)
 		}
 	}

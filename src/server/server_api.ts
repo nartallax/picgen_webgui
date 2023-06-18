@@ -33,12 +33,6 @@ export namespace ServerApi {
 			return config.tags.shape
 		})
 
-	export const getContentTags = RCV.validatedFunction(
-		[],
-		(): {readonly [tagContent: string]: readonly string[]} => {
-			return config.tags.content
-		})
-
 	const Protocol = RC.constUnion(["http", "https"])
 	export const getDiscordLoginUrl = RCV.validatedFunction(
 		[RC.struct({protocol: Protocol, domain: RC.string()})],

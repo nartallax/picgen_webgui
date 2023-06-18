@@ -19,9 +19,6 @@ export namespace ClientApi {
 	export const getShapeTags = () =>
 		client.call<readonly string[]>("getShapeTags", {})
 
-	export const getContentTags = () =>
-		client.call<{readonly [tagContent: string]: readonly string[]}>("getContentTags", {})
-
 	export const getDiscordLoginUrl = (protocol: "http" | "https", domain: string) =>
 		client.call<string>("getDiscordLoginUrl", {protocol, domain})
 

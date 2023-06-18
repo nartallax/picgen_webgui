@@ -22,9 +22,7 @@ export const currentArgumentBoxes = box<{[key: string]: WBox<GenerationTaskArgum
 export const currentParamSetName = localStorageBox("fixedGenArgument.selectedParamSetName", "")
 export const currentShapeTag = localStorageBox<string | null>("fixedGenArgument.prompt.shape", null)
 export const currentPrompt = localStorageBox("fixedGenArgument.prompt.prompt", "")
-export const currentContentTags = localStorageBox<readonly string[]>("fixedGenArgument.prompt.content", [])
 
-export const allKnownContentTags = box<null | {readonly [tagContent: string]: readonly string[]}>(null)
 export const allKnownShapeTags = box<null | readonly string[]>(null)
 export const allKnownParamSets = box<GenerationParameterSet[]>([])
 export const allKnownJsonFileLists = box<{readonly [name: string]: readonly JsonFileListItemDescription[]}>({})

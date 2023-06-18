@@ -10,8 +10,7 @@
 	"haveHttps": false,	
 	"dbFilePath": "./db.sqlite",
 	"tags": {
-		"shapeTagsFile": "./shape_tags.json",
-		"contentTagsFile": "./content_tags.json"
+		"shapeTagsFile": "./shape_tags.json"
 	},
 	"parameterSets": [{
 		"uiName": "Picture generation",
