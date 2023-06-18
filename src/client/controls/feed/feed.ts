@@ -5,6 +5,7 @@ import * as css from "./feed.module.scss"
 import {IdentifiedEntity} from "server/dao"
 import {BinaryQueryCondition, SimpleListQueryParams} from "common/infra_entities/query"
 import {SoftValueChanger} from "client/base/soft_value_changer"
+import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
 
 interface FeedProps<T> {
 	values?: WBox<T[]>
@@ -37,14 +38,6 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 		tag({
 			class: [css.feedItemsContainer, props.containerClass]
 		}, values.mapArray(props.getId, props.renderElement)),
-		!props.scrollToTopButton ? null : tag({
-			class: [css.scrollToTopButton, "icon-up-open", {
-				[css.visible!]: scrollToTopVisible
-			}],
-			onClick: () => {
-				scroller.set(0)
-			}
-		}),
 		VisibilityNotifier({
 			isOnScreen: isBottomVisible,
 			hide: reachedEndOfFeed
@@ -56,6 +49,23 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 		getValue: () => result.scrollTop,
 		setValue: v => result.scrollTop = v
 	})
+
+	if(props.scrollToTopButton){
+		makeOverlayItem({
+			body: tag({
+				class: [css.scrollToTopButton, "icon-up-open", {
+					[css.visible!]: scrollToTopVisible
+				}],
+				onClick: () => {
+					scroller.set(0)
+				}
+			}),
+			referenceElement: result,
+			visible: scrollToTopVisible,
+			overlayPosition: "bottomRight",
+			referencePosition: "bottomRight"
+		})
+	}
 
 	async function loadNext(): Promise<void> {
 		let currentValues = values()
