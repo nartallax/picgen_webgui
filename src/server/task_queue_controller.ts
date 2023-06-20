@@ -305,13 +305,12 @@ export class TaskQueueController {
 				})
 			}),
 
-			onArgumentUpdated: (name, value) => {
-				// TODO: cringe
-				update(() => task.arguments[name] = value)
+			onTaskArgumentsModified: args => {
+				update(() => task.arguments = {...task.arguments, ...args})
 				sendTaskNotification({
-					type: "task_argument_updated",
+					type: "task_arguments_updated",
 					taskId: task.id,
-					name, value
+					args
 				})
 			},
 

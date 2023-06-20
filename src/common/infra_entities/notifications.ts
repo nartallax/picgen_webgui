@@ -38,10 +38,9 @@ export interface TaskExpectedPictureCountKnownNotification {
 }
 
 export interface TaskArgumentUpdatedNotification {
-	type: "task_argument_updated"
+	type: "task_arguments_updated"
 	taskId: number
-	name: string
-	value: GenerationTaskArgument
+	args: Record<string, GenerationTaskArgument>
 }
 
 export interface TaskGeneratedPictureNotification {

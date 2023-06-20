@@ -20,7 +20,7 @@ async function main() {
 	Process.stderr.write("Got arguments! " + JSON.stringify(parameters) + "\n")
 
 	// this is how you can update any argument if you want
-	Process.stdout.write(JSON.stringify({updateArgument: "exclude", value: "nyom"}) + "\n")
+	Process.stdout.write(JSON.stringify({modifyTaskArguments: {exclude: "nyom-nyom"}}) + "\n")
 
 	// we can send arbitrary text messages while generating stuff to be displayed to frontend
 	Process.stdout.write(JSON.stringify({message: "Hewwo! I'm starting!", displayFor: 10}) + "\n")

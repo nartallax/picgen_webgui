@@ -10,7 +10,7 @@ import {GenerationTask} from "common/entities/generation_task"
 import {Picture} from "common/entities/picture"
 import {GenerationTaskArgument} from "common/entities/arguments"
 
-type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | UpdatedArgumentLine | TimeLeftLine
+type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | ModifyTaskArguments | TimeLeftLine
 
 interface GeneratedFileLine {
 	generatedPicture: string
@@ -43,13 +43,12 @@ function isExpectedPicturesLine(line: OutputLine): line is ExpectedPicturesLine 
 	return typeof((line as ExpectedPicturesLine).willGenerateCount) === "number"
 }
 
-interface UpdatedArgumentLine {
-	updateArgument: string
-	value: GenerationTaskArgument
+interface ModifyTaskArguments {
+	modifyTaskArguments: Record<string, GenerationTaskArgument>
 }
-function isUpdatedArgumentLine(line: OutputLine): line is UpdatedArgumentLine {
-	// TODO: validate value and name here
-	return typeof((line as UpdatedArgumentLine).updateArgument) === "string"
+function isModifyTaskArgumentsLine(line: OutputLine): line is ModifyTaskArguments {
+	// TODO: validate here
+	return typeof((line as ModifyTaskArguments).modifyTaskArguments) === "object"
 }
 
 interface TimeLeftLine {
@@ -60,7 +59,7 @@ function isTimeLeftLine(line: OutputLine): line is TimeLeftLine {
 }
 
 export interface GenRunnerCallbacks {
-	onArgumentUpdated(name: string, value: GenerationTaskArgument): void
+	onTaskArgumentsModified(args: Record<string, GenerationTaskArgument>): void
 	onFileProduced(path: string, modifiedArguments: Picture["modifiedArguments"]): void
 	onExpectedPictureCountKnown(expectedPictureCount: number): void
 	onMessage(message: string, displayFor: number | null): void
@@ -131,8 +130,8 @@ export class GenRunner {
 					await this.onFileProduced(line, line.modifiedArguments ?? null)
 				} else if(isExpectedPicturesLine(line)){
 					this.callbacks.onExpectedPictureCountKnown(line.willGenerateCount)
-				} else if(isUpdatedArgumentLine(line)){
-					this.callbacks.onArgumentUpdated(line.updateArgument, line.value)
+				} else if(isModifyTaskArgumentsLine(line)){
+					this.callbacks.onTaskArgumentsModified(line.modifyTaskArguments)
 				} else if(isTimeLeftLine(line)){
 					this.callbacks.onTimeLeftKnown(line.timeLeft)
 				} else {

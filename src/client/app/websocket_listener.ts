@@ -87,14 +87,14 @@ export class WebsocketListener {
 					})
 				)
 				break
-			case "task_argument_updated":
+			case "task_arguments_updated":
 				this.updateTaskById(
 					notification.taskId,
 					task => ({
 						...task,
 						arguments: {
 							...task.arguments,
-							[notification.name]: notification.value
+							...notification.args
 						}
 					})
 				)
