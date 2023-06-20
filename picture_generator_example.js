@@ -11,7 +11,6 @@ import {setTimeout} from "timers"
 // entrypoint of the picture generator
 // this function will be called when picture generator is launched
 async function main() {
-
 	// some generation arguments are passed as command-line parameter
 	// what they will look like exactly is defined by bot config
 	const parameters = JSON.parse(Process.argv[2] || "{}")
@@ -36,6 +35,7 @@ async function main() {
 	// we also can notify server on how long it will take to generate all the stuff we want to generate
 	// we can do it at any time through generation run
 	// timeLeft is in seconds
+
 	Process.stdout.write(JSON.stringify({timeLeft: (willGenerateFilesCount * timePerPicture) / 1000}) + "\n")
 
 	// we will generate some pictures

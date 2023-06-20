@@ -83,7 +83,8 @@ export class TaskQueueController {
 			finishTime: null,
 			generatedPictures: 0,
 			status: "queued",
-			runOrder: -1
+			runOrder: -1,
+			exitCode: 0
 		}
 
 		// TODO: fix runOrder here? after creation
@@ -130,8 +131,10 @@ export class TaskQueueController {
 		await this.tryStartNextGeneration()
 	}
 
-	private waitGenerationEnd(): Promise<void> {
-		return !this.runningGeneration ? Promise.resolve() : this.runningGeneration.gen.waitCompletion()
+	private async waitGenerationEnd(): Promise<void> {
+		if(this.runningGeneration){
+			await this.runningGeneration.gen.waitCompletion()
+		}
 	}
 
 	private shouldTryRunGeneration(): boolean {
@@ -165,13 +168,14 @@ export class TaskQueueController {
 				startTime: startTime
 			})
 
-			await gen.waitCompletion()
+			const exitResult = await gen.waitCompletion()
 
 			log(`Task #${task.id} completed`)
 			const finishTime = unixtime()
 			update(() => {
 				task.status = "completed"
 				task.finishTime = finishTime
+				task.exitCode = exitResult.code
 			})
 			sendTaskNotification({
 				type: "task_finished",

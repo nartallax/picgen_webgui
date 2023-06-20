@@ -67,11 +67,15 @@ export interface GenRunnerCallbacks {
 	onTimeLeftKnown(timeLeft: number): void
 }
 
+export interface GenRunExitResult {
+	code: number
+}
+
 export class GenRunner {
 
 	public readonly process: ChildProcess.ChildProcessByStdio<null, Stream.Readable, null>
 
-	private readonly exitPromise: Promise<void>
+	private readonly exitPromise: Promise<GenRunExitResult>
 
 	constructor(
 		private readonly config: Config,
@@ -85,10 +89,10 @@ export class GenRunner {
 			stdio: ["inherit", "pipe", "inherit"]
 		})
 
-		this.exitPromise = new Promise<void>(ok => {
+		this.exitPromise = new Promise<GenRunExitResult>(ok => {
 			process.on("exit", code => {
 				log("Generator process exited with code " + code)
-				ok()
+				ok({code: code ?? 0})
 			})
 		})
 
@@ -99,7 +103,7 @@ export class GenRunner {
 		this.addStdoutParser()
 	}
 
-	waitCompletion(): Promise<void> {
+	waitCompletion(): Promise<GenRunExitResult> {
 		return this.exitPromise
 	}
 

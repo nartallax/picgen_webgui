@@ -303,6 +303,19 @@ export const migrations: Migration[] = [
 		await db.run(`
 			alter table "generationTasks" drop column "prompt";
 		`)
+	}},
+
+	{name: "00018", handler: async db => {
+		await db.run(`
+			alter table "generationTasks"
+			add "exitCode" int;
+		`)
+	}},
+
+	{name: "00019", handler: async db => {
+		await db.run(`
+			update "generationTasks" set "exitCode" = 0;
+		`)
 	}}
 
 ]

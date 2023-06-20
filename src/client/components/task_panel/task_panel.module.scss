@@ -148,6 +148,16 @@ $arrowButtonSize: 3rem;
 
 	}
 
+	.taskExitCodeError {
+		color: red;
+		font-weight: bold;
+		padding: 0.25rem;
+
+		&.hidden {
+			display: none;
+		}
+	}
+
 }
 
 @media (hover: hover) {

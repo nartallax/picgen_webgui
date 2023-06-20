@@ -156,6 +156,11 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 						}
 					})
 				]),
+				tag({class: [css.taskExitCodeError, "icon-warning-empty", {
+					[css.hidden!]: props.task.prop("exitCode").map(code => code === 0)
+				}]}, [
+					props.task.prop("exitCode").map(code => "Failed! Exit code " + code)
+				]),
 				tag({class: css.doneCounter}, [
 					props.task.map(task => {
 						if(task.generatedPictures < 1 && !task.expectedPictures){

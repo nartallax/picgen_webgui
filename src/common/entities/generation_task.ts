@@ -43,7 +43,8 @@ export const GenerationTask = RC.struct(RC.structFields({
 			RC.constant(null)
 		]),
 		generatedPictures: RC.number(),
-		runOrder: RC.number()
+		runOrder: RC.number(),
+		exitCode: RC.number()
 	},
 	opt: {
 		estimatedDuration: RC.number()

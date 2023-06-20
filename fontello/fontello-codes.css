@@ -23,6 +23,7 @@
 .icon-copy-json-single:before { content: '\e815'; } /* '' */
 .icon-copy-json-task:before { content: '\e816'; } /* '' */
 .icon-paste-json:before { content: '\e817'; } /* '' */
+.icon-warning-empty:before { content: '\e818'; } /* '' */
 .icon-upload:before { content: '\f02f'; } /* '' */
 .icon-link-ext:before { content: '\f08e'; } /* '' */
 .icon-bookmark-empty:before { content: '\f097'; } /* '' */
