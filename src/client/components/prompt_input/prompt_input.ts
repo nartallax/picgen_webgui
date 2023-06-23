@@ -11,11 +11,13 @@ interface PromptInputProps {
 }
 
 export function PromptInput(props: PromptInputProps): HTMLElement {
-	const input: HTMLInputElement = tag({
-		tag: "input",
+
+	const input: HTMLTextAreaElement = tag({
+		tag: "textarea",
 		class: css.inputInput,
 		attrs: {
-			placeholder: "...Enter a description of the desired result"
+			placeholder: "...Enter a description of the desired result",
+			rows: 100
 		},
 		onInput: () => props.promptValue(input.value),
 		onKeydown: e => {
@@ -27,12 +29,14 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 
 	const result = tag({class: css.promptInput}, [
 		tag({class: css.firstLine}, [
-			SelectSearch({
-				availableValues: props.shapeValues,
-				value: props.shapeValue,
-				listSizeLimit: 10
-			}),
-			input,
+			tag({class: css.selectSearchWrap}, [
+				SelectSearch({
+					availableValues: props.shapeValues,
+					value: props.shapeValue,
+					listSizeLimit: 10
+				})
+			]),
+			tag({class: css.inputWrap}, [input]),
 			tag({
 				tag: "button",
 				class: [css.generateButton, "icon-brush"],
