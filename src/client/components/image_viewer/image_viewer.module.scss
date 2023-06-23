@@ -50,4 +50,15 @@
 	background-color: rgba(0, 0, 0, 0.5);
 	padding: 0.25em 0.5em 0.1em 0.5em;
 	line-height: 1.2em;
+	transform-origin: bottom left;
+	font-size: 1rem;
+}
+
+.additionalControls {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	transform-origin: top left;
+	padding: 0.5rem;
+	background-color: rgba(0, 0, 0, 0.5);
 }

@@ -93,22 +93,6 @@ $max-size: 23em;
 			font-size: 1.5rem;
 		}
 
-		.iconShowParams, .iconCopy, .iconFavorite, .iconLink {
-			cursor: pointer;
-			color: #ddd;
-
-			opacity: 0.25;
-			transition: opacity 0.25s;
-
-			&:hover {
-				opacity: 1;
-			}
-		}
-
-		.iconFavorite {
-			color: #ffdb59;
-		}
-
 		.iconShowParams {
 			span {
 				font-size: 1.5rem;
@@ -125,6 +109,30 @@ $max-size: 23em;
 			}
 		}
 	}
+}
+
+.iconShowParams, .iconCopy, .iconFavorite, .iconLink {
+	cursor: pointer;
+	color: #ddd;
+	font-size: 2rem;
+
+	opacity: 0.25;
+	transition: opacity 0.25s;
+
+	&:hover {
+		opacity: 1;
+	}
+}
+
+.iconFavorite {
+	color: #ffdb59;
+}
+
+.viewerButtons {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: flex-start;
 }
 
 @media (hover: hover) {

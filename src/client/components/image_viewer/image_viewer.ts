@@ -65,6 +65,7 @@ export type ShowImageViewerProps<T> = {
 	/** A fraction of picture that will be used as offset.
 	 * 0.1 means that there will be borders of 10% of picture height. */
 	readonly defaultOffset?: number
+	readonly getAdditionalControls?: (picture: T) => HTMLElement[]
 }
 
 export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promise<void> {
@@ -285,7 +286,8 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				class: css.imgLabel,
 				style: {
 					// fontSize: maxNatHeight.map(height => (height / 400) + "rem")
-					fontSize: zoom.map(zoom => (1 / zoom) + "rem")
+					// fontSize: zoom.map(zoom => (1 / zoom) + "rem")
+					transform: zoom.map(zoom => `scale(${1 / zoom})`)
 				}
 			}, [viewBox(() => {
 				if(!loaded()){
@@ -295,7 +297,25 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				return `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
 			})])
 
-			return [img, label]
+			let additionalControls: HTMLElement | null = null
+			if(props.getAdditionalControls){
+				// TODO: cringe
+				const src = img.getAttribute("src")
+				const desc = props.imageDescriptions().find(desc => props.makeUrl(desc) === src)
+				if(!desc){
+					console.warn("Image description not found for src = " + img.src)
+				}
+				if(desc){
+					additionalControls = tag({
+						class: css.additionalControls,
+						style: {
+							transform: zoom.map(zoom => `scale(${1 / zoom})`)
+						}
+					}, props.getAdditionalControls(desc))
+				}
+			}
+
+			return [img, label, additionalControls]
 		}))
 	)
 

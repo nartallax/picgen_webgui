@@ -1,4 +1,4 @@
-import {MRBox, RBox, box, constBoxWrap, unbox, viewBox} from "@nartallax/cardboard"
+import {MRBox, RBox, WBox, box, constBoxWrap, unbox, viewBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
@@ -17,24 +17,27 @@ interface TaskPictureProps {
 	loadAnimation?: boolean
 }
 
-export function TaskPicture(props: TaskPictureProps): HTMLElement {
-	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))
+class TaskPictureContext {
+	readonly favAddTime: WBox<number | null>
 
-	const linkButton = tag({class: ["icon-link-ext", css.iconLink]})
-	linkButton.addEventListener("click", e => {
-		e.stopPropagation()
-		window.open(url(), "_blank")
-	})
-
-	const getPictureArgs = (): GenerationTaskInputData => {
-		return getTaskInputDataFromPicture(props.picture(), getTask())
+	constructor(
+		readonly picture: RBox<Picture>,
+		readonly generationTask?: MRBox<GenerationTaskWithPictures>
+	) {
+		this.favAddTime = box(picture().favoritesAddTime)
 	}
 
-	const haveTask = () => pictureHasAttachedTask(props.picture()) || !!unbox(props.generationTask)
+	private getPictureArgs(): GenerationTaskInputData {
+		return getTaskInputDataFromPicture(this.picture(), this.getTask())
+	}
 
-	const getTask = (): GenerationTaskInputData => {
-		const pic = props.picture()
-		let task: GenerationTask | undefined = unbox(props.generationTask)
+	private haveTask(): boolean {
+		return pictureHasAttachedTask(this.picture()) || !!unbox(this.generationTask)
+	}
+
+	private getTask(): GenerationTaskInputData {
+		const pic = this.picture()
+		let task: GenerationTask | undefined = unbox(this.generationTask)
 		if(pictureHasAttachedTask(pic)){
 			task = pic.task
 		}
@@ -44,49 +47,71 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		return task
 	}
 
-	const copyButton = tag({class: ["icon-copy-single", css.iconCopy]})
-	copyButton.addEventListener("click", e => {
-		e.stopPropagation()
-		loadArguments(getPictureArgs())
-	})
+	makeLinkButton(): HTMLElement {
+		const linkButton = tag({class: ["icon-link-ext", css.iconLink]})
+		linkButton.addEventListener("click", e => {
+			e.stopPropagation()
+			const picture = this.picture()
+			window.open(ClientApi.getPictureUrl(picture.id, picture.salt), "_blank")
+		})
+		return linkButton
+	}
 
-	const copyTaskButton = tag({
-		class: ["icon-copy-task", css.iconCopy],
-		style: {
-			display: viewBox(() => haveTask() ? "block" : "none")
-		}
-	})
-	copyTaskButton.addEventListener("click", e => {
-		e.stopPropagation()
-		loadArguments(getTask())
-	})
+	makeCopyButton(): HTMLElement {
+		const copyButton = tag({class: ["icon-copy-single", css.iconCopy]})
+		copyButton.addEventListener("click", e => {
+			e.stopPropagation()
+			loadArguments(this.getPictureArgs())
+		})
+		return copyButton
+	}
 
-	const makeShowParamsButton = (isTaskOnly: boolean) => {
+	makeCopyTaskButton(): HTMLElement {
+		const copyTaskButton = tag({
+			class: ["icon-copy-task", css.iconCopy],
+			style: {
+				display: viewBox(() => this.haveTask() ? "block" : "none")
+			}
+		})
+		copyTaskButton.addEventListener("click", e => {
+			e.stopPropagation()
+			loadArguments(this.getTask())
+		})
+		return copyTaskButton
+	}
+
+	makeShowParamsButton(isTaskOnly: boolean): HTMLElement {
 		const btn = tag({
 			class: [css.iconShowParams, `icon-copy-json-${isTaskOnly ? "task" : "single"}`],
 			style: {
-				display: isTaskOnly ? viewBox(() => haveTask() ? "" : "none") : ""
+				display: isTaskOnly ? viewBox(() => this.haveTask() ? "" : "none") : ""
 			}
 		})
 		btn.addEventListener("click", e => {
 			e.stopPropagation()
-			const args = isTaskOnly ? getTask() : getPictureArgs()
+			const args = isTaskOnly ? this.getTask() : this.getPictureArgs()
 			showTaskArgsModal(args)
 		})
 		return btn
 	}
 
-	const favAddTime = box(props.picture().favoritesAddTime)
-	const favoriteButton = tag({class: [
-		css.iconFavorite,
-		favAddTime.map(time => time !== null ? "icon-star" : "icon-star-empty")
-	]})
-	favoriteButton.addEventListener("click", async e => {
-		e.stopPropagation()
-		const isFavoriteNow = favAddTime() !== null
-		favAddTime(isFavoriteNow ? null : 1)
-		await ClientApi.setPictureFavorite(props.picture().id, !isFavoriteNow)
-	})
+	makeFavButton(): HTMLElement {
+		const favoriteButton = tag({class: [
+			css.iconFavorite,
+			this.favAddTime.map(time => time !== null ? "icon-star" : "icon-star-empty")
+		]})
+		favoriteButton.addEventListener("click", async e => {
+			e.stopPropagation()
+			const isFavoriteNow = this.favAddTime() !== null
+			this.favAddTime(isFavoriteNow ? null : 1)
+			await ClientApi.setPictureFavorite(this.picture().id, !isFavoriteNow)
+		})
+		return favoriteButton
+	}
+}
+
+export function TaskPicture(props: TaskPictureProps): HTMLElement {
+	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))
 
 	const img = tag({
 		tag: "img",
@@ -95,6 +120,8 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			src: url
 		}
 	})
+
+	const context = new TaskPictureContext(props.picture, props.generationTask)
 
 	const isLoaded = box(props.loadAnimation ? false : true)
 
@@ -121,13 +148,13 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			}
 		}, [
 			tag({class: css.topRow}, [
-				tag([makeShowParamsButton(true), makeShowParamsButton(false)]),
-				tag([copyTaskButton, copyButton])
+				tag([context.makeShowParamsButton(true), context.makeShowParamsButton(false)]),
+				tag([context.makeCopyTaskButton(), context.makeCopyButton()])
 			]),
 			tag({class: css.middleRow}, [
 				tag({class: [css.iconOpen, "icon-resize-full-alt"]})
 			]),
-			tag({class: css.bottomRow}, [favoriteButton, linkButton])
+			tag({class: css.bottomRow}, [context.makeFavButton(), context.makeLinkButton()])
 		])
 	])
 
@@ -155,14 +182,27 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 	let props: ShowImageViewerProps<Picture>
 	const commonProps = {
 		makeUrl: (picture: Picture) => ClientApi.getPictureUrl(picture.id, picture.salt),
-		panBounds: {x: "centerInPicture", y: "borderToBorder"}
+		panBounds: {x: "centerInPicture", y: "borderToBorder"},
+		getAdditionalControls: pic => {
+			const cont = new TaskPictureContext(box(pic), task)
+			return [
+				tag({class: css.viewerButtons}, [
+					cont.makeFavButton(),
+					cont.makeLinkButton(),
+					cont.makeCopyButton(),
+					cont.makeCopyTaskButton(),
+					cont.makeShowParamsButton(false),
+					cont.makeShowParamsButton(true)
+				])
+			]
+		}
 	} satisfies Partial<ShowImageViewerProps<Picture>>
 	if(task){
 		const pictures = constBoxWrap(task).prop("pictures").map(x => [...x].reverse())
 		const pictureIndex = pictures().indexOf(unbox(picture))
 		props = {
 			...commonProps,
-			// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
+			makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
 			imageDescriptions: pictures,
 			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
 			equalizeByHeight: true
