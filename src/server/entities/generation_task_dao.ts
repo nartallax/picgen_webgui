@@ -1,10 +1,10 @@
 import {ApiError} from "common/infra_entities/api_error"
 import {DAO} from "server/dao"
-import {UserlessContext} from "server/request_context"
-import {PictureInfo, ServerPicture} from "server/entities/picture"
+import {PictureInfo, ServerPicture} from "server/entities/picture_dao"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskStatus} from "common/entities/generation_task"
 import {GenParameter, GenerationParameterSet, PictureGenParam, getParamDefList} from "common/entities/parameter"
 import {isPictureArgument} from "common/entities/arguments"
+import {config, pictureDao, taskQueue} from "server/server_globals"
 
 interface DbGenerationTask extends Omit<GenerationTask, "arguments" | "status"> {
 	arguments: string
@@ -26,7 +26,7 @@ export function getServerGenParamDefault(def: GenParameter): ServerGenerationTas
 	return "default" in def ? def.default : undefined
 }
 
-export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGenerationTask> {
+export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 
 	protected getTableName(): string {
 		return "generationTasks"
@@ -58,19 +58,17 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	}
 
 	async killAllQueued(userId: number | null): Promise<void> {
-		const context = this.getContext()
-		const queuedTasks = await context.generationTask.getAllInQueue()
+		const queuedTasks = await this.getAllInQueue()
 		for(const task of queuedTasks){
-			await context.taskQueue.kill(task.id, userId)
+			await taskQueue.kill(task.id, userId)
 		}
 	}
 
 	async killAllQueuedAndRunning(userId: number | null): Promise<void> {
 		await this.killAllQueued(userId)
-		const context = this.getContext()
-		const runningTask = await context.generationTask.queryRunning()
+		const runningTask = await this.queryRunning()
 		if(runningTask){
-			await context.taskQueue.kill(runningTask.id, userId)
+			await taskQueue.kill(runningTask.id, userId)
 		}
 	}
 
@@ -82,7 +80,6 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	// even if they are all valid, sometimes they contain IDs that refers to entities in our DB
 	// which must be resolved in one way or another before passed to generator
 	async prepareInputData(origInputData: GenerationTaskInputData): Promise<ServerGenerationTaskInputData> {
-		const context = this.getContext()
 		const resultInputData: ServerGenerationTaskInputData = JSON.parse(JSON.stringify(origInputData))
 		const paramDefs = this.getParams(origInputData.paramSetName)
 
@@ -104,14 +101,14 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 				if(!isPictureArgument(arg)){
 					throw new ApiError("validation_not_passed", `Generation argument ${def.jsonName} should be a description of picture; it is ${JSON.stringify(arg)} now.`)
 				}
-				const pic = await context.picture.getById(arg.id)
-				const {path: picturePath, info: pictureInfo} = await context.picture.getPicturePathForGenerationRun(pic)
+				const pic = await pictureDao.getById(arg.id)
+				const {path: picturePath, info: pictureInfo} = await pictureDao.getPicturePathForGenerationRun(pic)
 				const newParamValue: ServerPictureArgument = {
 					picture: picturePath
 				}
 				resultInputData.arguments[def.jsonName] = newParamValue
 				if(arg.mask){
-					newParamValue.mask = await context.picture.getMaskPathForGenerationRun(arg.mask, pictureInfo)
+					newParamValue.mask = await pictureDao.getMaskPathForGenerationRun(arg.mask, pictureInfo)
 				}
 			}
 		}
@@ -120,7 +117,6 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	}
 
 	async cleanupInputData(inputData: ServerGenerationTaskInputData): Promise<void> {
-		const context = this.getContext()
 		const paramDefs = this.getParams(inputData.paramSetName)
 		for(const def of paramDefs){
 			if(def.type !== "picture"){
@@ -133,17 +129,15 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 			if(typeof(paramValue) !== "object" || paramValue === null || typeof(paramValue.picture) !== "string"){
 				throw new Error(`Cannot cleanup after task finish: expected picture path as ${def.jsonName}, got ${paramValue} (${JSON.stringify(paramValue)})`)
 			}
-			await context.picture.cleanupPictureOrMaskAfterGenerationRun(paramValue.picture)
+			await pictureDao.cleanupPictureOrMaskAfterGenerationRun(paramValue.picture)
 			if(paramValue.mask){
-				await context.picture.cleanupPictureOrMaskAfterGenerationRun(paramValue.mask)
+				await pictureDao.cleanupPictureOrMaskAfterGenerationRun(paramValue.mask)
 			}
 		}
 	}
 
 	private getParamSet(name: string): GenerationParameterSet {
-		const context = this.getContext()
-
-		const paramSet = context.config.parameterSets.find(set => set.internalName === name)
+		const paramSet = config.parameterSets.find(set => set.internalName === name)
 		if(!paramSet){
 			throw new ApiError("validation_not_passed", `Name ${name} is not a known parameter set name.`)
 		}
@@ -156,7 +150,6 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	}
 
 	async validateInputData(inputData: GenerationTaskInputData): Promise<void> {
-		const context = this.getContext()
 		const paramDefs = this.getParams(inputData.paramSetName)
 		for(const def of paramDefs){
 			const argument = inputData.arguments[def.jsonName]
@@ -208,7 +201,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 					if(!isPictureArgument(argument)){
 						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a description of picture; it is ${argument} now.`)
 					}
-					const picture = await context.picture.getById(argument.id)
+					const picture = await pictureDao.getById(argument.id)
 					await this.validateInputPicture(picture, def)
 				} break
 			}
@@ -216,8 +209,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	}
 
 	async validateInputPicture(picture: ServerPicture | Buffer, def: PictureGenParam): Promise<PictureInfo> {
-		const context = this.getContext()
-		const picInf = await context.picture.getPictureInfo(picture)
+		const picInf = await pictureDao.getPictureInfo(picture)
 
 		if(def.minHeight !== undefined && picInf.height < def.minHeight){
 			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minHeight}px in height; it is ${picInf.height}px now.`)
@@ -258,13 +250,12 @@ export class GenerationTaskDAO extends DAO<GenerationTask, UserlessContext, DbGe
 	}
 
 	override async delete(task: GenerationTask): Promise<void> {
-		const cont = this.getContext()
-		const pictures = await cont.picture.list({
+		const pictures = await pictureDao.list({
 			filters: [{a: {field: "generationTaskId"}, op: "=", b: {value: task.id}}]
 		})
 
 		for(const picture of pictures){
-			await cont.picture.delete(picture)
+			await pictureDao.delete(picture)
 		}
 
 		return await super.delete(task)

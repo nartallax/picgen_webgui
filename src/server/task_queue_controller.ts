@@ -1,20 +1,20 @@
 import {GenerationTask, GenerationTaskInputData} from "common/entities/generation_task"
 import {ApiError} from "common/infra_entities/api_error"
 import {ApiNotification} from "common/infra_entities/notifications"
-import {cont} from "server/async_context"
-import {Config} from "server/config"
-import {ServerGenerationTaskInputData} from "server/entities/generation_task"
-import {assertIsPictureType} from "server/entities/picture"
+import {ServerGenerationTaskInputData} from "server/entities/generation_task_dao"
+import {assertIsPictureType} from "server/entities/picture_dao"
 import {GenRunner, GenRunnerCallbacks} from "server/gen_runner"
 import {log, runInCatchLog, wrapInCatchLog} from "server/log"
-import {UserlessContext, UserlessContextFactory} from "server/request_context"
 import {DebouncedCollector, makeDebounceCollector} from "server/utils/debounce_collect"
 import {unixtime} from "server/utils/unixtime"
 import * as Path from "path"
 import {promises as Fs} from "fs"
-import {ServerPicture} from "server/entities/picture"
+import {ServerPicture} from "server/entities/picture_dao"
+import {runWithMinimalContext} from "server/context"
+import {config, context, generationTaskDao, pictureDao, userDao, websocketServer} from "server/server_globals"
 
 export class TaskQueueController {
+	readonly name = "Task queue"
 
 	private runningGeneration: {
 		gen: GenRunner
@@ -24,17 +24,14 @@ export class TaskQueueController {
 	private generationIsStarting = false
 	private queueIsMoving = false
 
-	constructor(private readonly contextFactory: UserlessContextFactory) {}
-
-	async init(): Promise<void> {
+	async start(): Promise<void> {
 		this.queueIsMoving = true
-		await this.contextFactory(async context => {
-			await context.picture.init()
-			const runningTask = await context.generationTask.queryRunning()
+		await runWithMinimalContext(async() => {
+			const runningTask = await generationTaskDao.queryRunning()
 			if(runningTask){
 				log(`Discovered that task #${runningTask} is running in DB, but we are just started and could not possibly start a task. Marking it as completed, because not much we can do at this point.`)
 				runningTask.status = "completed"
-				await context.generationTask.update(runningTask)
+				await generationTaskDao.update(runningTask)
 			}
 		})
 
@@ -51,29 +48,26 @@ export class TaskQueueController {
 			this.tryStartNextGeneration()
 			return
 		} else {
-			const context = cont()
-			const task = await context.generationTask.getById(id)
+			const task = await generationTaskDao.getById(id)
 			if(userId !== null && task.userId !== userId){
 				throw new ApiError("validation_not_passed", `Task ${id} does not belong to user ${userId}`)
 			}
 			log(`Removing task #${id} from queue.`)
 			task.status = "completed"
 			task.finishTime = unixtime()
-			sendTaskUpdate(context, task, {
+			sendTaskUpdate(task, {
 				type: "task_finished",
 				taskId: task.id,
 				finishTime: task.finishTime
 			})
-			await context.generationTask.update(task)
+			await generationTaskDao.update(task)
 		}
 	}
 
 	async addToQueue(inputData: GenerationTaskInputData): Promise<GenerationTask> {
-		const context = cont()
+		await generationTaskDao.validateInputData(inputData)
 
-		await context.generationTask.validateInputData(inputData)
-
-		const user = await context.user.getCurrent()
+		const user = await userDao.getCurrent()
 		const genTask: Omit<GenerationTask, "id"> = {
 			...inputData,
 			userId: user.id,
@@ -88,16 +82,19 @@ export class TaskQueueController {
 		}
 
 		// TODO: fix runOrder here? after creation
-		const result = await context.generationTask.create(genTask)
+		const result = await generationTaskDao.create(genTask)
 		log("Enqueued task #" + result.id)
 
-		sendTaskUpdate(context, result, {
+		sendTaskUpdate(result, {
 			type: "task_created",
 			task: result
 		})
 
 		// just to make queue more uniform
-		context.onClosed(() => this.tryStartNextGeneration())
+		context.get().onClosed.push(() => {
+			// no await, intended
+			this.tryStartNextGeneration()
+		})
 
 		return result
 	}
@@ -107,19 +104,20 @@ export class TaskQueueController {
 			return
 		}
 		try {
-			const res = await this.contextFactory(async context => {
-				const nextTask = await context.generationTask.getNextInQueue()
+			// FIXME: think about moving this somewhere else
+			const res = await runWithMinimalContext(async() => {
+				const nextTask = await generationTaskDao.getNextInQueue()
 				if(!nextTask){
 					return null
 				} else {
-					return {nextTask, config: context.config}
+					return nextTask
 				}
 			})
 			if(!res){
 				log("Task queue is empty.")
 				return
 			}
-			await this.tryStartGeneration(res.config, res.nextTask)
+			await this.tryStartGeneration(res)
 		} catch(e){
 			log("Failed to run generation: " + e)
 		}
@@ -141,7 +139,7 @@ export class TaskQueueController {
 		return !this.runningGeneration && !this.generationIsStarting && this.queueIsMoving
 	}
 
-	private async tryStartGeneration(config: Config, task: GenerationTask): Promise<void> {
+	private async tryStartGeneration(task: GenerationTask): Promise<void> {
 		if(!this.shouldTryRunGeneration()){
 			return
 		}
@@ -151,8 +149,9 @@ export class TaskQueueController {
 
 			const [update, sendTaskNotification, callbacks] = this.makeTaskCallbacks(task)
 
-			const preparedInputData = await this.contextFactory(async context => {
-				return await context.generationTask.prepareInputData(task)
+			// FIXME: think about moving this somewhere else
+			const preparedInputData = await runWithMinimalContext(async() => {
+				return await generationTaskDao.prepareInputData(task)
 			})
 			const gen = new GenRunner(config, callbacks, preparedInputData, task)
 			this.runningGeneration = {gen, input: preparedInputData, estimatedDuration: null}
@@ -183,9 +182,7 @@ export class TaskQueueController {
 				finishTime: finishTime
 			})
 
-			this.contextFactory(context => {
-				context.generationTask.cleanupInputData(preparedInputData)
-			})
+			await generationTaskDao.cleanupInputData(preparedInputData)
 			await update.waitInvocationsOver()
 		} finally {
 			this.generationIsStarting = false
@@ -215,34 +212,35 @@ export class TaskQueueController {
 	}
 
 	private makeTaskCallbacks(task: GenerationTask): [
-		DebouncedCollector<(context: UserlessContext) => void>,
+		DebouncedCollector<() => void>,
 		(notification: ApiNotification) => void,
 		GenRunnerCallbacks
 	] {
-		const update = makeDebounceCollector<(context: UserlessContext, afterUpdateActions: ((context: UserlessContext) => void)[]) => void>(500, updaters => {
-			runInCatchLog(() => this.contextFactory(async context => {
-				const afterUpdateActions: ((context: UserlessContext) => void)[] = []
+		const update = makeDebounceCollector<(afterUpdateActions: (() => void)[]) => void>(500, updaters => {
+			// FIXME: think about moving it somewhere else
+			runInCatchLog(() => runWithMinimalContext(async ctx => {
+				const afterUpdateActions: (() => void)[] = []
 				const taskBeforeUpdate = JSON.stringify(task)
 				for(const updater of updaters){
-					await runInCatchLog(() => updater(context, afterUpdateActions))
+					await runInCatchLog(() => updater(afterUpdateActions))
 				}
 				if(JSON.stringify(task) !== taskBeforeUpdate){
-					await context.generationTask.update(task)
-					await context.db.flushTransaction()
+					await generationTaskDao.update(task)
+					await ctx.db.flushTransaction()
 				}
 				// afterUpdateActions is mainly intended for notifications sending
 				// and we flush transaction before notifications are sent
 				// because otherwise there's a chance that transaction won't be commited before frontend knows about the change
 				// and that's bad, because frontend is then able to query data that is not in db yet
 				for(const action of afterUpdateActions){
-					runInCatchLog(() => action(context))
+					runInCatchLog(() => action())
 				}
 			}))
 		})
 
 		function sendTaskNotification(body: ApiNotification): void {
-			update((_, actions) => actions.push(context => {
-				sendTaskUpdate(context, task, body)
+			update(actions => actions.push(() => {
+				sendTaskUpdate(task, body)
 			}))
 		}
 
@@ -279,24 +277,24 @@ export class TaskQueueController {
 				})
 			},
 
-			onFileProduced: (path, modifiedArguments) => update(async context => {
+			onFileProduced: (path, modifiedArguments) => update(async() => {
 				const ext = Path.extname(path).substring(1).toLowerCase()
 				assertIsPictureType(ext)
 				let serverPic: ServerPicture
-				switch(context.config.resultingPictureReceivingStrategy){
+				switch(config.resultingPictureReceivingStrategy){
 					case "copy": {
 						const content = await Fs.readFile(path)
-						serverPic = await context.picture.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext, modifiedArguments)
+						serverPic = await pictureDao.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext, modifiedArguments)
 						break
 					}
 					case "move": {
 						const content = await Fs.readFile(path)
-						serverPic = await context.picture.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext, modifiedArguments)
+						serverPic = await pictureDao.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext, modifiedArguments)
 						await Fs.rm(path)
 						break
 					}
 					case "refer": {
-						serverPic = await context.picture.storeGeneratedPictureByPathReference(path, task, task.generatedPictures, ext, modifiedArguments)
+						serverPic = await pictureDao.storeGeneratedPictureByPathReference(path, task, task.generatedPictures, ext, modifiedArguments)
 						break
 					}
 				}
@@ -304,7 +302,7 @@ export class TaskQueueController {
 				sendTaskNotification({
 					type: "task_generated_picture",
 					taskId: task.id,
-					picture: context.picture.stripServerData(serverPic),
+					picture: pictureDao.stripServerData(serverPic),
 					generatedPictures: task.generatedPictures
 				})
 			}),
@@ -366,7 +364,7 @@ export class TaskQueueController {
 
 }
 
-function sendTaskUpdate(context: UserlessContext, task: GenerationTask, update: ApiNotification): void {
-	context.websockets.sendToUser(task.userId, update)
-	context.websockets.sendByCriteria(conn => conn.data.user.isAdmin, {type: "task_admin_notification", task})
+function sendTaskUpdate(task: GenerationTask, update: ApiNotification): void {
+	websocketServer.sendToUser(task.userId, update)
+	websocketServer.sendByCriteria(conn => conn.data.user.isAdmin, {type: "task_admin_notification", task})
 }

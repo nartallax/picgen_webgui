@@ -1,6 +1,4 @@
 import {ApiError} from "common/infra_entities/api_error"
-import {cont} from "server/async_context"
-import {config} from "server/config"
 import {RC} from "@nartallax/ribcage"
 import {RCV} from "@nartallax/ribcage-validation"
 import {GenerationParameterSet} from "common/entities/parameter"
@@ -9,14 +7,13 @@ import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} fro
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
-import {RequestContext} from "server/request_context"
 import {unixtime} from "server/utils/unixtime"
 import {JsonFileList} from "common/entities/json_file_list"
+import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, userDao} from "server/server_globals"
+import {getHttpContext} from "server/context"
 
-async function adminCont(): Promise<RequestContext> {
-	const context = cont()
-	context.user.checkIsAdmin(await context.user.getCurrent())
-	return context
+async function checkIsAdmin(): Promise<void> {
+	userDao.checkIsAdmin(await userDao.getCurrent())
 }
 
 export namespace ServerApi {
@@ -44,78 +41,75 @@ export namespace ServerApi {
 	export const discordOauth2 = RCV.validatedFunction(
 		[RC.struct({code: RC.string()})],
 		async({code}): Promise<void> => {
-			const context = cont()
+			const context = getHttpContext()
 			const redirectUrl = new URL(context.requestUrl)
 			redirectUrl.search = ""
 			// why TF this works, but just `/` does not?
 			// I don't understand this API
 			redirectUrl.pathname = "/api/discordOauth2"
 
-			const token = await context.discordApi.getTokenByCode(code, redirectUrl + "")
-			const discordUser = await context.discordApi.getCurrentUser(token.access_token)
-			let user = await context.user.queryByDiscordId(discordUser.id)
+			const token = await discordApi.getTokenByCode(code, redirectUrl + "")
+			const discordUser = await discordApi.getCurrentUser(token.access_token)
+			let user = await userDao.queryByDiscordId(discordUser.id)
 			if(user){
-				context.user.setDiscordTokenProps(user, token)
-				context.user.setDiscordUserProps(user, discordUser)
-				await context.user.update(user)
+				userDao.setDiscordTokenProps(user, token)
+				userDao.setDiscordUserProps(user, discordUser)
+				await userDao.update(user)
 			} else {
-				const userWithoutId = context.user.makeEmptyUser()
-				context.user.setDiscordTokenProps(userWithoutId, token)
-				context.user.setDiscordUserProps(userWithoutId, discordUser)
-				user = await context.user.create(userWithoutId)
+				const userWithoutId = userDao.makeEmptyUser()
+				userDao.setDiscordTokenProps(userWithoutId, token)
+				userDao.setDiscordUserProps(userWithoutId, discordUser)
+				user = await userDao.create(userWithoutId)
 			}
 
-			context.user.setDiscordCookieToken(user)
+			userDao.setDiscordCookieToken(user)
 			context.redirectUrl = "/"
 		})
 
 	export const getUserData = RCV.validatedFunction(
 		[],
 		async(): Promise<User> => {
-			const context = cont()
-			const user = await context.user.getCurrent()
-			await context.user.maybeUpdateDiscordTokenProps(user)
+			const user = await userDao.getCurrent()
+			await userDao.maybeUpdateDiscordTokenProps(user)
 			if(!user.discordAccessToken){
 				throw new ApiError("not_logged_in", "User is not logged in.")
 			}
 
 			// it's not the best idea to do it here
 			// but we should update this data at some point, right?
-			const discordUser = await context.discordApi.getCurrentUser(user.discordAccessToken)
-			context.user.setDiscordUserProps(user, discordUser)
-			await context.user.update(user)
+			const discordUser = await discordApi.getCurrentUser(user.discordAccessToken)
+			userDao.setDiscordUserProps(user, discordUser)
+			await userDao.update(user)
 
-			context.user.setDiscordCookieToken(user)
-			return context.user.stripUserForClient(user)
+			userDao.setDiscordCookieToken(user)
+			return userDao.stripUserForClient(user)
 		})
 
 	export const logout = RCV.validatedFunction(
 		[],
 		async(): Promise<void> => {
-			const context = cont()
-			const user = await context.user.getCurrent()
-			context.user.clearLoginFields(user)
-			await context.user.update(user)
-			context.user.deleteDiscordCookieToken()
+			const user = await userDao.getCurrent()
+			userDao.clearLoginFields(user)
+			await userDao.update(user)
+			userDao.deleteDiscordCookieToken()
 		})
 
 	export const createGenerationTask = RCV.validatedFunction(
 		[RC.struct({inputData: GenerationTaskInputData})],
 		async({inputData}): Promise<GenerationTask> => {
-			return await cont().taskQueue.addToQueue(inputData)
+			return await taskQueue.addToQueue(inputData)
 		})
 
 	export const listTasks = RCV.validatedFunction(
 		[RC.struct({query: SimpleListQueryParams(GenerationTask)})],
 		async({query}): Promise<GenerationTaskWithPictures[]> => {
-			const context = cont()
-			const currentUser = await context.user.getCurrent();
+			const currentUser = await userDao.getCurrent();
 			(query.filters ||= []).push(
 				{op: "=", a: {field: "userId"}, b: {value: currentUser.id}}
 			)
-			const tasks = await context.generationTask.list(query)
-			const serverPictures = await context.picture.queryAllFieldIncludes("generationTaskId", tasks.map(x => x.id))
-			const pictures = serverPictures.map(pic => context.picture.stripServerData(pic))
+			const tasks = await generationTaskDao.list(query)
+			const serverPictures = await pictureDao.queryAllFieldIncludes("generationTaskId", tasks.map(x => x.id))
+			const pictures = serverPictures.map(pic => pictureDao.stripServerData(pic))
 			const taskMap = new Map<number, GenerationTaskWithPictures>(tasks.map(task => [task.id, {...task, pictures: []}]))
 			for(const picture of pictures){
 				const task = taskMap.get(picture.generationTaskId!)!
@@ -124,7 +118,7 @@ export namespace ServerApi {
 			const result = [...taskMap.values()]
 			for(const task of result){
 				task.pictures.sort((a, b) => a.id - b.id)
-				context.taskQueue.tryAddEstimatedDuration(task)
+				taskQueue.tryAddEstimatedDuration(task)
 			}
 			return result
 		})
@@ -133,8 +127,6 @@ export namespace ServerApi {
 		// actually number expected, string is for calling this stuff through HTTP GET
 		[RC.struct({id: RC.union([RC.int(), RC.string()]), salt: RC.union([RC.int(), RC.string()])})],
 		async({id, salt}): Promise<Buffer> => {
-			const context = cont()
-
 			const pictureId = typeof(id) === "string" ? parseInt(id) : id
 			if(Number.isNaN(pictureId)){
 				throw new ApiError("generic", "Bad picture ID: " + id)
@@ -145,29 +137,30 @@ export namespace ServerApi {
 				throw new ApiError("generic", "Bad picture salt: " + salt)
 			}
 
-			const picture = await context.picture.getById(pictureId)
+			const picture = await pictureDao.getById(pictureId)
 			if(picture.salt !== pictureSalt){
 				throw new ApiError("generic", "Wrong salt")
 			}
 
-			context.responseHeaders["Content-Type"] = MimeTypes.contentType("img." + picture.ext) || "image/jpeg"
-			context.responseHeaders["Cache-Control"] = "public,max-age=31536000,immutable"
+			const ctx = getHttpContext()
+			ctx.responseHeaders["Content-Type"] = MimeTypes.contentType("img." + picture.ext) || "image/jpeg"
+			ctx.responseHeaders["Cache-Control"] = "public,max-age=31536000,immutable"
 
 			// TODO: stream directly into http stream?
-			const result = await context.picture.getPictureData(picture)
+			const result = await pictureDao.getPictureData(picture)
 			return result
 		})
 
 	export const getPictureInfoById = RCV.validatedFunction(
 		[RC.struct({id: RC.int(), salt: RC.int()})],
 		async({id, salt}): Promise<Picture & PictureInfo> => {
-			const context = cont()
-			const picture = await context.picture.getById(id)
+
+			const picture = await pictureDao.getById(id)
 			if(picture.salt !== salt){
 				throw new ApiError("generic", "Wrong salt")
 			}
-			const info = await context.picture.getPictureInfo(picture)
-			const strippedPicture = context.picture.stripServerData(picture)
+			const info = await pictureDao.getPictureInfo(picture)
+			const strippedPicture = pictureDao.stripServerData(picture)
 			return {
 				...strippedPicture,
 				...info
@@ -177,9 +170,9 @@ export namespace ServerApi {
 	export const killOwnTask = RCV.validatedFunction(
 		[RC.struct({id: RC.int()})],
 		async({id}): Promise<void> => {
-			const context = cont()
-			const user = await context.user.getCurrent()
-			await context.taskQueue.kill(id, user.id)
+
+			const user = await userDao.getCurrent()
+			await taskQueue.kill(id, user.id)
 		})
 
 	export const uploadPictureAsArgument = RCV.validatedFunction(
@@ -189,41 +182,41 @@ export namespace ServerApi {
 				throw new Error("Data is not buffer!")
 			}
 
-			const context = cont()
-			const pic = await context.picture.uploadPictureAsArgumentAndValidate(paramSetName, paramName, fileName, data)
-			return context.picture.stripServerData(pic)
+
+			const pic = await pictureDao.uploadPictureAsArgumentAndValidate(paramSetName, paramName, fileName, data)
+			return pictureDao.stripServerData(pic)
 		})
 
 	export const deleteTask = RCV.validatedFunction(
 		[RC.struct({taskId: RC.int()})],
 		async({taskId}): Promise<void> => {
-			const context = cont()
+
 			const [user, task] = await Promise.all([
-				context.user.getCurrent(),
-				context.generationTask.getById(taskId)
+				userDao.getCurrent(),
+				generationTaskDao.getById(taskId)
 			])
 			if(task.userId !== user.id){
 				throw new ApiError("validation_not_passed", `Task ${task.id} does not belong to user ${user.id}.`)
 			}
-			await context.generationTask.delete(task)
+			await generationTaskDao.delete(task)
 		}
 	)
 
 	export const adminListUsers = RCV.validatedFunction(
 		[RC.struct({query: SimpleListQueryParams(User)})],
 		async({query}): Promise<User[]> => {
-			const context = await adminCont()
-			const users = await context.user.list(query)
-			return users.map(user => context.user.stripUserForClient(user))
+			await checkIsAdmin()
+			const users = await userDao.list(query)
+			return users.map(user => userDao.stripUserForClient(user))
 		}
 	)
 
 	export const adminUpdateUser = RCV.validatedFunction(
 		[RC.struct({user: User})],
 		async({user}): Promise<void> => {
-			const context = await adminCont()
-			await context.user.update({
-				...await context.user.getById(user.id),
+			await checkIsAdmin()
+			await userDao.update({
+				...await userDao.getById(user.id),
 				...user
 			})
 		}
@@ -231,78 +224,77 @@ export namespace ServerApi {
 
 	export const getIsUserControlEnabled = RCV.validatedFunction(
 		[],
-		() => cont().config.userControl
+		() => config.userControl
 	)
 
 	export const adminListTasks = RCV.validatedFunction(
 		[RC.struct({query: SimpleListQueryParams(GenerationTask)})],
 		async({query}): Promise<GenerationTask[]> => {
-			const context = await adminCont()
-			return await context.generationTask.list(query)
+			await checkIsAdmin()
+			return await generationTaskDao.list(query)
 		}
 	)
 
 	export const adminKillTask = RCV.validatedFunction(
 		[RC.struct({taskId: RC.int()})],
 		async({taskId}): Promise<void> => {
-			const context = await adminCont()
-			await context.taskQueue.kill(taskId, null)
+			await checkIsAdmin()
+			await taskQueue.kill(taskId, null)
 		}
 	)
 
 	export const adminKillAllQueuedTasks = RCV.validatedFunction(
 		[],
 		async(): Promise<void> => {
-			const context = await adminCont()
-			await context.generationTask.killAllQueued(null)
+			await checkIsAdmin()
+			await generationTaskDao.killAllQueued(null)
 		}
 	)
 
 	export const adminKillAllQueuedAndRunningTasks = RCV.validatedFunction(
 		[],
 		async(): Promise<void> => {
-			const context = await adminCont()
-			await context.generationTask.killAllQueuedAndRunning(null)
+			await checkIsAdmin()
+			await generationTaskDao.killAllQueuedAndRunning(null)
 		}
 	)
 
 	export const adminPauseQueue = RCV.validatedFunction(
 		[],
 		async(): Promise<void> => {
-			const context = await adminCont()
-			context.taskQueue.pause()
+			await checkIsAdmin()
+			taskQueue.pause()
 		}
 	)
 
 	export const adminUnpauseQueue = RCV.validatedFunction(
 		[],
 		async(): Promise<void> => {
-			const context = await adminCont()
-			context.taskQueue.unpause()
+			await checkIsAdmin()
+			taskQueue.unpause()
 		}
 	)
 
 	export const getIsQueuePaused = RCV.validatedFunction(
 		[],
 		async(): Promise<boolean> => {
-			const context = cont()
-			return context.taskQueue.isPaused
+			return taskQueue.isPaused
 		}
 	)
 
 	export const setPictureFavorite = RCV.validatedFunction(
 		[RC.struct({pictureId: RC.number(), isFavorite: RC.bool()})],
 		async({pictureId, isFavorite}): Promise<number | null> => {
-			const context = cont()
+
 			const [picture, user] = await Promise.all([
-				context.picture.getById(pictureId),
-				context.user.getCurrent()
+				pictureDao.getById(pictureId),
+				userDao.getCurrent()
 			])
 			if(picture.ownerUserId !== user.id){
 				throw new Error(`Picture ${picture.id} does not belong to user ${user.id}.`)
 			}
 			picture.favoritesAddTime = isFavorite ? unixtime() : null
-			context.picture.update(picture)
+			pictureDao.update(picture)
 			return picture.favoritesAddTime
 		}
 	)
@@ -310,17 +302,17 @@ export namespace ServerApi {
 	export const listPicturesWithTasks = RCV.validatedFunction(
 		[RC.struct({query: SimpleListQueryParams(Picture)})],
 		async({query}): Promise<PictureWithTask[]> => {
-			const context = cont()
-			const currentUser = await context.user.getCurrent();
+
+			const currentUser = await userDao.getCurrent();
 			(query.filters ||= []).push(
 				{op: "=", a: {field: "ownerUserId"}, b: {value: currentUser.id}},
 			)
-			const serverPictures = await context.picture.list(query)
-			const pictures = serverPictures.map(pic => context.picture.stripServerData(pic) as PictureWithTask)
+			const serverPictures = await pictureDao.list(query)
+			const pictures = serverPictures.map(pic => pictureDao.stripServerData(pic) as PictureWithTask)
 
 			const taskIds = [...new Set(pictures.map(x => x.generationTaskId))]
 				.filter((x): x is number => x !== null)
-			const tasks = await context.generationTask.list({
+			const tasks = await generationTaskDao.list({
 				filters: [{
 					a: {field: "id"},
 					op: "in",
@@ -345,7 +337,7 @@ export namespace ServerApi {
 	export const getAllJsonFileLists = RCV.validatedFunction(
 		[],
 		async(): Promise<readonly JsonFileList[]> => {
-			return cont().jsonFileList.getAllLists()
+			return jsonFileLists.getAllLists()
 		}
 	)
 

@@ -40,11 +40,9 @@ export type ConfigFile = RC.Value<typeof ConfigFile>
 
 export type Config = CLIArgs & ConfigFile & AuxConfigFilesData
 
-export let config: Config = null as unknown as Config
-
 let configFileValidator: ((configFile: unknown) => void) | null = null
 
-export async function loadConfig(): Promise<void> {
+export async function loadConfig(): Promise<Config> {
 
 	if(!configFileValidator){
 		configFileValidator = RCV.getValidatorBuilder().build(ConfigFile)
@@ -59,7 +57,7 @@ export async function loadConfig(): Promise<void> {
 		Fs.readFile(newConfig.tags.shapeTagsFile, "utf-8")
 	])
 
-	config = {
+	return {
 		...args,
 		...newConfig,
 		discordClientSecret: discordClientSecret.trim(),

@@ -6,7 +6,6 @@ import {isPathInsidePath} from "server/utils/is_path_inside_path"
 import {isEnoent} from "server/utils/is_enoent"
 import {errToString} from "server/utils/err_to_string"
 import {readStreamToBuffer} from "server/utils/read_stream_to_buffer"
-import {RequestContext, RequestContextFactory} from "server/request_context"
 import {ApiError} from "common/infra_entities/api_error"
 import {log} from "server/log"
 import {RCV} from "@nartallax/ribcage-validation"
@@ -23,8 +22,15 @@ interface HttpServerOptions {
 	readonly apiMethods: {
 		readonly [name: string]: (args: Record<string, unknown>) => (unknown | Promise<unknown>)
 	}
-	readonly contextFactory: RequestContextFactory
 	readonly httpRootUrl?: string
+	readonly runRequestHandler: <T>(req: Http.IncomingMessage, runner: () => T | Promise<T>, methodName: string, methodArgs: Record<string, unknown>) => Promise<RequestRunResult<T>>
+}
+
+interface RequestRunResult<T> {
+	body?: T
+	cookie?: string[]
+	headers?: Http.OutgoingHttpHeaders
+	redirectUrl?: string
 }
 
 if(Math.random() > 1){
@@ -33,6 +39,7 @@ if(Math.random() > 1){
 }
 
 export class HttpServer {
+	readonly name = "HTTP server"
 
 	readonly server: Http.Server
 
@@ -181,19 +188,11 @@ export class HttpServer {
 		}
 
 		const methodArgs = await this.getApiBody(req, url)
-		let result: unknown = null
+		let result: RequestRunResult<unknown> | null = null
 		let error: Error | null = null
-		let context: RequestContext | null = null
 		try {
-			[result, context] = await this.opts.contextFactory(req, async context => {
-
-				if((req.method ?? "GET").toUpperCase() !== "GET"){
-					// if it goes through GET - it's not very important probably, no need to log
-					const user = await context.user.queryCurrent()
-					const userStr = !user ? "<anon>" : user.displayName
-					log(`${userStr}: ${methodName}(${argsToString(methodArgs)})`)
-				}
-
+			// TODO: uhhhh
+			result = await this.opts.runRequestHandler(req, async() => {
 				let callResult: unknown
 				if(apiMethod.length === 0){
 					const keys = Object.keys(methodArgs)
@@ -205,8 +204,8 @@ export class HttpServer {
 					callResult = apiMethod(methodArgs)
 				}
 
-				return [await Promise.resolve(callResult), context]
-			})
+				return await Promise.resolve(callResult)
+			}, methodName, methodArgs)
 		} catch(e){
 			if(e instanceof Error){
 				let err: Error = e
@@ -214,7 +213,7 @@ export class HttpServer {
 					err = new ApiError("validation_not_passed", e.message)
 				}
 				const errStr = ApiError.isApiError(err) ? err.message : err.stack || err.message
-				log(`Error calling ${methodName}(${argsToString(methodArgs)}): ${errStr}`)
+				log(`Error calling ${methodName}(${apiMethodArgsToString(methodArgs)}): ${errStr}`)
 				error = err
 			} else {
 				throw e
@@ -222,32 +221,32 @@ export class HttpServer {
 		}
 
 		let resp: string | Buffer
-		if(error){
-			resp = JSON.stringify(errorToErrorApiResp(error))
+		if(error || !result){
+			resp = JSON.stringify(errorToErrorApiResp(error ?? new Error("No error, but no response either")))
 			await endRequest(res, 500, "Server Error", resp)
 		} else {
-			if(result instanceof Buffer){
-				resp = result
+			if(result.body instanceof Buffer){
+				resp = result.body
 			} else {
-				const apiResp: ApiResponse<typeof result> = {result: result === undefined ? null : result}
+				const apiResp: ApiResponse<Required<typeof result>["body"]> = {result: result.body ?? null}
 				resp = JSON.stringify(apiResp)
 			}
-			if(context){
-				for(const newCookie of context.cookie.harvestSetCookieLines()){
-					res.setHeader("Set-Cookie", newCookie)
+			for(const newCookie of (result.cookie ?? [])){
+				res.setHeader("Set-Cookie", newCookie)
+			}
+			for(const [headerName, rawValue] of Object.entries(result.headers ?? {})){
+				if(rawValue === undefined){
+					continue
 				}
-				for(const headerName in context.responseHeaders){
-					const rawValue = context.responseHeaders[headerName]!
-					for(const value of Array.isArray(rawValue) ? rawValue : [rawValue]){
-						res.setHeader(headerName, value)
-					}
+				for(const value of Array.isArray(rawValue) ? rawValue : [rawValue]){
+					res.setHeader(headerName, value)
 				}
-				if(context.redirectUrl){
-					res.setHeader("Location", context.redirectUrl)
-					await endRequest(res, 302, "Redirect", resp)
-				} else {
-					await endRequest(res, 200, "OK", resp)
-				}
+			}
+			if(result.redirectUrl){
+				res.setHeader("Location", result.redirectUrl)
+				await endRequest(res, 302, "Redirect", resp)
+			} else {
+				await endRequest(res, 200, "OK", resp)
 			}
 		}
 	}
@@ -276,7 +275,7 @@ function waitReadStreamToEnd(stream: Fs.ReadStream): Promise<void> {
 	})
 }
 
-function argsToString(methodArgs: Record<string, unknown>): string {
+export function apiMethodArgsToString(methodArgs: Record<string, unknown>): string {
 	return Object.entries(methodArgs).map(([k, v]) => {
 		return k + ": " + (v instanceof Uint8Array ? "<binary>" : JSON.stringify(v))
 	}).join(", ")

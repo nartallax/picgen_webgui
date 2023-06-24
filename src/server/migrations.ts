@@ -1,8 +1,8 @@
-import {config} from "server/config"
 import {Migration} from "server/db/db_controller"
 import {log} from "server/log"
 import * as Path from "path"
 import {promises as Fs} from "fs"
+import {config} from "server/server_globals"
 
 export const migrations: Migration[] = [
 	{name: "00000_users_gentasks_pictures", handler: async db => {

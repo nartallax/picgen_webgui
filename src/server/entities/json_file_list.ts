@@ -1,14 +1,13 @@
 import {JsonFileList, JsonFileListItemDescription, JsonFileListItemDescriptionFile} from "common/entities/json_file_list"
-import {config} from "server/config"
 import {promises as Fs} from "fs"
 import * as Path from "path"
 import {RCV} from "@nartallax/ribcage-validation"
 import watch from "node-watch"
-import {UserlessContextFactory} from "server/request_context"
 import {RunOnlyOneAtTimeFn, runOnlyOneAtTime} from "common/utils/run_only_one_at_time"
 import {log} from "server/log"
 import {JsonFileListGenParam} from "common/entities/parameter"
 import {md5} from "common/utils/md5"
+import {config, websocketServer} from "server/server_globals"
 
 const jsonListItemFileValidator = RCV.getValidatorBuilder().build(JsonFileListItemDescriptionFile)
 
@@ -27,22 +26,9 @@ type List = ListDescription & {
 }
 
 export class JSONFileListController {
+	readonly name = "JSON file list"
 
-	private lists: ReadonlyMap<string, List>
-
-	constructor(private readonly contextFactory: UserlessContextFactory) {
-		this.lists = new Map(this.getListDescriptions().map(listDescription => {
-			const list: List = {
-				...listDescription,
-				values: [],
-				watcher: null,
-				reload: runOnlyOneAtTime(async() => {
-					list.values = await this.readFiles(listDescription.directory, listDescription.siblingExt)
-				})
-			}
-			return [list.id, list]
-		}))
-	}
+	private lists: ReadonlyMap<string, List> = new Map()
 
 	private getListDescriptions(): ListDescription[] {
 		return config.parameterSets.flatMap(paramSet =>
@@ -66,6 +52,18 @@ export class JSONFileListController {
 	}
 
 	async start(): Promise<void> {
+		this.lists = new Map(this.getListDescriptions().map(listDescription => {
+			const list: List = {
+				...listDescription,
+				values: [],
+				watcher: null,
+				reload: runOnlyOneAtTime(async() => {
+					list.values = await this.readFiles(listDescription.directory, listDescription.siblingExt)
+				})
+			}
+			return [list.id, list]
+		}))
+
 		for(const list of this.lists.values()){
 			this.trySetupWatcher(list)
 			await list.reload()
@@ -104,12 +102,10 @@ export class JSONFileListController {
 				}
 
 				log(`Changes detected in json file list directory ${list.directory}; sending updates.`)
-				this.contextFactory(context => {
-					context.websockets.sendToAll({
-						type: "json_file_list_update",
-						directory: list.directory,
-						items: list.values
-					})
+				websocketServer.sendToAll({
+					type: "json_file_list_update",
+					directory: list.directory,
+					items: list.values
 				})
 			}
 		)

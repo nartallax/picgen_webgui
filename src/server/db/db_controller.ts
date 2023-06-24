@@ -21,6 +21,8 @@ export interface Migration {
 const maxSimultaneouslyOpenConnections = 1
 
 export class DbController {
+	readonly name = "DB controller"
+
 	private connWaiters = [] as (() => void)[]
 	private openConnectionsCount = 0
 
@@ -28,7 +30,7 @@ export class DbController {
 
 	constructor(readonly dbPath: string, readonly migrations: Migration[]) {}
 
-	async init(): Promise<void> {
+	async start(): Promise<void> {
 		await this.migrate()
 		await this.inTransaction(conn => this.shaper.init(conn))
 	}
@@ -38,6 +40,7 @@ export class DbController {
 			await this.waitConnectionClosed()
 		}
 		this.openConnectionsCount++
+		// log("Connection opened, conncount: " + this.openConnectionsCount)
 
 		const conn = new DbConnectionImpl(() => this.openConnection())
 		try {
@@ -52,6 +55,7 @@ export class DbController {
 		} finally {
 			await conn.close(false, true)
 			this.openConnectionsCount--
+			// log("Connection closed, conncount: " + this.openConnectionsCount)
 			this.callConnectionCloseWaiters()
 		}
 	}
@@ -72,6 +76,10 @@ export class DbController {
 		while(this.openConnectionsCount > 0){
 			await this.waitConnectionClosed()
 		}
+	}
+
+	async stop(): Promise<void> {
+		await this.waitAllConnectionsClosed()
 	}
 
 	private openConnection(): Promise<SqliteDatabase> {

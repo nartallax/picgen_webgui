@@ -1,19 +1,17 @@
 import {BinaryQueryCondition} from "common/infra_entities/query"
 import {FilterField, FilterValue, SimpleListQueryParams, allowedFilterOps} from "common/infra_entities/query"
-import {UserlessContext} from "server/request_context"
+import {context, dbController} from "server/server_globals"
 
 export type IdentifiedEntity = {
 	readonly id: number
 }
 
-export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext = UserlessContext, S extends IdentifiedEntity = T> {
+export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity = T> {
 
 	protected abstract getTableName(): string
 	protected getMaxQueryRows(): number {
 		return 1000
 	}
-
-	constructor(protected readonly getContext: () => C) {}
 
 	getById(id: number): Promise<T> {
 		return this.getByFieldValue("id", id)
@@ -63,7 +61,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const fieldsStr = fields.map(x => `"${x}"`).join(", ")
 		const placeholdersStr = fields.map(() => "?").join(", ")
 		const fieldValues = fields.map(fieldName => convertedItem[fieldName as keyof Omit<S, "id">])
-		const resultArr: S[] = await this.getContext().db.query(`
+		const resultArr: S[] = await context.get().db.query(`
 			insert into "${this.getTableName()}"(${fieldsStr})
 			values (${placeholdersStr})
 			returning *`, fieldValues)
@@ -80,7 +78,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const fieldSetters = fields.map(field => `"${field}" = ?`).join(", ")
 		const fieldValues = fields.map(fieldName => convertedItem[fieldName as keyof Omit<S, "id">])
 
-		await this.getContext().db.query(`
+		await context.get().db.query(`
 			update "${this.getTableName()}"
 			set ${fieldSetters}
 			where "id" = ?`, [...fieldValues, convertedItem.id])
@@ -88,7 +86,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 	}
 
 	async delete(item: T): Promise<void> {
-		await this.getContext().db.query(`
+		await context.get().db.query(`
 			delete from "${this.getTableName()}"
 			where "id" = ?`, [item.id])
 	}
@@ -103,7 +101,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const limit = "limit " + Math.min(this.getMaxQueryRows(), query.limit ?? Number.MAX_SAFE_INTEGER)
 		where = !where ? "" : "where " + where
 		const sortBy = !query.sortBy ? "" : `order by "${query.sortBy}" ${(query.desc ? " desc" : " asc")}`
-		const result: S[] = await this.getContext().db.query(`
+		const result: S[] = await context.get().db.query(`
 			select *
 			from "${this.getTableName()}"
 			${where}
@@ -166,7 +164,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 		const placeholders = values.map(() => "?")
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const mappedValues = values.map(x => this.fieldToDb(field as string & keyof T & keyof S, x as any))
-		const result: S[] = await this.getContext().db.query(`
+		const result: S[] = await context.get().db.query(`
 			select *
 			from "${this.getTableName()}"
 			where "${field}" in (${placeholders.join(", ")})
@@ -177,7 +175,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 
 	protected async queryByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T | null> {
 		this.validateFieldNames([fieldName])
-		const result: S[] = await this.getContext().db.query(`select * from "${this.getTableName()}" where "${fieldName}" = ?`, [
+		const result: S[] = await context.get().db.query(`select * from "${this.getTableName()}" where "${fieldName}" = ?`, [
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			this.fieldToDb(fieldName as keyof S & keyof T & string, value as any)
 		])
@@ -196,7 +194,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 	// TODO: replace with list()
 	protected async querySortedFiltered<K extends keyof T & string>(fieldName: K, value: T[K], sortBy: string & keyof T, desc: boolean, limit = -1): Promise<T[]> {
 		this.validateFieldNames([fieldName, sortBy])
-		const result: S[] = await this.getContext().db.query(`
+		const result: S[] = await context.get().db.query(`
 			select * 
 			from "${this.getTableName()}"
 			where "${fieldName}" = ?
@@ -210,7 +208,7 @@ export abstract class DAO<T extends IdentifiedEntity, C extends UserlessContext 
 
 	private fieldSet: ReadonlySet<string> | null = null
 	private getFieldSet(): ReadonlySet<string> {
-		return this.fieldSet ||= this.getContext().dbController.shaper.getFieldSetOfTable(this.getTableName())
+		return this.fieldSet ||= dbController.shaper.getFieldSetOfTable(this.getTableName())
 	}
 
 	private validateFieldNames(fieldList: readonly string[]): void {

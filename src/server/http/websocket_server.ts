@@ -14,6 +14,8 @@ type IdWithData<K, D> = {
 
 export class WebsocketServer<I, W = void, K extends string | number = string | number, D = void> {
 
+	readonly name = "Websocket server"
+
 	private readonly server: WebSocket.WebSocketServer
 
 	private readonly userSockets = new Map<K, SocketWithData<K, D>[]>()

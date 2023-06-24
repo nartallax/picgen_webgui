@@ -5,7 +5,6 @@ import {promises as Fs} from "fs"
 import * as FsSync from "fs"
 import {directoryExists, fileExists} from "server/utils/file_exists"
 import {unixtime} from "server/utils/unixtime"
-import {RequestContext, UserlessContext} from "server/request_context"
 import {httpGet} from "server/http/http_req"
 import {makeTempFile, makeTempFileName} from "server/utils/with_temp_file"
 import {decodePictureMask} from "common/picture_mask_encoding"
@@ -13,11 +12,11 @@ import {rasterizePictureMask} from "server/utils/picture_mask_rasterizer"
 import {Picture, PictureType, pictureTypeSet} from "common/entities/picture"
 import {GenerationTask} from "common/entities/generation_task"
 import {generateRandomIdentifier} from "common/utils/generate_random_identifier"
-import {cont} from "server/async_context"
 import {ApiError} from "common/infra_entities/api_error"
 import {getParamDefList} from "common/entities/parameter"
 import {isEnoent} from "server/utils/is_enoent"
 import {log} from "server/log"
+import {config, generationTaskDao, pictureDao, userDao} from "server/server_globals"
 
 export interface ServerPicture extends Picture {
 	directLink: string | null
@@ -39,14 +38,15 @@ async function createPictureDir(imgDir: string) {
 	pictureDirCreated = true
 }
 
-export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> extends DAO<ServerPicture, C> {
+export class PictureDAO extends DAO<ServerPicture> {
+	readonly name = "Picture DAO"
 
 	protected getTableName(): string {
 		return "pictures"
 	}
 
-	async init(): Promise<void> {
-		const dirPath = this.getContext().config.runningGenerationPictureStorageDir
+	async start(): Promise<void> {
+		const dirPath = config.runningGenerationPictureStorageDir
 		if(await directoryExists(dirPath)){
 			await Fs.rm(dirPath, {recursive: true})
 		}
@@ -83,9 +83,7 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 	}
 
 	async uploadPictureAsArgumentAndValidate(paramSetName: string, paramName: string, fileName: string, data: Buffer): Promise<ServerPicture> {
-		const context = cont()
-
-		const paramSet = context.config.parameterSets.find(set => set.internalName === paramSetName)
+		const paramSet = config.parameterSets.find(set => set.internalName === paramSetName)
 		if(!paramSet){
 			throw new ApiError("validation_not_passed", "Unknown parameter set name: " + paramSetName)
 		}
@@ -98,14 +96,14 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 			throw new ApiError("validation_not_passed", `Parameter ${paramName} is not picture parameter, it's ${paramDef.type} parameter. You cannot upload a picture as this parameter value.`)
 		}
 
-		const pictureInfo = await context.generationTask.validateInputPicture(data, paramDef)
-		const user = await context.user.getCurrent()
-		const serverPic = await context.picture.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
+		const pictureInfo = await generationTaskDao.validateInputPicture(data, paramDef)
+		const user = await userDao.getCurrent()
+		const serverPic = await pictureDao.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
 		return serverPic
 	}
 
 	protected makeFullPicturePath(fileName: string): string {
-		return Path.resolve(this.getContext().config.pictureStorageDir, fileName)
+		return Path.resolve(config.pictureStorageDir, fileName)
 	}
 
 	private getSalt(): number {
@@ -125,7 +123,7 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 	}
 
 	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"]): Promise<ServerPicture> {
-		const relPath = Path.relative(this.getContext().config.pictureStorageDir, path)
+		const relPath = Path.relative(config.pictureStorageDir, path)
 		return await this.create({
 			creationTime: unixtime(),
 			directLink: null,
@@ -153,7 +151,7 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 	}
 
 	private async storePicture(data: Buffer, picture: Omit<Picture, "id" | "creationTime">): Promise<ServerPicture> {
-		await createPictureDir(this.getContext().config.pictureStorageDir)
+		await createPictureDir(config.pictureStorageDir)
 		const fileName = await generateRandomIdentifier(fileName => fileExists(this.makeFullPicturePath(fileName)))
 		const filePath = this.makeFullPicturePath(fileName)
 		try {
@@ -216,8 +214,7 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 	async getPicturePathForGenerationRun(picture: ServerPicture, info?: PictureInfo): Promise<{path: string, info: PictureInfo}> {
 		info ??= await this.getPictureInfo(picture)
 		const pictureBytes = await this.getPictureData(picture)
-		const context = this.getContext()
-		const runningGenDir = context.config.runningGenerationPictureStorageDir
+		const runningGenDir = config.runningGenerationPictureStorageDir
 		return {
 			path: await makeTempFile(pictureBytes, info.ext, runningGenDir),
 			info: info
@@ -225,8 +222,7 @@ export class UserlessPictureDAO<C extends UserlessContext = UserlessContext> ext
 	}
 
 	async getMaskPathForGenerationRun(mask: string, info: PictureInfo): Promise<string> {
-		const context = this.getContext()
-		const runningGenDir = context.config.runningGenerationPictureStorageDir
+		const runningGenDir = config.runningGenerationPictureStorageDir
 		const maskData = decodePictureMask(mask)
 		const path = await makeTempFileName("png", runningGenDir)
 		await rasterizePictureMask(maskData, path, info)
@@ -262,5 +258,3 @@ export function assertIsPictureType(x: string): asserts x is PictureType {
 		throw new Error(`"${x}" is not a known picture type.`)
 	}
 }
-
-export class CompletePictureDAO extends UserlessPictureDAO<RequestContext> {}

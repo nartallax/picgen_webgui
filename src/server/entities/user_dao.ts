@@ -1,9 +1,9 @@
 import {User} from "common/entities/user"
 import {ApiError} from "common/infra_entities/api_error"
-import {cont} from "server/async_context"
+import {getHttpContext} from "server/context"
 import {DAO} from "server/dao"
 import {DiscordApiAccessTokenResponse, DiscordApiUser} from "server/discord_api_client"
-import {RequestContext, UserlessContext} from "server/request_context"
+import {config, context, discordApi} from "server/server_globals"
 import {unixtime} from "server/utils/unixtime"
 
 export interface ServerUser extends User {
@@ -14,7 +14,9 @@ export interface ServerUser extends User {
 
 const timeMarginBeforeRenewal = 15 * 60
 
-export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extends DAO<ServerUser, C> {
+export class UserDAO extends DAO<ServerUser> {
+
+	readonly discordTokenCookieName = "picgen-bot-discord-token"
 
 	protected override fieldFromDb<K extends keyof ServerUser & string>(field: K, value: ServerUser[K]): unknown {
 		switch(field){
@@ -74,11 +76,11 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 	}
 
 	isAdmin(user: ServerUser): boolean {
-		return !cont().config.userControl || user.isAdmin
+		return !config.userControl || user.isAdmin
 	}
 
 	isAllowed(user: ServerUser): boolean {
-		return !cont().config.userControl || user.isAllowed
+		return !config.userControl || user.isAllowed
 	}
 
 	checkIsAdmin(user: ServerUser): void {
@@ -100,22 +102,15 @@ export class UserlessUserDAO<C extends UserlessContext = UserlessContext> extend
 		}
 	}
 
-}
-
-export class CompleteUserDAO extends UserlessUserDAO<RequestContext> {
-
-	readonly discordTokenCookieName = "picgen-bot-discord-token"
-	private currentUser: ServerUser | null | undefined = undefined
-
 	setDiscordCookieToken(user: ServerUser): void {
 		if(!user.discordAccessToken){
 			throw new Error("Cannot send discord access token to client: it's empty!")
 		}
-		this.getContext().cookie.set(this.discordTokenCookieName, user.discordAccessToken)
+		getHttpContext().cookie.set(this.discordTokenCookieName, user.discordAccessToken)
 	}
 
 	deleteDiscordCookieToken(): void {
-		this.getContext().cookie.delete(this.discordTokenCookieName)
+		getHttpContext().cookie.delete(this.discordTokenCookieName)
 	}
 
 	async maybeUpdateDiscordTokenProps(user: ServerUser): Promise<void> {
@@ -125,21 +120,32 @@ export class CompleteUserDAO extends UserlessUserDAO<RequestContext> {
 		if(user.discordTokenExpiresAt - timeMarginBeforeRenewal > unixtime()){
 			return
 		}
-		const token = await this.getContext().discordApi.getTokenByRefreshToken(user.discordRefreshToken)
+		const token = await discordApi.getTokenByRefreshToken(user.discordRefreshToken)
 		this.setDiscordTokenProps(user, token)
 	}
 
+	// TODO: think about updating current user; this may lead to inconsistencies
+	private currentUserCacheKey = "current-user"
+	private getCachedCurrentUser(): ServerUser | null | undefined {
+		return context.get().cache[this.currentUserCacheKey] as ServerUser | null | undefined
+	}
+	private setCachedCurrentUser(user: ServerUser | null): void {
+		context.get().cache[this.currentUserCacheKey] = user
+	}
+
 	async queryCurrent(): Promise<ServerUser | null> {
-		if(this.currentUser || this.currentUser === null){
-			return this.currentUser
+		let currentUser = this.getCachedCurrentUser()
+		if(currentUser !== undefined){
+			return currentUser
 		}
-		const cookie = this.getContext().cookie.get(this.discordTokenCookieName)
+		const cookie = getHttpContext().cookie.get(this.discordTokenCookieName)
 		if(!cookie){
-			this.currentUser = null
+			currentUser = null
 		} else {
-			this.currentUser = await this.queryByFieldValue("discordAccessToken", cookie)
+			currentUser = await this.queryByFieldValue("discordAccessToken", cookie)
 		}
-		return this.currentUser
+		this.setCachedCurrentUser(currentUser)
+		return currentUser
 	}
 
 	async getCurrent(): Promise<ServerUser> {
