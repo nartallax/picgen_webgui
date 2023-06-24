@@ -35,7 +35,7 @@ export class TaskQueueController {
 			}
 		})
 
-		this.tryStartNextGeneration() // yep, without await. intended.
+		this.tryStartNextGeneration()
 	}
 
 	async kill(id: number, userId: number | null): Promise<void> {
@@ -92,19 +92,18 @@ export class TaskQueueController {
 
 		// just to make queue more uniform
 		context.get().onClosed.push(() => {
-			// no await, intended
 			this.tryStartNextGeneration()
 		})
 
 		return result
 	}
 
+	// this method can be called without await
 	private async tryStartNextGeneration(): Promise<void> {
 		if(!this.shouldTryRunGeneration()){
 			return
 		}
 		try {
-			// FIXME: think about moving this somewhere else
 			const res = await runWithMinimalContext(async() => {
 				const nextTask = await generationTaskDao.getNextInQueue()
 				if(!nextTask){
@@ -149,7 +148,6 @@ export class TaskQueueController {
 
 			const [update, sendTaskNotification, callbacks] = this.makeTaskCallbacks(task)
 
-			// FIXME: think about moving this somewhere else
 			const preparedInputData = await runWithMinimalContext(async() => {
 				return await generationTaskDao.prepareInputData(task)
 			})
@@ -217,7 +215,6 @@ export class TaskQueueController {
 		GenRunnerCallbacks
 	] {
 		const update = makeDebounceCollector<(afterUpdateActions: (() => void)[]) => void>(500, updaters => {
-			// FIXME: think about moving it somewhere else
 			runInCatchLog(() => runWithMinimalContext(async ctx => {
 				const afterUpdateActions: (() => void)[] = []
 				const taskBeforeUpdate = JSON.stringify(task)
