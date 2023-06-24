@@ -70,7 +70,7 @@ class TaskPictureContext {
 		const copyTaskButton = tag({
 			class: ["icon-copy-task", css.iconCopy],
 			style: {
-				display: viewBox(() => this.haveTask() ? "block" : "none")
+				display: viewBox(() => this.haveTask() ? "" : "none")
 			}
 		})
 		copyTaskButton.addEventListener("click", e => {
@@ -202,7 +202,7 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 		const pictureIndex = pictures().indexOf(unbox(picture))
 		props = {
 			...commonProps,
-			makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
+			// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
 			imageDescriptions: pictures,
 			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
 			equalizeByHeight: true

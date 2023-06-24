@@ -309,7 +309,8 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 					additionalControls = tag({
 						class: css.additionalControls,
 						style: {
-							transform: zoom.map(zoom => `scale(${1 / zoom})`)
+							transform: zoom.map(zoom => `scale(${1 / zoom})`),
+							maxWidth: zoom.map(() => img.getBoundingClientRect().width + "px")
 						}
 					}, props.getAdditionalControls(desc))
 				}
