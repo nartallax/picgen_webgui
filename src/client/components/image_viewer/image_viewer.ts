@@ -321,9 +321,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	)
 
 	const wrap = tag({
-		class: [css.imageViewer, {
-			[css.grabbed!]: isGrabbed
-		}],
+		class: [css.imageViewer],
 		style: {
 			transform: zoom.map(zoom => `scale(${zoom})`)
 		},
@@ -363,7 +361,10 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		}
 	})
 
-	const modal = showModalBase({closeByBackgroundClick: true}, [wrap])
+	const modal = showModalBase({
+		closeByBackgroundClick: true,
+		overlayClass: isGrabbed.map(grabbed => `${css.imageViewerModal} ${!grabbed ? "" : css.grabbed}`)
+	}, [wrap])
 
 	function getNextZoomValue(direction: -1 | 1, currentImageZoomness: number, speed: number): number {
 

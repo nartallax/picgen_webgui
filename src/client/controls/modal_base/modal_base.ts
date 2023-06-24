@@ -5,6 +5,7 @@ import * as css from "./modal_base.module.scss"
 export interface ModalBaseProps {
 	closeByBackgroundClick?: boolean
 	closeByEsc?: boolean
+	overlayClass?: MRBox<string>
 }
 
 export interface ModalCloseEvent {
@@ -21,7 +22,7 @@ export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement
 	const isClosed = box(true)
 
 	const result = tag({
-		class: [css.modalBase, {
+		class: [css.modalBase, props.overlayClass, {
 			[css.closeableByClick!]: props.closeByBackgroundClick,
 			[css.hidden!]: isClosed
 		}]
