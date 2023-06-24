@@ -10,12 +10,16 @@
 	white-space: nowrap;
 	user-select: none;
 
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+
 	img {
 		object-fit: contain;
 		margin: 0 1rem;
 		vertical-align: text-top;
 
-		transform: translateY(-50%);
+		// transform: translateY(50%);
 
 		-webkit-user-drag: none;
 		user-drag: none;
@@ -25,8 +29,7 @@
 
 .imgWrap {
 	position: relative;
-	display: inline-block;
-	transform: translateY(-50%);
+	// transform: translateY(50%);
 	margin: 0 1rem;
 
 	img {

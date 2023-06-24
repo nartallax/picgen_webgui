@@ -235,8 +235,12 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		setZoomByCoords(pointerEventsToClientCoords(e), value)
 	}
 
+	let lastKnownHeight: number | null = null
 	function calcZoomnessRate(img: HTMLImageElement): number {
-		return img.getBoundingClientRect().height / img.naturalHeight
+		const height = lastKnownHeight !== null && props.equalizeByHeight
+			? lastKnownHeight
+			: lastKnownHeight = img.getBoundingClientRect().height
+		return height / img.naturalHeight
 	}
 
 	const imgs = props.imageDescriptions.mapArray(
@@ -279,45 +283,58 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	const imgsWithLabels = imgs.mapArray(
 		img => img,
-		img => tag({class: css.imgWrap}, img.map(img => {
-			const loaded = box(false)
-			waitLoadEvent(img).then(() => requestAnimationFrame(() => loaded(true)))
-			const label = tag({
-				class: css.imgLabel,
-				style: {
-					// fontSize: maxNatHeight.map(height => (height / 400) + "rem")
-					// fontSize: zoom.map(zoom => (1 / zoom) + "rem")
-					transform: zoom.map(zoom => `scale(${1 / zoom})`)
-				}
-			}, [viewBox(() => {
-				if(!loaded()){
-					return ""
-				}
-				void zoom() // just to subscribe
-				return `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
-			})])
-
-			let additionalControls: HTMLElement | null = null
-			if(props.getAdditionalControls){
-				// TODO: cringe
-				const src = img.getAttribute("src")
-				const desc = props.imageDescriptions().find(desc => props.makeUrl(desc) === src)
-				if(!desc){
-					console.warn("Image description not found for src = " + img.src)
-				}
-				if(desc){
-					additionalControls = tag({
-						class: css.additionalControls,
-						style: {
-							transform: zoom.map(zoom => `scale(${1 / zoom})`),
-							maxWidth: zoom.map(() => img.getBoundingClientRect().width + "px")
+		img => {
+			const imgWrap = tag({class: css.imgWrap}, img.map(img => {
+				const loaded = box(false)
+				waitLoadEvent(img).then(() => {
+					const cycler = () => {
+						if(img.naturalHeight < 1 || img.height < 1){
+							requestAnimationFrame(cycler)
+						} else {
+							imgWrap.style.width = img.naturalWidth + "px"
+							imgWrap.style.height = img.naturalHeight + "px"
+							loaded(true)
 						}
-					}, props.getAdditionalControls(desc))
-				}
-			}
+					}
+					requestAnimationFrame(cycler)
+				})
+				const label = tag({
+					class: css.imgLabel,
+					style: {
+						transform: zoom.map(zoom => `scale(${1 / zoom})`)
+					}
+				}, [viewBox(() => {
+					if(!loaded()){
+						return ""
+					}
+					void zoom() // just to subscribe
+					return `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
+				})])
 
-			return [img, label, additionalControls]
-		}))
+				let additionalControls: HTMLElement | null = null
+				if(props.getAdditionalControls){
+					// TODO: cringe
+					const src = img.getAttribute("src")
+					const desc = props.imageDescriptions().find(desc => props.makeUrl(desc) === src)
+					if(!desc){
+						console.warn("Image description not found for src = " + img.src)
+					}
+					if(desc){
+						additionalControls = tag({
+							class: css.additionalControls,
+							style: {
+								transform: zoom.map(zoom => `scale(${1 / zoom})`)
+								// maxWidth: zoom.map(() => img.getBoundingClientRect().width + "px")
+							}
+						}, props.getAdditionalControls(desc))
+					}
+				}
+
+				return [img, label, additionalControls]
+			}))
+
+			return imgWrap
+		}
 	)
 
 	const wrap = tag({
@@ -356,6 +373,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	whileMounted(wrap, zoom, () => {
 		updateBounds()
+		lastKnownHeight = null
 		if(lastScrollActionCoords){
 			scrollCoordsToPoint(lastScrollActionCoords.abs, lastScrollActionCoords.rel)
 		}
