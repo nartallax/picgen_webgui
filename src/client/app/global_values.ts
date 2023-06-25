@@ -1,5 +1,6 @@
 import {WBox, box} from "@nartallax/cardboard"
 import {localStorageBox} from "@nartallax/cardboard-dom"
+import {ThumbnailProvider} from "client/app/thumbnail_provider"
 import {LoadingPage} from "client/pages/loading_page/loading_page"
 import {LoginPage} from "client/pages/login_page/login_page"
 import {MainPage} from "client/pages/main_page/main_page"
@@ -26,6 +27,8 @@ export const currentPrompt = localStorageBox("fixedGenArgument.prompt.prompt", "
 export const allKnownShapeTags = box<null | readonly string[]>(null)
 export const allKnownParamSets = box<GenerationParameterSet[]>([])
 export const allKnownJsonFileLists = box<{readonly [name: string]: readonly JsonFileListItemDescription[]}>({})
+
+export const thumbnailProvider = new ThumbnailProvider()
 
 export type PageName = keyof typeof _pages
 

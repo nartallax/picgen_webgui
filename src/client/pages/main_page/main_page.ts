@@ -12,7 +12,7 @@ import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentArgumentBoxes, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars} from "client/app/global_values"
+import {currentArgumentBoxes, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, thumbnailProvider} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
@@ -137,23 +137,26 @@ export function MainPage(): HTMLElement {
 				value: selectedTab,
 				class: css.mainPageSwitchPanel,
 				routes: {
-					favorites: () => Feed({
-						scrollToTopButton: true,
-						class: css.mainPageFeed,
-						containerClass: css.favoritesFeed,
-						getId: picture => picture.id,
-						renderElement: picture => TaskPicture({picture}),
-						loadNext: makeSimpleFeedFetcher<Picture, PictureWithTask>({
-							fetch: query => {
-								(query.filters ||= []).push(
-									{a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}}
-								)
-								return ClientApi.listPicturesWithTasks(query)
-							},
-							desc: true,
-							packSize: 50
+					favorites: () => {
+						const thumbContext = thumbnailProvider.makeContext()
+						return Feed({
+							scrollToTopButton: true,
+							class: css.mainPageFeed,
+							containerClass: css.favoritesFeed,
+							getId: picture => picture.id,
+							renderElement: picture => TaskPicture({picture, thumbContext}),
+							loadNext: makeSimpleFeedFetcher<Picture, PictureWithTask>({
+								fetch: query => {
+									(query.filters ||= []).push(
+										{a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}}
+									)
+									return ClientApi.listPicturesWithTasks(query)
+								},
+								desc: true,
+								packSize: 50
+							})
 						})
-					}),
+					},
 					tasks: () => Feed({
 						scrollToTopButton: true,
 						getId: task => task.id,

@@ -168,7 +168,9 @@ export namespace ServerApi {
 				return {id, salt}
 			})
 
-			const pictures = await pictureDao.getByIds(idsAndSalts.map(x => x.id))
+			const unsortedPictures = await pictureDao.getByIds(idsAndSalts.map(x => x.id))
+			const picturesMap = new Map(unsortedPictures.map(pic => [pic.id, pic]))
+			const pictures = idsAndSalts.map(({id}) => picturesMap.get(id)!)
 			const idSaltMap = new Map(idsAndSalts.map(({id, salt}) => [id, salt]))
 			for(const picture of pictures){
 				if(picture.salt !== idSaltMap.get(picture.id)){

@@ -8,6 +8,7 @@ import {getTaskInputDataFromPicture} from "client/app/load_arguments"
 import {ShowImageViewerProps, showImageViewer} from "client/components/image_viewer/image_viewer"
 import {loadArguments} from "client/app/load_arguments"
 import {showTaskArgsModal} from "client/components/task_args_modal/task_args_modal"
+import {ThumbnailProvidingContext} from "client/app/thumbnail_provider"
 
 interface TaskPictureProps {
 	picture: RBox<Picture>
@@ -15,6 +16,7 @@ interface TaskPictureProps {
 	onLoad?: () => void
 	generationTask?: MRBox<GenerationTaskWithPictures>
 	loadAnimation?: boolean
+	thumbContext: ThumbnailProvidingContext
 }
 
 class TaskPictureContext {
@@ -113,13 +115,7 @@ class TaskPictureContext {
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))
 
-	const img = tag({
-		tag: "img",
-		attrs: {
-			alt: "Generated picture",
-			src: url
-		}
-	})
+	const imgPlaceholder = tag()
 
 	const context = new TaskPictureContext(props.picture, props.generationTask)
 
@@ -131,7 +127,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			[css.loaded!]: isLoaded
 		}]
 	}, [
-		img,
+		imgPlaceholder,
 		tag({
 			class: css.overlay,
 			onClick: () => {
@@ -156,10 +152,13 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			]),
 			tag({class: css.bottomRow}, [context.makeFavButton(), context.makeLinkButton()])
 		])
-	])
+	]);
 
-	const onLoad = () => {
-		img.removeEventListener("load", onLoad)
+	(async() => {
+		const img = await props.thumbContext.getThumbnail(props.picture())
+		imgPlaceholder.before(img)
+		imgPlaceholder.remove()
+		// FIXME: load animation...?
 		if(!props.loadAnimation){
 			if(props.onLoad){
 				props.onLoad()
@@ -172,8 +171,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				}, 200) // to synchronise with animation
 			}
 		}
-	}
-	img.addEventListener("load", onLoad)
+	})()
 
 	return result
 }

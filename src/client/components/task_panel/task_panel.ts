@@ -11,6 +11,7 @@ import {SoftScroller} from "client/base/soft_scroller"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {debounce} from "client/client_common/debounce"
 import {loadArguments} from "client/app/load_arguments"
+import {thumbnailProvider} from "client/app/global_values"
 
 interface TaskPanelProps {
 	task: RBox<GenerationTaskWithPictures>
@@ -21,6 +22,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const taskHidden = box(false)
 	const taskDeletionProgress = box(0)
 	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse())
+	const thumbContext = thumbnailProvider.makeContext()
 	let isInDOM = false
 
 	function detectCurrentScrollPictureIndex(): number | null {
@@ -81,7 +83,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					isDisabled,
 					onLoad: debouncedUpdateDisabledState,
 					loadAnimation: isInDOM,
-					generationTask: props.task
+					generationTask: props.task,
+					thumbContext
 				})
 				picturesWithDisableBoxes.push({el, isDisabled})
 				return el
