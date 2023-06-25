@@ -1,3 +1,4 @@
+import {ApiError} from "common/infra_entities/api_error"
 import {BinaryQueryCondition} from "common/infra_entities/query"
 import {FilterField, FilterValue, SimpleListQueryParams, allowedFilterOps} from "common/infra_entities/query"
 import {context, dbController} from "server/server_globals"
@@ -15,6 +16,19 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 
 	getById(id: number): Promise<T> {
 		return this.getByFieldValue("id", id)
+	}
+
+	async getByIds(ids: readonly number[]): Promise<T[]> {
+		const result: S[] = await context.get().db.query(
+			`select * from "${this.getTableName()}" where id in (${ids.map(() => "?").join(", ")})`,
+			ids
+		)
+		if(result.length !== ids.length){
+			const foundIds = new Set(result.map(x => x.id))
+			const absentIds = ids.filter(id => !foundIds.has(id))
+			throw new ApiError("generic", "Not found entities with id(s): " + absentIds.join(", "))
+		}
+		return result.map(x => this.fromDb(x))
 	}
 
 	protected fieldFromDb<K extends keyof S & keyof T & string>(field: K, value: S[K]): unknown {

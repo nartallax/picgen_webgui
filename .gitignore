@@ -8,6 +8,7 @@ db.sqlite-wal
 db.sqlite-shm
 discord_client_secret.txt
 pictures
+thumbnails
 running_generation_pictures
 _static
 .parcel-cache

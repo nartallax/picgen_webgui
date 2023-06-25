@@ -12,6 +12,7 @@ import type {Context} from "server/context"
 import type {Config} from "server/config"
 import type {GenerationTaskDAO} from "server/entities/generation_task_dao"
 import type {PictureDAO} from "server/entities/picture_dao"
+import {ThumbnailController} from "server/thumbnail_controller"
 
 // this file exists for two reasons
 // 1. it's convenient to just be able to import a global variable instead of namespace, or get it from another object
@@ -25,6 +26,7 @@ export let server: HttpServer = null as any
 export let websocketServer: WebsocketServer<ApiNotification, ApiNotificationWrap, number, {user: ServerUser}> = null as any
 export let taskQueue: TaskQueueController = null as any
 export let jsonFileLists: JSONFileListController = null as any
+export let thumbnails: ThumbnailController = null as any
 
 export let generationTaskDao: GenerationTaskDAO = null as any
 export let pictureDao: PictureDAO = null as any
@@ -53,7 +55,8 @@ type GlobalsPack = GlobalServiceRecord<[
 	typeof server,
 	typeof websocketServer,
 	typeof taskQueue,
-	typeof jsonFileLists
+	typeof jsonFileLists,
+	typeof thumbnails
 ]>
 
 let globalsPack: GlobalsPack = null as any
@@ -74,7 +77,8 @@ export function setGlobals(globals: GlobalsPack): void {
 		server,
 		websocketServer,
 		taskQueue,
-		jsonFileLists
+		jsonFileLists,
+		thumbnails
 	] = globals
 }
 

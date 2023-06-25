@@ -17,6 +17,7 @@ import {setupGlobalServerHandlers} from "server/server_global_handlers"
 import {Context, runWithHttpRequestContext} from "server/context"
 import {GenerationTaskDAO} from "server/entities/generation_task_dao"
 import {PictureDAO} from "server/entities/picture_dao"
+import {ThumbnailController} from "server/thumbnail_controller"
 
 export async function main() {
 	try {
@@ -76,7 +77,8 @@ async function mainInternal(): Promise<void> {
 				return {id: user.id, data: {user}}
 			}), notification => ({notification})),
 		new TaskQueueController(),
-		new JSONFileListController()
+		new JSONFileListController(),
+		new ThumbnailController(config.thumbnails)
 	])
 
 	await startGlobals()

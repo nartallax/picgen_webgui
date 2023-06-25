@@ -27,6 +27,17 @@ export class ApiClient {
 		})
 	}
 
+	private get(name: string, params: Record<string, string>): Promise<Response> {
+		let queryStr = Object.entries(params).map(([k, v]) => {
+			return encodeURIComponent(k) + "=" + encodeURIComponent(v)
+		}).join("&")
+		if(queryStr){
+			queryStr = "?" + queryStr
+		}
+
+		return fetch(this.urlBase + name + queryStr, {method: "GET"})
+	}
+
 	private async parseResp<T>(resp: Response): Promise<T> {
 		const respData: ApiResponse<unknown> = await resp.json()
 
@@ -54,6 +65,11 @@ export class ApiClient {
 	async callPut<T>(name: string, data: ArrayBuffer, input: Record<string, string>): Promise<T> {
 		const resp = await this.put(name, data, input)
 		return await this.parseResp(resp)
+	}
+
+	async callGetForBinary(name: string, input: Record<string, string>): Promise<ArrayBuffer> {
+		const resp = await this.get(name, input)
+		return await resp.arrayBuffer()
 	}
 
 }

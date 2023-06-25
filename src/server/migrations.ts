@@ -2,7 +2,8 @@ import {Migration} from "server/db/db_controller"
 import {log} from "server/log"
 import * as Path from "path"
 import {promises as Fs} from "fs"
-import {config} from "server/server_globals"
+import {config, thumbnails} from "server/server_globals"
+import {ServerPicture} from "server/entities/picture_dao"
 
 export const migrations: Migration[] = [
 	{name: "00000_users_gentasks_pictures", handler: async db => {
@@ -316,6 +317,24 @@ export const migrations: Migration[] = [
 		await db.run(`
 			update "generationTasks" set "exitCode" = 0;
 		`)
+	}},
+
+	{name: "00020", handler: async db => {
+		await thumbnails.start() // ew.
+		log("Starting to generate thumbnails for existing pictures.")
+		let offset = 0
+		const packSize = 10
+		const limit: number = ((await db.query("select id from pictures order by id desc limit 1"))[0] as any)["id"]
+		while(offset < limit){
+			const picturePack = (await db.query(
+				"select * from pictures where id >= ? and id < ?",
+				[offset, offset + packSize]
+			)) as ServerPicture[]
+			offset += packSize
+			offset = Math.min(offset, limit) // just for beautiful output
+			await Promise.all(picturePack.map(pic => thumbnails.makeThumbnail(pic)))
+			log(`Processed ${offset} out of ${limit}, ${((offset / limit) * 100).toFixed(2)}%...`)
+		}
 	}}
 
 ]

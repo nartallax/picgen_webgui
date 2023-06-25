@@ -12,6 +12,10 @@
 	"tags": {
 		"shapeTagsFile": "./shape_tags.json"
 	},
+	"thumbnails": {
+		"directory": "./thumbnails",
+		"height": 276
+	},
 	"parameterSets": [{
 		"uiName": "Picture generation",
 		"internalName": "default",

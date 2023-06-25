@@ -16,7 +16,7 @@ import {ApiError} from "common/infra_entities/api_error"
 import {getParamDefList} from "common/entities/parameter"
 import {isEnoent} from "server/utils/is_enoent"
 import {log} from "server/log"
-import {config, generationTaskDao, pictureDao, userDao} from "server/server_globals"
+import {config, generationTaskDao, pictureDao, thumbnails, userDao} from "server/server_globals"
 
 export interface ServerPicture extends Picture {
 	directLink: string | null
@@ -156,12 +156,14 @@ export class PictureDAO extends DAO<ServerPicture> {
 		const filePath = this.makeFullPicturePath(fileName)
 		try {
 			await Fs.writeFile(filePath, data)
-			return await this.create({
+			const result = await this.create({
 				creationTime: unixtime(),
 				directLink: null,
 				fileName: fileName,
 				...picture
 			})
+			await thumbnails.makeThumbnail(result)
+			return result
 		} catch(e){
 			try {
 				await Fs.rm(filePath)

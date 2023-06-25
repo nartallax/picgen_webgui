@@ -9,7 +9,7 @@ import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import {unixtime} from "server/utils/unixtime"
 import {JsonFileList} from "common/entities/json_file_list"
-import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, userDao} from "server/server_globals"
+import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, thumbnails, userDao} from "server/server_globals"
 import {getHttpContext} from "server/context"
 
 async function checkIsAdmin(): Promise<void> {
@@ -150,6 +150,57 @@ export namespace ServerApi {
 			const result = await pictureDao.getPictureData(picture)
 			return result
 		})
+
+	export const getPictureThumbnails = RCV.validatedFunction(
+		[RC.struct({idsAndSalts: RC.string()})],
+		async({idsAndSalts: idsAndSaltsStr}): Promise<Buffer> => {
+
+			function checkUint(x: unknown, name: string): asserts x is number {
+				if(typeof(x) !== "number" || Number.isNaN(x) || x <= 0 || (x % 1) !== 0){
+					throw new ApiError("validation_not_passed", `Incorrect ${name}.`)
+				}
+			}
+
+			const idsAndSalts = idsAndSaltsStr.split("_").map(idAndSalt => {
+				const [id, salt] = idAndSalt.split(".").map(x => parseInt(x))
+				checkUint(id, "id")
+				checkUint(salt, "salt")
+				return {id, salt}
+			})
+
+			const pictures = await pictureDao.getByIds(idsAndSalts.map(x => x.id))
+			const idSaltMap = new Map(idsAndSalts.map(({id, salt}) => [id, salt]))
+			for(const picture of pictures){
+				if(picture.salt !== idSaltMap.get(picture.id)){
+					throw new ApiError("generic", `Bad picture salt for picture ${picture.id}`)
+				}
+			}
+
+			const thumbsBytes = await Promise.all(pictures.map(pic => thumbnails.getThumbnail(pic)))
+			const result = Buffer.alloc(thumbsBytes.map(bytes => bytes.length + 4).reduce((a, b) => a + b, 0))
+
+			let offset = 0
+			for(let i = 0; i < thumbsBytes.length; i++){
+				let len = thumbsBytes[i]!.length
+				for(let j = 0; j < 4; j++){
+					result[offset++] = len & 0xff
+					len >>= 8
+				}
+			}
+
+			for(const bytes of thumbsBytes){
+				bytes.copy(result, offset)
+				offset += bytes.length
+			}
+
+			// it probably won't be as efficient as in single picture, but anyway
+			const ctx = getHttpContext()
+			ctx.responseHeaders["Content-Type"] = MimeTypes.contentType("img.webp") || "image/webp"
+			ctx.responseHeaders["Cache-Control"] = "public,max-age=31536000,immutable"
+
+			return result
+		}
+	)
 
 	export const getPictureInfoById = RCV.validatedFunction(
 		[RC.struct({id: RC.int(), salt: RC.int()})],

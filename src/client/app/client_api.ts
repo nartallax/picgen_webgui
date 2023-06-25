@@ -6,6 +6,7 @@ import {GenerationParameterSet} from "common/entities/parameter"
 import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import {User} from "common/entities/user"
 import {SimpleListQueryParams} from "common/infra_entities/query"
+import {ServerPicture} from "server/entities/picture_dao"
 
 export namespace ClientApi {
 
@@ -39,6 +40,12 @@ export namespace ClientApi {
 
 	export function getPictureUrl(id: number, salt: number): string {
 		return `${apiPrefix}getPictureData?id=${id}&salt=${salt}`
+	}
+
+	export function getPictureThumbnails(pictures: ServerPicture[]): Promise<ArrayBuffer> {
+		return client.callGetForBinary("getPictureThumbnails", {
+			idsAndSalts: pictures.map(pic => pic.id + "." + pic.salt).join("_")
+		})
 	}
 
 	export const getPictureInfoById = (id: number, salt: number) =>

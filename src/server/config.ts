@@ -29,7 +29,11 @@ const ConfigFile = RC.struct(RC.structFields({
 		parameterSets: RC.roArray(GenerationParameterSet),
 		tags: RC.struct(RC.structFields({ro: {
 			shapeTagsFile: RC.string()
-		}}))
+		}})),
+		thumbnails: RC.roStruct({
+			directory: RC.string(),
+			height: RC.int()
+		})
 	},
 	roOpt: {
 		httpHost: RC.string()
