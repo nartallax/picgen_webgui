@@ -203,6 +203,7 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 		props = {
 			...commonProps,
 			// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,
+			// makeUrl: picture => `https://dummyimage.com/${((picture.id % pictures().length) + 1)}00x${((picture.id % pictures().length) + 1) * 2}00`,
 			imageDescriptions: pictures,
 			centerOn: pictureIndex < 0 ? undefined : pictureIndex,
 			equalizeByHeight: true
