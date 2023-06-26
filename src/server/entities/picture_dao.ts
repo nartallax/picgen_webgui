@@ -124,7 +124,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 
 	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"]): Promise<ServerPicture> {
 		const relPath = Path.relative(config.pictureStorageDir, path)
-		return await this.create({
+		const result = await this.create({
 			creationTime: unixtime(),
 			directLink: null,
 			fileName: relPath,
@@ -136,6 +136,8 @@ export class PictureDAO extends DAO<ServerPicture> {
 			modifiedArguments,
 			favoritesAddTime: null
 		})
+		await thumbnails.makeThumbnail(result)
+		return result
 	}
 
 	async storeExternalPicture(data: Buffer, userId: number, name: string, ext: PictureType): Promise<ServerPicture> {

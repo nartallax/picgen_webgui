@@ -19,12 +19,14 @@ export class ThumbnailController {
 	}
 
 	async makeThumbnail(picture: ServerPicture): Promise<void> {
+		// log("Making thumbnail for picture #" + picture.id)
 		const srcBytes = await pictureDao.getPictureData(picture)
 		const webpBytes = await Sharp(srcBytes)
 			.resize({height: this.props.height})
 			.webp({effort: 6})
 			.toBuffer()
 		await Fs.writeFile(this.thumbnailPathOf(picture), webpBytes)
+		// log("Done; result is " + this.thumbnailPathOf(picture))
 	}
 
 	async getThumbnail(picture: ServerPicture): Promise<Buffer> {

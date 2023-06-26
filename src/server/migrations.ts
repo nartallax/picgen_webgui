@@ -332,7 +332,13 @@ export const migrations: Migration[] = [
 			)) as ServerPicture[]
 			offset += packSize
 			offset = Math.min(offset, limit) // just for beautiful output
-			await Promise.all(picturePack.map(pic => thumbnails.makeThumbnail(pic)))
+			await Promise.all(picturePack.map(async pic => {
+				try {
+					await thumbnails.makeThumbnail(pic)
+				} catch(e){
+					log("Conversion failed for " + pic.id + ": " + e)
+				}
+			}))
 			log(`Processed ${offset} out of ${limit}, ${((offset / limit) * 100).toFixed(2)}%...`)
 		}
 	}}
