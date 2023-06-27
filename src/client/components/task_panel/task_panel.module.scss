@@ -81,15 +81,15 @@ $arrowButtonSize: 3rem;
 	
 	.picturesWrapWrap {
 		mask-image: linear-gradient(to right, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
-		margin-left: -$arrowButtonSize;
-		margin-right: -$arrowButtonSize;
+		// margin-left: -$arrowButtonSize;
+		// margin-right: -$arrowButtonSize;
 	}
 
 	.picturesWrap {
 		overflow: hidden;
 
-		mask-image: linear-gradient(to left, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
-		padding-left: $arrowButtonSize;
+		// mask-image: linear-gradient(to left, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
+		// padding-left: $arrowButtonSize;
 
 		.pictures {
 			user-select: none;
@@ -98,13 +98,6 @@ $arrowButtonSize: 3rem;
 			flex-direction: row;
 			align-items: stretch;
 			gap: 1rem;
-
-			&:after {
-				content: ' ';
-				display: block;
-				width: $arrowButtonSize;
-				flex-shrink: 0;
-			}
 		}
 
 	}	

@@ -118,6 +118,35 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		taskHidden(true)
 	})
 
+	const scrollLeftButton = tag({
+		tag: "button",
+		class: [css.arrow, "icon-left-open-big", {
+			[css.disabled!]: scroller.isAtStart,
+			[css.hidden!]: haveNotEnoughPictures
+		}],
+		style: {left: "0px"},
+		onClick: () => scrollToNextPicture(-1)
+	})
+	const scrollRightButton = tag({
+		tag: "button",
+		class: [css.arrow, "icon-right-open-big", {
+			[css.disabled!]: scroller.isAtFinish,
+			[css.hidden!]: haveNotEnoughPictures
+		}],
+		style: {right: "0px"},
+		onClick: () => scrollToNextPicture(1)
+	})
+
+	const gradientBox = viewBox(() => {
+		const pos = scroller.scrollPosition()
+		const lim = scroller.scrollLimit()
+		const maxMargin = scrollLeftButton.getBoundingClientRect().width
+		const width = picturesWrap.getBoundingClientRect().width
+		const startBlur = Math.min(pos, maxMargin)
+		const endBlur = width - Math.min(maxMargin, lim - pos)
+		return `linear-gradient(to right, rgba(0,0,0,0) 0, rgba(0,0,0,1) ${startBlur + "px"}, rgba(0,0,0,1) ${endBlur + "px"}, rgba(0,0,0,0) 100%)`
+	})
+
 	const result = tag({class: [css.taskPanel, {[css.hidden!]: taskHidden}]}, [
 		tag({class: css.body}, [
 			tag({class: css.header}, [
@@ -204,7 +233,9 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			tag({
 				class: css.picturesWrapWrap,
 				style: {
-					opacity: taskDeletionProgress.map(x => 1 - x)
+					opacity: taskDeletionProgress.map(x => 1 - x),
+					webkitMaskImage: gradientBox,
+					maskImage: gradientBox
 				}
 			}, [picturesWrap]),
 			tag({class: css.footer}, [
@@ -221,24 +252,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				})
 			])
 		]),
-		tag({
-			tag: "button",
-			class: [css.arrow, "icon-left-open-big", {
-				[css.disabled!]: scroller.isAtStart,
-				[css.hidden!]: haveNotEnoughPictures
-			}],
-			style: {left: "0px"},
-			onClick: () => scrollToNextPicture(-1)
-		}),
-		tag({
-			tag: "button",
-			class: [css.arrow, "icon-right-open-big", {
-				[css.disabled!]: scroller.isAtFinish,
-				[css.hidden!]: haveNotEnoughPictures
-			}],
-			style: {right: "0px"},
-			onClick: () => scrollToNextPicture(1)
-		})
+		scrollLeftButton,
+		scrollRightButton
 	])
 
 	return result
