@@ -18,7 +18,29 @@ function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 			img.removeEventListener("load", onImageLoad)
 			ok()
 		}
-		img.addEventListener("load", onImageLoad)
+		// this event listener must not be passive
+		// because passive = async call
+		// and this could introduce race condition between updateBounds() and centerOn()
+		img.addEventListener("load", onImageLoad, {passive: true})
+	})
+}
+
+async function waitLoadAndPaint(img: HTMLImageElement): Promise<void> {
+	await waitLoadEvent(img)
+	await new Promise<void>((ok, err) => {
+		let spinCount = 0
+		const cycler = () => {
+			if(spinCount > 1000){
+				err(new Error("Paint is taking too long"))
+			}
+			if(img.naturalHeight < 1 || img.clientHeight < 1){
+				requestAnimationFrame(cycler)
+				spinCount++
+			} else {
+				ok()
+			}
+		}
+		requestAnimationFrame(cycler)
 	})
 }
 
@@ -103,13 +125,12 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		for(const img of imgArr){
 			natHeight = Math.max(img.naturalHeight, natHeight)
 		}
+		lastKnownHeight = null
 		maxNatHeight(natHeight)
 	})
 
 	const updateBounds = debounce(1, async() => {
-		if(updateMaxNatHeight.isRunScheduled){
-			await updateMaxNatHeight.waitForScheduledRun() // just in case
-		}
+		await updateMaxNatHeight.waitForScheduledRun() // just in case
 
 		const imgArr = imgs()
 
@@ -146,6 +167,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 		updatePanX()
 		updatePanY()
+		lastKnownHeight = null
 	})
 
 	let defaultZoom = 1
@@ -243,18 +265,21 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return height / img.naturalHeight
 	}
 
-	const imgs = props.imageDescriptions.mapArray(
+	const imgsWithLabels = props.imageDescriptions.mapArray(
 		desc => props.makeUrl(desc),
 		desc => {
 			const natSideRatio = box(1)
-			let img: HTMLImageElement | null = null
-			img = tag({
+			const loaded = box(false)
+			const widthByHeight = viewBox(() => (natSideRatio() * maxNatHeight()))
+
+			let _img: HTMLImageElement | null = null
+			_img = tag({
 				tag: "img",
 				attrs: {src: desc.map(desc => props.makeUrl(desc)), alt: ""},
 				style: {
-					width: !props.equalizeByHeight ? undefined : viewBox(() => (natSideRatio() * maxNatHeight()) + "px"),
-					height: !props.equalizeByHeight ? undefined : maxNatHeight.map(height => height + "px"),
-					imageRendering: zoom.map(() => img && calcZoomnessRate(img) >= 1 ? "pixelated" : "auto")
+					width: !props.equalizeByHeight ? undefined : viewBox(() => !loaded() ? null : widthByHeight() + "px"),
+					height: !props.equalizeByHeight ? undefined : viewBox(() => !loaded() ? null : maxNatHeight() + "px"),
+					imageRendering: zoom.map(() => _img && calcZoomnessRate(_img) >= 1 ? "pixelated" : "auto")
 				},
 				onMousedown: e => {
 					if(e.button === 1){
@@ -262,82 +287,48 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 					}
 				}
 			})
+			const img: HTMLImageElement = _img
 
-			const onLoad = () => {
-				natSideRatio(img!.naturalWidth / img!.naturalHeight)
+			waitLoadAndPaint(img).then(() => {
+				natSideRatio(img.naturalWidth / img.naturalHeight)
 				updateMaxNatHeight()
 				updateBounds()
-			}
-			if(img.complete){
-				onLoad()
-			} else {
-				// this event listener must not be passive
-				// because passive = async call
-				// and this could introduce race condition between updateBounds() and centerOn()
-				img.addEventListener("load", onLoad, {capture: true, once: true})
-			}
+				loaded(true)
+			})
 
-			return img
-		}
-	)
-
-	const imgsWithLabels = imgs.mapArray(
-		img => img,
-		img => {
-			const imgWrap = tag({class: css.imgWrap}, img.map(img => {
-				const loaded = box(false)
-				waitLoadEvent(img).then(() => {
-					const cycler = () => {
-						if(img.naturalHeight < 1 || img.height < 1){
-							requestAnimationFrame(cycler)
-						} else {
-							loaded(true)
-						}
-					}
-					requestAnimationFrame(cycler)
-				})
-				const label = tag({
-					class: css.imgLabel,
-					style: {
-						transform: zoom.map(zoom => `scale(${1 / zoom})`)
-					}
-				}, [viewBox(() => {
-					if(!loaded()){
-						return ""
-					}
-					void zoom() // just to subscribe
-					return `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
-				})])
-
-				let additionalControls: HTMLElement | null = null
-				if(props.getAdditionalControls){
-					// TODO: cringe
-					const src = img.getAttribute("src")
-					const desc = props.imageDescriptions().find(desc => props.makeUrl(desc) === src)
-					if(!desc){
-						console.warn("Image description not found for src = " + img.src)
-					}
-					if(desc){
-						additionalControls = tag({
-							class: css.additionalControls,
-							style: {
-								transform: zoom.map(zoom => `scale(${1 / zoom})`),
-								width: zoom.map(zoom => {
-									// FIXME: that's not right
-									const w = !props.equalizeByHeight ? img.naturalWidth : parseInt(img.style.width)
-									return (w * zoom) + "px"
-								})
-							}
-						}, props.getAdditionalControls(desc))
-					}
+			const label = tag({
+				class: css.imgLabel,
+				style: {
+					transform: zoom.map(zoom => `scale(${1 / zoom})`)
 				}
+			}, [viewBox(() => {
+				if(!loaded()){
+					return ""
+				}
+				void zoom(), maxNatHeight() // just to subscribe
+				return `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
+			})])
 
-				return [img, label, additionalControls]
-			}))
+			let additionalControls: HTMLElement | null = null
+			if(props.getAdditionalControls){
+				additionalControls = tag({
+					class: css.additionalControls,
+					style: {
+						transform: zoom.map(zoom => `scale(${1 / zoom})`),
+						width: viewBox(() => {
+							// FIXME: that's not right
+							const w = !props.equalizeByHeight ? img.naturalWidth : widthByHeight()
+							return (w * zoom()) + "px"
+						})
+					}
+				}, desc.map(desc => props.getAdditionalControls!(desc)))
+			}
 
-			return imgWrap
+			return tag({class: css.imgWrap}, [img, label, additionalControls])
 		}
 	)
+
+	const imgs = imgsWithLabels.map(wraps => wraps.map(wrap => wrap.getElementsByTagName("img")[0]!))
 
 	const wrap = tag({
 		class: [css.imageViewer],
@@ -459,10 +450,11 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 		const imgArr = imgs()
 		const imgsBeforeTarget = imgArr.slice(0, targetIndex + 1)
-		await Promise.all(imgsBeforeTarget.map(img => waitLoadEvent(img)))
+		await Promise.all(imgsBeforeTarget.map(img => waitLoadAndPaint(img)))
 		const targetImg = imgArr[targetIndex]!
 
 		await updateBounds.waitForScheduledRun()
+		await updateMaxNatHeight.waitForScheduledRun()
 		centerOn(targetImg)
 	})
 }
