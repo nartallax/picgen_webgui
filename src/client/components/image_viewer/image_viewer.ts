@@ -271,6 +271,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			const natSideRatio = box(1)
 			const loaded = box(false)
 			const widthByHeight = viewBox(() => (natSideRatio() * maxNatHeight()))
+			const heightBox = viewBox(() => !loaded() ? null : maxNatHeight() + "px")
 
 			let _img: HTMLImageElement | null = null
 			_img = tag({
@@ -278,7 +279,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				attrs: {src: desc.map(desc => props.makeUrl(desc)), alt: ""},
 				style: {
 					width: !props.equalizeByHeight ? undefined : viewBox(() => !loaded() ? null : widthByHeight() + "px"),
-					height: !props.equalizeByHeight ? undefined : viewBox(() => !loaded() ? null : maxNatHeight() + "px"),
+					height: !props.equalizeByHeight ? undefined : heightBox,
 					imageRendering: zoom.map(() => _img && calcZoomnessRate(_img) >= 1 ? "pixelated" : "auto")
 				},
 				onMousedown: e => {
@@ -301,13 +302,14 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				style: {
 					transform: zoom.map(zoom => `scale(${1 / zoom})`)
 				}
-			}, [viewBox(() => {
-				if(!loaded()){
-					return ""
-				}
-				void zoom(), maxNatHeight() // just to subscribe
-				return `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
-			})])
+			})
+
+			const updateLabel = debounce(1, () => {
+				label.textContent = `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
+			})
+			whileMounted(label, loaded, updateLabel)
+			whileMounted(label, zoom, updateLabel)
+			whileMounted(label, heightBox, updateLabel)
 
 			let additionalControls: HTMLElement | null = null
 			if(props.getAdditionalControls){
