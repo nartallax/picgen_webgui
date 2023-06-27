@@ -291,8 +291,6 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 						if(img.naturalHeight < 1 || img.height < 1){
 							requestAnimationFrame(cycler)
 						} else {
-							imgWrap.style.width = !props.equalizeByHeight ? img.naturalWidth + "px" : img.style.width
-							imgWrap.style.height = !props.equalizeByHeight ? img.naturalHeight + "px" : img.style.height
 							loaded(true)
 						}
 					}
@@ -324,9 +322,10 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 							class: css.additionalControls,
 							style: {
 								transform: zoom.map(zoom => `scale(${1 / zoom})`),
-								maxWidth: zoom.map(() => {
+								width: zoom.map(zoom => {
+									// FIXME: that's not right
 									const w = !props.equalizeByHeight ? img.naturalWidth : parseInt(img.style.width)
-									return (w * zoom()) + "px"
+									return (w * zoom) + "px"
 								})
 							}
 						}, props.getAdditionalControls(desc))

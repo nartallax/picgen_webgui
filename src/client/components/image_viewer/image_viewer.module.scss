@@ -13,13 +13,12 @@
 	display: flex;
 	flex-direction: row;
 	align-items: center;
+	gap: 2rem;
 
 	img {
 		object-fit: contain;
 		margin: 0 1rem;
 		vertical-align: text-top;
-
-		// transform: translateY(50%);
 
 		-webkit-user-drag: none;
 		user-drag: none;
@@ -29,11 +28,8 @@
 
 .imgWrap {
 	position: relative;
-	// transform: translateY(50%);
-	margin: 0 1rem;
 
 	img {
-		transform: none;
 		margin: 0;
 	}
 }
