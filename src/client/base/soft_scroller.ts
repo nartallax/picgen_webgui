@@ -63,6 +63,10 @@ export class SoftScroller {
 		this.tryRestartScroll()
 	}
 
+	scrollToNow(position: number): void {
+		this.setPosition(Math.min(this.getLimit(), Math.max(0, position)))
+	}
+
 	setScrollAmountToDo(diff: number): void {
 		this.scrollTo(this.getPosition() + diff)
 	}

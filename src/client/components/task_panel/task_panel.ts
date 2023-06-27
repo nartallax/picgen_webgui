@@ -84,7 +84,11 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					onLoad: debouncedUpdateDisabledState,
 					loadAnimation: isInDOM,
 					generationTask: props.task,
-					thumbContext
+					thumbContext,
+					onScroll: evt => {
+						const width = evt.bounds.right - evt.bounds.left
+						scroller.scrollToNow(scroller.scrollLimit() * (evt.x / width))
+					}
 				})
 				picturesWithDisableBoxes.push({el, isDisabled})
 				return el

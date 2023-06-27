@@ -74,6 +74,13 @@ function calculateBoundsForImageViewer(params: BoundCalcParams): Bounds {
 
 }
 
+interface RectBounds {
+	readonly top: number
+	readonly bottom: number
+	readonly left: number
+	readonly right: number
+}
+
 export type ShowImageViewerProps<T> = {
 	readonly imageDescriptions: RBox<readonly T[]>
 	readonly makeUrl: (imageDescription: T) => string
@@ -88,6 +95,7 @@ export type ShowImageViewerProps<T> = {
 	 * 0.1 means that there will be borders of 10% of picture height. */
 	readonly defaultOffset?: number
 	readonly getAdditionalControls?: (picture: T) => HTMLElement[]
+	readonly onScroll?: (args: {x: number, y: number, zoom: number, bounds: RectBounds}) => void
 }
 
 export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promise<void> {
@@ -345,6 +353,11 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		onClick: () => modal.close()
 	}, imgsWithLabels)
 
+	const onScrollHandler = debounce(1, () => {
+		if(props.onScroll){
+			props.onScroll({x: xPos(), y: yPos(), zoom: zoom(), bounds})
+		}
+	})
 
 	const updatePanX = () => {
 		const x = xPos()
@@ -354,6 +367,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			return
 		}
 		wrap.style.left = (-x + (window.innerWidth / 2)) + "px"
+		onScrollHandler()
 	}
 
 	const updatePanY = () => {
@@ -364,6 +378,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			return
 		}
 		wrap.style.top = (-y + (window.innerHeight / 2)) + "px"
+		onScrollHandler()
 	}
 
 	// those handlers are only to have better control over updates

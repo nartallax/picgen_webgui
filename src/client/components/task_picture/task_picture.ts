@@ -17,6 +17,7 @@ interface TaskPictureProps {
 	generationTask?: MRBox<GenerationTaskWithPictures>
 	loadAnimation?: boolean
 	thumbContext: ThumbnailProvidingContext
+	onScroll?: ShowImageViewerProps<unknown>["onScroll"]
 }
 
 class TaskPictureContext {
@@ -134,7 +135,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				requestAnimationFrame(() => {
 					// raf is here to prevent opening and then immediately closing the viewer
 					// it's some weird interference in events and closing-modal-by-background-click
-					openViewer(props.picture, props.generationTask)
+					openViewer(props.picture, props.generationTask, props.onScroll)
 				})
 			},
 			onMousedown: e => {
@@ -176,11 +177,12 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	return result
 }
 
-function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPictures>): void {
+function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPictures>, onScroll?: ShowImageViewerProps<unknown>["onScroll"]): void {
 	let props: ShowImageViewerProps<Picture>
 	const commonProps = {
 		makeUrl: (picture: Picture) => ClientApi.getPictureUrl(picture.id, picture.salt),
 		panBounds: {x: "centerInPicture", y: "borderToBorder"},
+		onScroll,
 		getAdditionalControls: pic => {
 			const cont = new TaskPictureContext(box(pic), task)
 			return [
