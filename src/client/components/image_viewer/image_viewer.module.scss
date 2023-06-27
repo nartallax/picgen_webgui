@@ -22,7 +22,6 @@
 
 		-webkit-user-drag: none;
 		user-drag: none;
-		pointer-events: none;
 	}
 }
 
@@ -31,6 +30,14 @@
 
 	img {
 		margin: 0;
+	}
+
+	.imgOverlay {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
 	}
 }
 

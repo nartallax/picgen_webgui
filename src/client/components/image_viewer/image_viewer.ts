@@ -326,7 +326,12 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				}, desc.map(desc => props.getAdditionalControls!(desc)))
 			}
 
-			return tag({class: css.imgWrap}, [img, label, additionalControls])
+			// this exists to prevent native browser behaviour about image dragging
+			// it will be easier to do with `pointer-events: none` on img
+			// but that will also disable image's context menu (this approach will not, on most systems)
+			const imgOverlay = tag({class: css.imgOverlay})
+
+			return tag({class: css.imgWrap}, [img, label, additionalControls, imgOverlay])
 		}
 	)
 
