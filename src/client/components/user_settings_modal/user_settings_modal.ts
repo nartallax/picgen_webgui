@@ -1,4 +1,4 @@
-import {hideSomeScrollbars, uiScale} from "client/app/global_values"
+import {hideSomeScrollbars, preventGalleryImageInteractions, uiScale} from "client/app/global_values"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {FormField} from "client/controls/form/form"
 import {showModal} from "client/controls/modal_base/modal"
@@ -26,6 +26,12 @@ export const showUserSettingsModal = (): Modal => {
 			label: "Hide some scrollbars",
 			revertable: hideSomeScrollbars,
 			onRevert: () => hideSomeScrollbars(false)
+		}),
+		FormField({
+			input: BoolInput({value: preventGalleryImageInteractions}),
+			label: "Block gallery image click",
+			revertable: preventGalleryImageInteractions,
+			onRevert: () => preventGalleryImageInteractions(false)
 		})
 	])
 

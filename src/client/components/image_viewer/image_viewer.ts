@@ -7,6 +7,7 @@ import {addDragScroll} from "client/client_common/drag_scroll"
 import {SoftValueChanger} from "client/base/soft_value_changer"
 import {addTouchZoom} from "client/client_common/touch_zoom"
 import {debounce} from "client/client_common/debounce"
+import {preventGalleryImageInteractions} from "client/app/global_values"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
@@ -337,7 +338,9 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			// this exists to prevent native browser behaviour about image dragging
 			// it will be easier to do with `pointer-events: none` on img
 			// but that will also disable image's context menu (this approach will not, on most systems)
-			const imgOverlay = tag({class: css.imgOverlay})
+			const imgOverlay = tag({class: css.imgOverlay, style: {
+				display: preventGalleryImageInteractions.map(prevent => prevent ? "" : "none")
+			}})
 
 			return tag({class: css.imgWrap}, [img, label, additionalControls, imgOverlay])
 		}
