@@ -3,7 +3,7 @@ import {getNowBox} from "client/base/now_box"
 import {TaskPicture} from "client/components/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
-import {RBox, WBox, box, viewBox} from "@nartallax/cardboard"
+import {WBox, box, viewBox} from "@nartallax/cardboard"
 import {onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
 import {GenerationTaskWithPictures} from "common/entities/generation_task"
@@ -14,14 +14,14 @@ import {loadArguments} from "client/app/load_arguments"
 import {thumbnailProvider} from "client/app/global_values"
 
 interface TaskPanelProps {
-	task: RBox<GenerationTaskWithPictures>
+	task: WBox<GenerationTaskWithPictures>
+	tasks: WBox<GenerationTaskWithPictures[]>
 }
 
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
-	const taskHidden = box(false)
 	const taskDeletionProgress = box(0)
-	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse())
+	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse(), arr => [...arr].reverse())
 	const thumbContext = thumbnailProvider.makeContext()
 	let isInDOM = false
 
@@ -117,10 +117,13 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		return () => isInDOM = false
 	})
 
-	const delTimer = makeDeletionTimer(500, taskDeletionProgress, async() => {
-		await ClientApi.deleteTask(props.task().id)
-		taskHidden(true)
-	})
+	const delTaskNow = async() => {
+		const id = props.task().id
+		props.tasks(props.tasks().filter(task => task.id !== id))
+		await ClientApi.deleteTask(id)
+	}
+
+	const delTimer = makeDeletionTimer(500, taskDeletionProgress, delTaskNow)
 
 	const scrollLeftButton = tag({
 		tag: "button",
@@ -151,7 +154,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		return `linear-gradient(to right, rgba(0,0,0,0) 0, rgba(0,0,0,1) ${startBlur + "px"}, rgba(0,0,0,1) ${endBlur + "px"}, rgba(0,0,0,0) 100%)`
 	})
 
-	const result = tag({class: [css.taskPanel, {[css.hidden!]: taskHidden}]}, [
+	const result = tag({class: [css.taskPanel]}, [
 		tag({class: css.body}, [
 			tag({class: css.header}, [
 				tag({
@@ -178,8 +181,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					onTouchend: () => delTimer.cancel(),
 					onClick: limitClickRate(async e => {
 						if(e.shiftKey){
-							await ClientApi.deleteTask(props.task().id)
-							taskHidden(true)
+							delTaskNow()
 						}
 					})
 				}),

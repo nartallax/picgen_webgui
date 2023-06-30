@@ -12,7 +12,7 @@ import {ThumbnailProvidingContext} from "client/app/thumbnail_provider"
 import notFoundSvg from "../../../../static/not_found.svg"
 
 interface TaskPictureProps {
-	picture: RBox<Picture>
+	picture: WBox<Picture>
 	isDisabled?: RBox<boolean>
 	onLoad?: () => void
 	generationTask?: MRBox<GenerationTaskWithPictures>
@@ -25,10 +25,10 @@ class TaskPictureContext {
 	readonly favAddTime: WBox<number | null>
 
 	constructor(
-		readonly picture: RBox<Picture>,
+		readonly picture: WBox<Picture>,
 		readonly generationTask?: MRBox<GenerationTaskWithPictures>
 	) {
-		this.favAddTime = box(picture().favoritesAddTime)
+		this.favAddTime = picture.prop("favoritesAddTime")
 	}
 
 	private getPictureArgs(): GenerationTaskInputData {

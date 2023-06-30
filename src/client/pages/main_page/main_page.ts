@@ -166,7 +166,7 @@ export function MainPage(): HTMLElement {
 							packSize: 10
 						}),
 						values: knownTasks,
-						renderElement: taskBox => TaskPanel({task: taskBox}),
+						renderElement: taskBox => TaskPanel({task: taskBox, tasks: knownTasks}),
 						bottomLoadingPlaceholder: tag(["Loading..."]),
 						class: css.mainPageFeed
 					})
