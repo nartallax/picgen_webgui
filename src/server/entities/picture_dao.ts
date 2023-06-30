@@ -252,6 +252,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 				}
 			}
 		}
+		await thumbnails.deleteThumbnail(picture)
 		return await super.delete(picture)
 	}
 

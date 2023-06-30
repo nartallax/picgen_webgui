@@ -4,6 +4,8 @@ import {promises as Fs} from "fs"
 import {directoryExists} from "server/utils/file_exists"
 import {ServerPicture} from "server/entities/picture_dao"
 import {pictureDao} from "server/server_globals"
+import {isEnoent} from "server/utils/is_enoent"
+import {log} from "server/log"
 
 export class ThumbnailController {
 	constructor(readonly props: {readonly directory: string, readonly height: number}) {}
@@ -31,5 +33,17 @@ export class ThumbnailController {
 
 	async getThumbnail(picture: ServerPicture): Promise<Buffer> {
 		return await Fs.readFile(this.thumbnailPathOf(picture))
+	}
+
+	async deleteThumbnail(picture: ServerPicture): Promise<void> {
+		try {
+			await Fs.unlink(this.thumbnailPathOf(picture))
+		} catch(e){
+			if(isEnoent(e)){
+				log("No thumbnail file for #" + picture.id + "; skipping thumbnail deletion.")
+			} else {
+				throw e
+			}
+		}
 	}
 }
