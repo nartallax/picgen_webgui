@@ -16,6 +16,9 @@
 		"directory": "./thumbnails",
 		"height": 276
 	},
+	"pictureCleanup": {
+		"resultPictureLimitPerUser": 500
+	},
 	"parameterSets": [{
 		"uiName": "Picture generation",
 		"internalName": "default",

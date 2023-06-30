@@ -341,6 +341,19 @@ export const migrations: Migration[] = [
 			}))
 			log(`Processed ${offset} out of ${limit}, ${((offset / limit) * 100).toFixed(2)}%...`)
 		}
+	}},
+
+	{name: "00021", handler: async db => {
+		await db.run(`
+			alter table "pictures"
+			add "deleted" bool;
+		`)
+	}},
+
+	{name: "00022", handler: async db => {
+		await db.run(`
+			update "pictures" set "deleted" = false;
+		`)
 	}}
 
 ]

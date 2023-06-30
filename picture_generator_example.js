@@ -24,14 +24,14 @@ async function main() {
 	// we can send arbitrary text messages while generating stuff to be displayed to frontend
 	Process.stdout.write(JSON.stringify({message: "Hewwo! I'm starting!", displayFor: 10}) + "\n")
 
-	const willGenerateFilesCount = 10
+	const willGenerateFilesCount = 50
 
 	// let's tell the bot how many pictures to expect
 	// if you don't, or tell incorrect number of pictures - it won't break anything
 	// it just allows for more beautiful inputs
 	Process.stdout.write(JSON.stringify({willGenerateCount: willGenerateFilesCount}) + "\n")
 
-	const timePerPicture = 1000
+	const timePerPicture = 10000 / willGenerateFilesCount
 	// we also can notify server on how long it will take to generate all the stuff we want to generate
 	// we can do it at any time through generation run
 	// timeLeft is in seconds
@@ -47,7 +47,7 @@ async function main() {
 		// now let's generate a file!
 		// it will actually be the same file every time
 		// that we put in the same location every time
-		const filePath = "./resulting_picture_example.png"
+		const filePath = `./resulting_picture_example_${i}.png`
 		// so, we put some data into file
 		await Fs.promises.writeFile(filePath, Buffer.from(pictures[i % pictures.length], "base64"))
 		// and then emit JSON into stdout, saying "hey, we just generated a file!"

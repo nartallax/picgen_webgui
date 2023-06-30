@@ -33,6 +33,9 @@ const ConfigFile = RC.struct(RC.structFields({
 		thumbnails: RC.roStruct({
 			directory: RC.string(),
 			height: RC.int()
+		}),
+		pictureCleanup: RC.roStruct({
+			resultPictureLimitPerUser: RC.int()
 		})
 	},
 	roOpt: {

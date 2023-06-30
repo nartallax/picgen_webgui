@@ -182,6 +182,7 @@ export class TaskQueueController {
 
 			await generationTaskDao.cleanupInputData(preparedInputData)
 			await update.waitInvocationsOver()
+			runWithMinimalContext(() => pictureDao.tryCleanupExcessivePicturesOfUser(task.userId))
 		} finally {
 			this.generationIsStarting = false
 			this.runningGeneration = null

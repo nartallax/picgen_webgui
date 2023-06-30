@@ -91,6 +91,12 @@ $max-size: 23em;
 		.iconFavorite, .iconLink {
 			padding: 1rem;
 			font-size: 1.5rem;
+
+			&.deleted {
+				display: block;
+				visibility: hidden;
+				pointer-events: none;
+			}
 		}
 
 		.iconShowParams {
@@ -121,6 +127,10 @@ $max-size: 23em;
 
 	&:hover {
 		opacity: 1;
+	}
+
+	&.deleted {
+		display: none;
 	}
 }
 

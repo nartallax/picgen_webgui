@@ -9,6 +9,7 @@ import {ShowImageViewerProps, showImageViewer} from "client/components/image_vie
 import {loadArguments} from "client/app/load_arguments"
 import {showTaskArgsModal} from "client/components/task_args_modal/task_args_modal"
 import {ThumbnailProvidingContext} from "client/app/thumbnail_provider"
+import notFoundSvg from "../../../../static/not_found.svg"
 
 interface TaskPictureProps {
 	picture: RBox<Picture>
@@ -101,6 +102,7 @@ class TaskPictureContext {
 	makeFavButton(): HTMLElement {
 		const favoriteButton = tag({class: [
 			css.iconFavorite,
+			{[css.deleted!]: this.picture.prop("deleted")},
 			this.favAddTime.map(time => time !== null ? "icon-star" : "icon-star-empty")
 		]})
 		favoriteButton.addEventListener("click", async e => {
@@ -182,6 +184,13 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 	const commonProps = {
 		makeUrl: (picture: Picture) => ClientApi.getPictureUrl(picture.id, picture.salt),
 		panBounds: {x: "centerInPicture", y: "borderToBorder"},
+		updateImg: (picture, img) => {
+			if(picture.deleted){
+				img.style.minWidth = "128px"
+				img.style.minHeight = "128px"
+				img.setAttribute("src", notFoundSvg)
+			}
+		},
 		onScroll,
 		getAdditionalControls: pic => {
 			const cont = new TaskPictureContext(box(pic), task)

@@ -18,6 +18,10 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 		return this.getByFieldValue("id", id)
 	}
 
+	queryById(id: number): Promise<T | null> {
+		return this.queryByFieldValue("id", id)
+	}
+
 	async getByIds(ids: readonly number[]): Promise<T[]> {
 		const result: S[] = await context.get().db.query(
 			`select * from "${this.getTableName()}" where id in (${ids.map(() => "?").join(", ")})`,
@@ -187,6 +191,11 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 		return result.map(x => this.fromDb(x))
 	}
 
+	async queryAll(): Promise<T[]> {
+		const result: S[] = await context.get().db.query(`select * from "${this.getTableName()}"`)
+		return result.map(x => this.fromDb(x))
+	}
+
 	protected async queryByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T | null> {
 		this.validateFieldNames([fieldName])
 		const result: S[] = await context.get().db.query(`select * from "${this.getTableName()}" where "${fieldName}" = ?`, [
@@ -194,6 +203,15 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 			this.fieldToDb(fieldName as keyof S & keyof T & string, value as any)
 		])
 		return !result[0] ? null : this.fromDb(result[0])
+	}
+
+	protected async queryAllByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T[]> {
+		this.validateFieldNames([fieldName])
+		const result: S[] = await context.get().db.query(`select * from "${this.getTableName()}" where "${fieldName}" = ?`, [
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			this.fieldToDb(fieldName as keyof S & keyof T & string, value as any)
+		])
+		return result.map(x => this.fromDb(x))
 	}
 
 	protected async getByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T> {

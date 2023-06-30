@@ -16,7 +16,8 @@ import {ApiError} from "common/infra_entities/api_error"
 import {getParamDefList} from "common/entities/parameter"
 import {isEnoent} from "server/utils/is_enoent"
 import {log} from "server/log"
-import {config, generationTaskDao, pictureDao, thumbnails, userDao} from "server/server_globals"
+import {config, context, generationTaskDao, pictureDao, thumbnails, userDao} from "server/server_globals"
+import {runWithMinimalContext} from "server/context"
 
 export interface ServerPicture extends Picture {
 	directLink: string | null
@@ -52,10 +53,20 @@ export class PictureDAO extends DAO<ServerPicture> {
 		}
 
 		await Fs.mkdir(dirPath, {recursive: true})
+
+		// this is not very performant, but whatever, we don't have a lot of users anyway
+		await runWithMinimalContext(async() => {
+			const users = await userDao.queryAll()
+			for(const user of users){
+				await this.tryCleanupExcessivePicturesOfUser(user.id)
+			}
+		})
 	}
 
 	protected override fieldFromDb<K extends keyof ServerPicture & string>(field: K, value: ServerPicture[K]): unknown {
 		switch(field){
+			case "deleted":
+				return !!value // TODO: cringe
 			case "modifiedArguments": return value === null ? null : JSON.parse(value as string)
 			default: return value
 		}
@@ -78,7 +89,8 @@ export class PictureDAO extends DAO<ServerPicture> {
 			name: pic.name,
 			salt: pic.salt,
 			modifiedArguments: pic.modifiedArguments,
-			favoritesAddTime: pic.favoritesAddTime
+			favoritesAddTime: pic.favoritesAddTime,
+			deleted: pic.deleted
 		}
 	}
 
@@ -118,7 +130,8 @@ export class PictureDAO extends DAO<ServerPicture> {
 			name: (index + 1) + "",
 			salt: this.getSalt(),
 			modifiedArguments,
-			favoritesAddTime: null
+			favoritesAddTime: null,
+			deleted: false
 		})
 	}
 
@@ -134,7 +147,8 @@ export class PictureDAO extends DAO<ServerPicture> {
 			name: (index + 1) + "",
 			salt: this.getSalt(),
 			modifiedArguments,
-			favoritesAddTime: null
+			favoritesAddTime: null,
+			deleted: false
 		})
 		await thumbnails.makeThumbnail(result)
 		return result
@@ -148,7 +162,8 @@ export class PictureDAO extends DAO<ServerPicture> {
 			name: name,
 			salt: this.getSalt(),
 			modifiedArguments: null,
-			favoritesAddTime: null
+			favoritesAddTime: null,
+			deleted: false
 		})
 	}
 
@@ -240,7 +255,16 @@ export class PictureDAO extends DAO<ServerPicture> {
 	}
 
 	override async delete(picture: ServerPicture): Promise<void> {
-		if(picture.fileName){
+		const [,,delRes] = await Promise.all([
+			this.rmPictureFile(picture),
+			thumbnails.deleteThumbnail(picture),
+			super.delete(picture)
+		])
+		return delRes
+	}
+
+	private async rmPictureFile(picture: ServerPicture): Promise<void> {
+		if(picture.fileName){ // picture can have no filename if it is stored externally somewhere
 			const fullName = this.makeFullPicturePath(picture.fileName)
 			try {
 				await Fs.rm(fullName)
@@ -252,8 +276,41 @@ export class PictureDAO extends DAO<ServerPicture> {
 				}
 			}
 		}
-		await thumbnails.deleteThumbnail(picture)
-		return await super.delete(picture)
+	}
+
+	async tryCleanupExcessivePicturesOfUser(userId: number): Promise<void> {
+		const taskIdField: keyof Picture = "generationTaskId"
+		const idField: keyof Picture = "id"
+		const favTimeField: keyof Picture = "favoritesAddTime"
+		const ownerField: keyof Picture = "ownerUserId"
+		const delField: keyof Picture = "deleted"
+		const tasksWithPicCount = await context.get().db.query<Pick<Picture, "generationTaskId"> & {taskPicCount: number}>(`
+			select "${taskIdField}", count("${idField}") as "taskPicCount"
+				from "pictures"
+				where "${taskIdField}" is not null
+					and "${favTimeField}" is null
+					and not "${delField}"
+					and "${ownerField}" = ?
+				group by "${taskIdField}"
+				order by "${taskIdField}" desc
+		`, [userId])
+		let sumCount = tasksWithPicCount.map(task => task.taskPicCount).reduce((a, b) => a + b, 0)
+		while(sumCount > config.pictureCleanup.resultPictureLimitPerUser){
+			const lastTask = tasksWithPicCount.pop()
+			if(!lastTask){
+				log(`Trying to cleanup pictures of user #${userId}, but user don't have enough tasks to met cleanup quota. Check the config value (it's ${config.pictureCleanup} now)`)
+				return
+			}
+			const pics = (await this.queryAllByFieldValue("generationTaskId", lastTask.generationTaskId))
+				.filter(x => !x.deleted && !x.favoritesAddTime)
+			sumCount -= pics.length
+			await Promise.all([
+				...pics.map(pic => this.update({...pic, deleted: true})),
+				...pics.map(pic => this.rmPictureFile(pic))
+			])
+			log(`Cleaned up ${pics.length} pictures from task #${lastTask.generationTaskId} of user #${userId}`)
+		}
+		log(`User #${userId} has ${sumCount} resulting pictures, which fits in the limit of ${config.pictureCleanup.resultPictureLimitPerUser}`)
 	}
 
 }

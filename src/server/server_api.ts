@@ -142,13 +142,13 @@ export namespace ServerApi {
 				throw new ApiError("generic", "Wrong salt")
 			}
 
+			const picBytes = await pictureDao.getPictureData(picture)
+
 			const ctx = getHttpContext()
 			ctx.responseHeaders["Content-Type"] = MimeTypes.contentType("img." + picture.ext) || "image/jpeg"
 			ctx.responseHeaders["Cache-Control"] = "public,max-age=31536000,immutable"
 
-			// TODO: stream directly into http stream?
-			const result = await pictureDao.getPictureData(picture)
-			return result
+			return picBytes
 		})
 
 	export const getPictureThumbnails = RCV.validatedFunction(

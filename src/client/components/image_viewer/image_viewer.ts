@@ -85,6 +85,7 @@ interface RectBounds {
 export type ShowImageViewerProps<T> = {
 	readonly imageDescriptions: RBox<readonly T[]>
 	readonly makeUrl: (imageDescription: T) => string
+	readonly updateImg?: (desc: T, img: HTMLImageElement) => void
 	readonly zoomSpeed?: number
 	readonly centerOn?: number
 	readonly equalizeByHeight?: boolean
@@ -285,7 +286,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			let _img: HTMLImageElement | null = null
 			_img = tag({
 				tag: "img",
-				attrs: {src: desc.map(desc => props.makeUrl(desc)), alt: ""},
+				attrs: {alt: ""},
 				style: {
 					width: !props.equalizeByHeight ? undefined : viewBox(() => !loaded() ? null : widthByHeight() + "px"),
 					height: !props.equalizeByHeight ? undefined : heightBox,
@@ -298,6 +299,10 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				}
 			})
 			const img: HTMLImageElement = _img
+			img.setAttribute("src", props.makeUrl(desc()))
+			if(props.updateImg){
+				props.updateImg(desc(), img)
+			}
 
 			waitLoadAndPaint(img).then(() => {
 				natSideRatio(img.naturalWidth / img.naturalHeight)

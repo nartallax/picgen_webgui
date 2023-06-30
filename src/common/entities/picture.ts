@@ -22,7 +22,8 @@ export const Picture = RC.struct(RC.structFields({
 		ext: PictureType,
 		name: RC.union([RC.constant(null), RC.string()]),
 		salt: RC.int(),
-		modifiedArguments: RC.union([RC.constant(null), GenerationTaskArgsObject])
+		modifiedArguments: RC.union([RC.constant(null), GenerationTaskArgsObject]),
+		deleted: RC.bool()
 	},
 	normal: {
 		favoritesAddTime: RC.union([RC.constant(null), RC.int()])
