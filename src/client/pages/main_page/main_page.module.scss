@@ -21,9 +21,9 @@ body {
 		min-height: 0;
 		flex: 1 1 0;
 
-		width: 20vw;
-		max-width: 35rem;
-		min-width: 20rem;
+		width: var(--params-column-width);
+		max-width: var(--params-column-max-width);
+		min-width: var(--params-column-min-width);
 
 		.settingsColumnScrollablePart {
 			overflow-y: auto;
