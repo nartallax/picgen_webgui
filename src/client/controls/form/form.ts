@@ -1,6 +1,6 @@
 import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./form.module.scss"
-import {MRBox, constBoxWrap, isConstBox, isRBox, unbox} from "@nartallax/cardboard"
+import {MRBox, WBox, constBoxWrap, isConstBox, isRBox, unbox} from "@nartallax/cardboard"
 import {TooltipIcon} from "client/controls/tooltip/tooltip"
 
 type FormFieldProps = {
@@ -13,6 +13,7 @@ type FormFieldProps = {
 	onDelete?: () => void
 	maxLabelWidth?: MRBox<string>
 	isInputOnNextLine?: boolean
+	isFavorite?: MRBox<boolean>
 }
 
 export const FormField = (props: FormFieldProps): HTMLElement => {
@@ -52,6 +53,19 @@ export const FormField = (props: FormFieldProps): HTMLElement => {
 			tag({
 				class: [css.deleteButton, "icon-cancel"],
 				onClick: () => props.onDelete?.()
+			}),
+			tag({
+				style: {
+					display: (isConstBox(props.isFavorite) || !isRBox(props.isFavorite)) && !unbox(props.isFavorite) ? "none" : ""
+				},
+				class: [
+					css.favoriteButton,
+					constBoxWrap(props.isFavorite).map(isFav => isFav ? "icon-star" : "icon-star-empty")
+				],
+				onClick: () => {
+					const favBox = props.isFavorite as WBox<boolean>
+					favBox(!favBox())
+				}
 			})
 		])
 	])

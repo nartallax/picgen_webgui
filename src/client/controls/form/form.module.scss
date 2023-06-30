@@ -53,13 +53,13 @@
 			flex-basis: auto;
 		}
 
-		> :not(.deleteButton) {
+		> :not(.deleteButton):not(.favoriteButton) {
 			width: 100%;
 			max-width: 100%;
 		}
 
 		&.withDeleteButton {
-			> :not(.deleteButton) {
+			> :not(.deleteButton):not(.favoriteButton) {
 				width: auto;
 				right: 2rem;
 			}
@@ -78,6 +78,15 @@
 			position: absolute;
 			right: 0;
 			top: 0;
+		}
+
+		.favoriteButton {
+			cursor: pointer;
+			position: absolute;
+			color: #ffdb59;
+			top: 0.1rem;
+			left: 0.1rem;
+			font-size: 1.5rem;
 		}
 	}
 

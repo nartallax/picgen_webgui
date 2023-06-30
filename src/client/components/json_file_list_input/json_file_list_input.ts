@@ -32,6 +32,7 @@ export const JsonFileListInput = (props: Props) => {
 	const selectValue = box<string | null>(null)
 	const defByIdMap = allItems.map(items => new Map(items.map(item => [item.id, item])))
 	const options = allItems.map(allItem => allItem.map(item => ({label: item.name, value: item.id})))
+	const orderingBox: WBox<string[] | undefined> = jsonFileListOrdering.prop(listName)
 
 	const result = tag([
 		Row({gap: true}, [
@@ -42,7 +43,7 @@ export const JsonFileListInput = (props: Props) => {
 				options: viewBox(() => {
 					const allKnownIds = new Set(allItems().map(item => item.id))
 					const selectedIds = new Set(props.value().map(item => item.id))
-					const ordering = jsonFileListOrdering()[listName] ?? []
+					const ordering = orderingBox() ?? []
 					const orderedIds = ordering.filter(id => !selectedIds.has(id) && allKnownIds.has(id))
 					const orderedIdSet = new Set(orderedIds)
 					const unorderedIds = allItems()
@@ -76,9 +77,10 @@ export const JsonFileListInput = (props: Props) => {
 		tag(props.value.mapArray(
 			selectedItem => selectedItem.id,
 			selectedItem => {
-				const itemDef = defByIdMap.map(map => map.get(selectedItem().id) ?? {
-					id: selectedItem().id,
-					name: selectedItem().id
+				const id = selectedItem().id
+				const itemDef = defByIdMap.map(map => map.get(id) ?? {
+					id: id,
+					name: id
 				})
 				return FormField({
 					label: itemDef.prop("name"),
@@ -104,8 +106,19 @@ export const JsonFileListInput = (props: Props) => {
 					]),
 					revertable: false,
 					onDelete: () => {
-						props.value(props.value().filter(item => item.id !== selectedItem().id))
-					}
+						props.value(props.value().filter(item => item.id !== id))
+					},
+					isFavorite: orderingBox.map(
+						values => !values ? false : values.includes(id),
+						isFav => {
+							const order = orderingBox()
+							if(!isFav){
+								return !order ? order : order.filter(x => x !== id)
+							} else {
+								return [...(order ?? []), id]
+							}
+						}
+					)
 				})
 			}))
 	])
