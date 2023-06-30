@@ -47,7 +47,7 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
-    "@nartallax/cardboard": "^1.0.21",
+    "@nartallax/cardboard": "^1.0.22",
     "@nartallax/cardboard-dom": "^1.0.28",
     "@nartallax/ribcage": "^1.1.7",
     "@nartallax/ribcage-validation": "^1.0.2",
