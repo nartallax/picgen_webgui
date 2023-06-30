@@ -327,7 +327,6 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 					style: {
 						transform: zoom.map(zoom => `scale(${1 / zoom})`),
 						width: viewBox(() => {
-							// FIXME: that's not right
 							const w = !props.equalizeByHeight ? img.naturalWidth : widthByHeight()
 							return (w * zoom()) + "px"
 						})

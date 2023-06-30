@@ -27,6 +27,7 @@ body {
 
 		.settingsColumnScrollablePart {
 			overflow-y: auto;
+			overflow-x: hidden;
 			flex: 1 1 0;
 		}
 	}

@@ -31,7 +31,8 @@ export const showUserSettingsModal = (): Modal => {
 			input: BoolInput({value: preventGalleryImageInteractions}),
 			label: "Block gallery image click",
 			revertable: preventGalleryImageInteractions,
-			onRevert: () => preventGalleryImageInteractions(false)
+			onRevert: () => preventGalleryImageInteractions(false),
+			hint: "Try enabling this setting if having trouble with drag in the gallery.\n\nThis can have also negative effects, so if drag works fine for you - don't change this setting."
 		})
 	])
 
