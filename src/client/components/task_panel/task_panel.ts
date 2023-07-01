@@ -21,6 +21,7 @@ interface TaskPanelProps {
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = getNowBox()
 	const taskDeletionProgress = box(0)
+	const taskDeletionOpacity = taskDeletionProgress.map(x => 1 - x)
 	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse(), arr => [...arr].reverse())
 	const thumbContext = thumbnailProvider.makeContext()
 	let isInDOM = false
@@ -238,12 +239,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			]),
 			tag({
 				style: {
-					opacity: taskDeletionProgress.map(x => 1 - x),
+					opacity: taskDeletionOpacity,
 					webkitMaskImage: gradientBox,
 					maskImage: gradientBox
 				}
 			}, [picturesWrap]),
-			tag({class: css.footer}, [
+			tag({class: css.footer, style: {opacity: taskDeletionOpacity}}, [
 				tag({class: css.prompt}, [props.task.map(task => (task.arguments["prompt"] + "") ?? "")]),
 				tag({
 					class: [css.useArgumentsButton, "icon-docs"],
