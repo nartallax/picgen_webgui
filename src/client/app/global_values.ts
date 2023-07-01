@@ -23,6 +23,7 @@ export const preventGalleryImageInteractions = localStorageBox("preventGalleryIm
 export const paramsColumnWidth = cssVariableLocalStorageBox("--params-column-width", "20vw")
 export const paramsColumnMaxWidth = cssVariableLocalStorageBox("--params-column-max-width", "35rem")
 export const paramsColumnMinWidth = cssVariableLocalStorageBox("--params-column-min-width", "20rem")
+export const formLabelWidth = cssVariableLocalStorageBox("--form-label-width", "50%")
 
 export const currentArgumentBoxes = box<{[key: string]: WBox<GenerationTaskArgument>}>({})
 export const currentParamSetName = localStorageBox("fixedGenArgument.selectedParamSetName", "")

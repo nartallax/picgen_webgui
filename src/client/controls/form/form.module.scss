@@ -18,7 +18,7 @@
     	align-items: center;
 		padding-top: 0.2rem;
 		flex: 0 0 auto;
-		width: 50%;
+		width: var(--form-label-width);
 		min-width: 0;
 
 		.labelText {

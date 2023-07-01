@@ -1,4 +1,4 @@
-import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth} from "client/app/global_values"
+import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth} from "client/app/global_values"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {FormField} from "client/controls/form/form"
 import {showModal} from "client/controls/modal_base/modal"
@@ -60,6 +60,18 @@ export const showUserSettingsModal = (): Modal => {
 			revertable: paramsColumnMinWidth.map(str => str !== "20rem"),
 			onRevert: () => paramsColumnMinWidth("20rem"),
 			hint: "Lower bound of width of parameters column, in font units."
+		}),
+		FormField({
+			input: NumberInput({
+				value: formLabelWidth.map(str => parseFloat(str) / 100, flt => (flt * 100) + "%"),
+				min: 0.05,
+				max: 0.95,
+				precision: 2
+			}),
+			label: "Form label width",
+			revertable: formLabelWidth.map(str => str !== "50%"),
+			onRevert: () => formLabelWidth("50%"),
+			hint: "Width of labels in various forms, most notably parameter form, in rate related to form width."
 		})
 	])
 
