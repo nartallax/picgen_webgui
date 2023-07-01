@@ -237,7 +237,6 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				})])
 			]),
 			tag({
-				class: css.picturesWrapWrap,
 				style: {
 					opacity: taskDeletionProgress.map(x => 1 - x),
 					webkitMaskImage: gradientBox,

@@ -28,6 +28,10 @@
 		background-color: var(--color-block-selected);
 	}
 
+	&.selected {
+		background-color: var(--color-block-selected);
+	}
+
 	&:before {
 		content: " ";
 		width: 1.5em;
