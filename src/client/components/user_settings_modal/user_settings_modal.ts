@@ -56,7 +56,7 @@ export const showUserSettingsModal = (): Modal => {
 		}),
 		FormField({
 			input: NumberInput({value: paramsColumnMinWidth.map(str => parseInt(str), num => num + "rem"), int: true}),
-			label: "Params column max width",
+			label: "Params column min width",
 			revertable: paramsColumnMinWidth.map(str => str !== "20rem"),
 			onRevert: () => paramsColumnMinWidth("20rem"),
 			hint: "Lower bound of width of parameters column, in font units."
