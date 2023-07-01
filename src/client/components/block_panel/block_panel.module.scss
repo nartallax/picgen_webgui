@@ -1,6 +1,6 @@
 .blockPanel {
-	background-color: #faf4f2;
-	box-shadow: 0px 4px 20px -8px rgba(43, 34, 34, 0.2);
+	background-color: var(--color-block);
+	box-shadow: 0px 4px 20px -8px var(--color-shadow);
 	border-radius: 1.2rem;
 	padding: 0 1rem 0.6rem 1rem;
 	margin-bottom: 1rem;

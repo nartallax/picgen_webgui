@@ -4,7 +4,6 @@ import * as css from "./text_input.module.scss"
 
 interface TextInputProps {
 	value: WBox<string>
-	iconClass?: string
 	updateAsUserType?: boolean
 	maxLength?: number
 	minLength?: number
@@ -13,7 +12,6 @@ interface TextInputProps {
 }
 
 const defaults = {
-	iconClass: undefined,
 	updateAsUserType: false,
 	maxLength: undefined,
 	minLength: undefined,
@@ -61,18 +59,7 @@ export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults
 		})
 	}
 
-	const iconEl = tag({
-		class: [css.textInputIcon, props.iconClass, {
-			[css.hidden!]: props.iconClass.map(cls => !cls)
-		}]
-	})
-
-	const wrap = tag({
-		class: css.textInputWrap
-	}, [
-		input,
-		iconEl
-	])
+	const wrap = tag({class: css.textInputWrap}, [input])
 
 	whileMounted(input, props.value, v => {
 		const clamped = clamp(v)

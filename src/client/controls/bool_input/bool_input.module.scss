@@ -8,9 +8,9 @@ $inner-padding: 0.4rem;
 	@extend .input;
 
 	cursor: pointer;
-	background-color: #e2d9d9;
+	background-color: var(--color-input-background);
 	transition: $transition-time;
-	box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.15);
+	box-shadow: inset 0px 2px 4px var(--color-shadow);
 	display: flex;
 	flex-direction: row;
 	align-items: center;
@@ -18,7 +18,7 @@ $inner-padding: 0.4rem;
 	padding: $inner-padding calc(($handle-size / 2) + $inner-padding);
 
 	&.on {
-		background-color: #a0c2a5;
+		background-color: var(--color-button);
 
 		.boolInputHandle {
 			left: 50%;
@@ -32,9 +32,9 @@ $inner-padding: 0.4rem;
 		
 		position: relative;
 		left: -50%;
-	
-		background-color: #fff;
-		box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.15);
+
+		background-color: var(--color-block-secondary);
+		box-shadow: 0px 2px 2px var(--color-shadow);
 		transition: $transition-time;
 	}
 }

@@ -10,7 +10,7 @@
 
 .sidebarOverlay {
 	opacity: 0;
-	background-color: rgba(0, 0, 0, 0.75);
+	background-color: var(--color-block-auxiliary);
 	transition: opacity 0.1s linear;
 	
 	position: fixed;

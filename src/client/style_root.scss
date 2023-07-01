@@ -1,9 +1,11 @@
 @use "../../fontello/fontello-codes";
+@use "./themes/default";
+@use "./themes/dark";
 
 body {
 	width: 100vw;
 	height: 100vh;
-	background-color: #E5D6D2;
+	background-color: var(--color-background);
 	display: flex;
 	flex-direction: row;
 	align-items: stretch;

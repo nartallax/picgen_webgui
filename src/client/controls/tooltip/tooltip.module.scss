@@ -1,8 +1,8 @@
 .tooltipIcon {
 	font-size: 0.9rem;
     border-radius: 100%;
-    border: 2px solid #625e5e;
-    color: #625e5e;
+    border: 2px solid var(--color-font-on-block);
+    color: var(--color-font-on-block);
     font-weight: bold;
     height: 1.5rem;
     width: 1.5rem;
@@ -16,8 +16,8 @@
 	text-align: left;
 	overflow-y: auto;
 
-	background: #cdbbb6;
-	border: 2px solid #625e5e;
+	background: var(--color-block-accent);
+	border: 2px solid var(--color-font-on-block);
 	border-radius: 1rem;
 	padding: 0.75rem;
 	font-size: 1rem;

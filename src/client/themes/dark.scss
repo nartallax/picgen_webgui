@@ -1,0 +1,23 @@
+body[data-visual-theme="dark"] {
+	--color-background: #222;
+	--color-block: #333;
+	--color-block-secondary: #444;
+	--color-block-accent: #555;
+	--color-block-selected: #777;
+	--color-block-auxiliary: rgba(0, 0, 0, 0.5);
+	--color-header: #aaa;
+	--color-border: #aaa;
+	--color-font-on-block: #eee;
+	--color-font-on-input: #eee;
+	--color-font-on-button: #333;
+	--color-font-on-auxiliary: #eee;
+	--color-input-background: #555;
+	--color-input-disabled: #D5C6C2;
+	--color-cancel: #E55F42;
+	--color-favorite: #ffdb59;
+	--color-button: #ccc;
+	--color-button-active: #ddd;
+	--color-button-disabled: #aaa;
+	--color-input-placeholder: #bfbfbf;
+	--color-shadow: rgba(43, 34, 34, 0.2);
+}

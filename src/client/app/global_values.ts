@@ -24,6 +24,7 @@ export const paramsColumnWidth = cssVariableLocalStorageBox("--params-column-wid
 export const paramsColumnMaxWidth = cssVariableLocalStorageBox("--params-column-max-width", "35rem")
 export const paramsColumnMinWidth = cssVariableLocalStorageBox("--params-column-min-width", "20rem")
 export const formLabelWidth = cssVariableLocalStorageBox("--form-label-width", "50%")
+export const visualTheme = localStorageBox<"default" | "dark">("userSettings.visualTheme", "default")
 
 export const currentArgumentBoxes = box<{[key: string]: WBox<GenerationTaskArgument>}>({})
 export const currentParamSetName = localStorageBox("fixedGenArgument.selectedParamSetName", "")

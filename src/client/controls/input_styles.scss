@@ -8,7 +8,7 @@
 .input {
 	@extend .input-size;
 
-	box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.15);
-	background: #fff;
-	color: #505050;
+	box-shadow: inset 0px 2px 4px var(--color-shadow);
+	background: var(--color-input-background);
+	color: var(--color-font-on-input);
 }

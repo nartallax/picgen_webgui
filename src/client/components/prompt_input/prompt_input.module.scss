@@ -24,7 +24,7 @@
 		flex-direction: row;
 		align-items: center;
 		position: relative;
-		background-color: #fff;
+		background-color: var(--color-input-background);
 		border-radius: 100px;
 	}
 
@@ -40,7 +40,8 @@
 		line-height: 1.5em;
 		margin-left: -1em;
 		margin-right: 1.5em;
-		color: #706D6C;
+		background-color: var(--color-input-background);
+		color: var(--color-font-on-block);
 		min-width: 0;
 		resize: none;
 		max-height: 2.6em;
@@ -61,14 +62,14 @@
 		}
 
 		&::placeholder {
-			color: #bfbfbf;
+			color: var(--color-input-placeholder);
 		}
 	}
 
 	.generateButton {
 		cursor: pointer;
-		color: #fff;
-		background: #a0c2a5;
+		color: var(--color-font-on-button);
+		background: var(--color-button);
 		border-radius: 10em;
 		transition: 0.25s;
 		position: absolute;
@@ -92,6 +93,6 @@
 
 @media (hover: hover) {
     .generateButton:hover {
-		background: #bdb;
+		background: var(--color-button-active);
 	}
 }

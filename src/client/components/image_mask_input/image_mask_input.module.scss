@@ -2,7 +2,7 @@
 
 	padding: 0.5rem;
 	border-radius: 0.25rem;
-	background: #cdbbb6;
+	background: var(--color-block-accent);
 
 	.imageMaskInput {
 		position: relative;
@@ -31,10 +31,10 @@
 			font-size: 1.25rem;
 			border-radius: 1rem;
 			padding: 0.25rem 1rem;
-			background: #a0c2a5;
+			background: var(--color-button);
 			cursor: pointer;
-			color: #fff;
-			border: 2px solid #fff;
+			color: var(--color-font-on-button);
+			border: 2px solid var(--color-font-on-button);
 		}
 	}
 

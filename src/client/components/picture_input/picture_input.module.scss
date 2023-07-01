@@ -10,7 +10,7 @@
 	overflow: hidden;
 
 	&:focus {
-		outline: 2px solid #a0c2a5;
+		outline: 2px solid var(--color-button);
 	}
 
 	.text {
@@ -42,10 +42,10 @@
 		width: 2rem;
 		cursor: pointer;
 
-		background: #a0c2a5;
+		background: var(--color-button);
 		font-size: 1.5rem;
 		border-radius: 100%;
-		color: #fff;
+		color: var(--color-font-on-button);
 
 		display: flex;
 		flex-direction: row;

@@ -4,9 +4,9 @@
 
 .tableRow {
 	display: grid;
-	color: #625e5e;
+	color: var(--color-font-on-block);
 	background-color: transparent;
-	border-bottom: 1px dotted #d5c6c2;
+	border-bottom: 1px dotted var(--color-border);
 	text-align: left;
 }
 
@@ -16,22 +16,22 @@ button.tableRow {
 
 .tableHeaders {
 	display: grid;
-	color: #d5c6c2;
+	color: var(--color-header);
 	font-weight: bold;
 }
 
 .tableRow, .tableHeaders {
 	&:first-child {
-		border-top: 1px dotted #d5c6c2;
+		border-top: 1px dotted var(--color-border);
 	}
 
 	> * {
-		border-left: 1px dotted #d5c6c2;
+		border-left: 1px dotted var(--color-border);
 		padding: 0.5rem;
 		height: 100%;
 	}
 
 	> *:last-child {
-		border-right: 1px dotted #d5c6c2;
+		border-right: 1px dotted var(--color-border);
 	}
 }

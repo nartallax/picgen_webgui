@@ -4,7 +4,7 @@
 	position: relative;
 
     .dropdownIcon {
-        color: #c2bcba;
+        color: var(--color-header);
 		font-size: 1.25rem;
 		line-height: 1em;
 		position: absolute;
@@ -25,7 +25,7 @@
         width: 100%;
         padding: 0.25rem 1rem;
         border-radius: 1rem;
-        color: #706d6c;
+        color: var(--color-font-on-block);
     }
 
     &.argumentInput .selectInput {
@@ -33,13 +33,14 @@
     }
 
     &:not(.argumentInput) .selectInput {
-        background: #faf4f2;
+        background: var(--color-block);
     }
 
 }
 
 .dropdown {
-    background-color: #f5edeb;
+    color: var(--color-font-on-block);
+    background-color: var(--color-block-secondary);
     border-radius: 0 0 1em 1em;
     overflow-y: auto;
     margin: 0 1em;
@@ -54,12 +55,12 @@
     line-height: 1.3em;
     padding: 0.25em 0.5em;
 
-    background-color: #f5edeb;
+    background-color: var(--color-block-secondary);
 
     white-space: nowrap;
 
     &.selectedItem,
     &:hover {
-        background-color: #fff;
+        background-color: var(--color-block-selected);
     }
 }

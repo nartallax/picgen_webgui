@@ -1,4 +1,4 @@
-import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth} from "client/app/global_values"
+import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth, visualTheme} from "client/app/global_values"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {FormField} from "client/controls/form/form"
 import {showModal} from "client/controls/modal_base/modal"
@@ -26,7 +26,8 @@ export const showUserSettingsModal = (): Modal => {
 			input: BoolInput({value: hideSomeScrollbars}),
 			label: "Hide some scrollbars",
 			revertable: hideSomeScrollbars,
-			onRevert: () => hideSomeScrollbars(false)
+			onRevert: () => hideSomeScrollbars(false),
+			hint: "Hide scrollbars in the parameter column and in the task list. The content still will be scrollable through other means.\n\nScrollbars are shown by default for accessibility reasons."
 		}),
 		FormField({
 			input: BoolInput({value: preventGalleryImageInteractions}),
@@ -72,6 +73,12 @@ export const showUserSettingsModal = (): Modal => {
 			revertable: formLabelWidth.map(str => str !== "50%"),
 			onRevert: () => formLabelWidth("50%"),
 			hint: "Width of labels in various forms, most notably parameter form, in rate related to form width."
+		}),
+		FormField({
+			input: BoolInput({value: visualTheme.map(theme => theme === "dark", isDark => isDark ? "dark" : "default")}),
+			label: "Dark theme",
+			revertable: visualTheme.map(theme => theme !== "default"),
+			onRevert: () => visualTheme("default")
 		})
 	])
 

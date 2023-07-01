@@ -45,7 +45,7 @@ $arrowButtonSize: 3rem;
 		.status,
 		.doneCounter,
 		.timer {
-			color: #625e5e;
+			color: var(--color-font-on-block);
 			padding: 0.25em 0.3em;
 		}
 
@@ -62,11 +62,11 @@ $arrowButtonSize: 3rem;
 		}
 		
 		.repeatButton {
-			color: #87AF8D;
+			color: var(--color-button-disabled);
 		}
 
 		.killButton, .deleteButton {
-			color: #E55F42;
+			color: var(--color-cancel);
 		}
 
 		.timer {
@@ -74,18 +74,9 @@ $arrowButtonSize: 3rem;
 			text-align: right;
 		}
 	}
-	
-	.picturesWrapWrap {
-		mask-image: linear-gradient(to right, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
-		// margin-left: -$arrowButtonSize;
-		// margin-right: -$arrowButtonSize;
-	}
 
 	.picturesWrap {
 		overflow: hidden;
-
-		// mask-image: linear-gradient(to left, rgba(0,0,0,0) 0, rgba(0,0,0,1) $arrowButtonSize, rgba(0,0,0,1) 100%);
-		// padding-left: $arrowButtonSize;
 
 		.pictures {
 			user-select: none;
@@ -105,14 +96,14 @@ $arrowButtonSize: 3rem;
 		flex-direction: row;
 		align-items: center;
 
-		background: #cdbbb6;
+		background: var(--color-block-accent);
 		border-radius: 1.5em;
 		overflow: hidden;
 
 		.prompt {
 			font-weight: bold;
 			font-size: 0.9em;
-			color: #5A5453;
+			color: var(--color-font-on-block);
 			flex-grow: 1;
 			padding: 0.5em 1.5em;
 			overflow-wrap: anywhere;
@@ -123,14 +114,14 @@ $arrowButtonSize: 3rem;
 			cursor: pointer;
 			border-radius: 0.5em;
 			padding: 0.5em;
-			color: #5A5453;
+			color: var(--color-font-on-block);
 
-			background: rgba(135, 185, 81, 0);
+			background: transparent;
 			transition: 0.25s;
 
 			&.recentlyClicked {
 				pointer-events: none;
-				background: rgba(135, 185, 81, 0.5);
+				background: var(--color-button);
 			}
 
 		}
@@ -151,6 +142,6 @@ $arrowButtonSize: 3rem;
 
 @media (hover: hover) {
     .arrow:hover {
-		background-color: rgba(128,128,128,0.5);
+		background-color: var(--color-block-auxiliary);
 	}
 }

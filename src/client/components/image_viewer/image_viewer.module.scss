@@ -45,9 +45,9 @@
 	position: absolute;
 	bottom: 100%;
 
-	color: #fff;
+	color: var(--color-font-on-auxiliary);
 	font-weight: bold;
-	background-color: rgba(0, 0, 0, 0.5);
+	background-color: var(--color-block-auxiliary);
 	padding: 0.25em 0.5em 0.1em 0.5em;
 	line-height: 1.2em;
 	transform-origin: bottom left;

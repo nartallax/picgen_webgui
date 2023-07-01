@@ -6,11 +6,11 @@
 	padding: 0.15em;
 	border-radius: 10em;
 	cursor: pointer;
-	color: #fff;
+	color: var(--color-font-on-button);
 	font-weight: bold;
-	background-color: #a0c2a5;
+	background-color: var(--color-button);
 	transition: 0.25s;
-	border: 0.1em solid #a0c2a5;
+	border: 0.1em solid var(--color-button);
 
 	&.small {
 		font-size: 1rem;
@@ -24,11 +24,11 @@
 	}
 
 	&:hover {
-		background-color: #bdb;
+		background-color: var(--color-button-active);
 	}
 
 	&.disabled {
 		cursor: default;
-		background-color: #8a8;
+		background-color: var(--color-button-disabled);
 	}
 }

@@ -3,7 +3,7 @@
 	flex-direction: row;
 	align-items: center;
 	justify-content: center;
-	background-color: #faf4f2;
+	background-color: var(--color-block);
 	border-radius: 4rem;
 	padding: 0.35rem;
 	margin-bottom: 1rem;
@@ -22,7 +22,7 @@
 		flex-basis: 0;
 		min-width: 0;
 
-		color: #706D6C;
+		color: var(--color-font-on-block);
 		font-size: 1.35rem;
 		line-height: 1.5em;
 		padding: 0 0.5em;

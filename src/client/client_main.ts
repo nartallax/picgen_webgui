@@ -1,6 +1,6 @@
 import {waitDocumentLoaded, whileMounted} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
-import {currentPage, currentUser, isUserControlEnabled, pages, uiScale} from "client/app/global_values"
+import {currentPage, currentUser, isUserControlEnabled, pages, uiScale, visualTheme} from "client/app/global_values"
 import {MultiPanel} from "client/controls/multi_panel/multi_panel"
 import {ApiError} from "common/infra_entities/api_error"
 
@@ -16,6 +16,10 @@ export async function main() {
 
 	whileMounted(rootPanel, uiScale, scale => {
 		document.documentElement.style.fontSize = Math.round((12 * scale)) + "px"
+	})
+
+	whileMounted(rootPanel, visualTheme, theme => {
+		document.body.setAttribute("data-visual-theme", theme)
 	})
 
 	try {

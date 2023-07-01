@@ -12,7 +12,7 @@
 
 	> hr {
 		height: 2px;
-		background: #E5D6D2;
+		background: var(--color-header);
 		flex-grow: 1;
 		opacity: 0.75;
 	}
@@ -20,12 +20,12 @@
 	.text {
 		flex-grow: 0;
 		font-weight: bold;
-		color: #D5C6C2;
+		color: var(--color-header);
 		font-size: 1.35rem;
 	}
 
 	.closeButton {
-		color: #d5c6c2;
+		color: var(--color-header);
 		cursor: pointer;
 		background-color: transparent;
 		height: 100%;

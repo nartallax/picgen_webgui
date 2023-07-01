@@ -1,5 +1,5 @@
-$clr: #fff;
-$trp: rgba(255, 255, 255, 0); // same as $clr, just transparent
+$clr: var(--color-font-on-button);
+$trp: rgba(0, 0, 0, 0);
 
 .tabs {
 	display: flex;
@@ -17,11 +17,11 @@ $trp: rgba(255, 255, 255, 0); // same as $clr, just transparent
 }
 
 .tab {
-	background-color: #cdbbb6;
+	background-color: var(--color-block-accent);
 	transition: background-color 0.25s;
 	
 	font-size: 1.35rem;
-	color: #fff;
+	color: var(--color-font-on-button);
 	font-weight: bold;
 	padding: 0.25rem 1rem 0.1rem 1rem;
 	cursor: pointer;
@@ -30,6 +30,6 @@ $trp: rgba(255, 255, 255, 0); // same as $clr, just transparent
 	border-bottom: none;
 
 	&.active {
-		background-color: #a0c2a5;
+		background-color: var(--color-button);
 	}
 }
