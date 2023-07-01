@@ -84,7 +84,6 @@ export const JsonFileListInput = (props: Props) => {
 				})
 				return FormField({
 					label: itemDef.prop("name"),
-					maxLabelWidth: "11rem",
 					input: NumberInput({
 						precision: 2,
 						value: selectedItem.prop("weight")
