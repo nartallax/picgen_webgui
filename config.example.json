@@ -177,6 +177,17 @@
 				"uiName": "InPaint",
 				"mask": true
 			}]
+		}, {
+			"uiName": "LoRAs",
+			"split": true,
+			"parameters": [{
+				"type": "json_file_list",
+				"directory": "./loras",
+				"siblingFileExtension": ".safetensors",
+				"inputInvitation": "Select LoRA...",
+				"uiName": "LoRAs",
+				"jsonName": "loras"
+			}]
 		}]
 	}]
 }

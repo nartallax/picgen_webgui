@@ -39,22 +39,12 @@ function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup
 		}
 	}
 
-	const defMap = new Map(defs.map(x => [x.jsonName, x]))
 	const boxMap = {...currentArgumentBoxes()}
 	for(const name in boxMap){
-		const value = boxMap[name]!
-		const def = defMap.get(name)
-		if(!def || typeof(value()) !== typeof(defaultValueOfParam(def))){
-			delete boxMap[name]
-			continue
-		}
+		delete boxMap[name]
 	}
 
 	for(const def of defs){
-		const oldValue = boxMap[def.jsonName]
-		if(oldValue){
-			continue
-		}
 		boxMap[def.jsonName] = localStorageBox(`genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
 	}
 
