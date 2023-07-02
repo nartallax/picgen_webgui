@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "@nartallax/cardboard": "^1.0.22",
-    "@nartallax/cardboard-dom": "^1.0.28",
+    "@nartallax/cardboard-dom": "^1.0.29",
     "@nartallax/ribcage": "^1.1.7",
     "@nartallax/ribcage-validation": "^1.0.2",
     "cls-hooked": "^4.2.2",
