@@ -19,11 +19,13 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 			placeholder: "...Enter a description of the desired result",
 			rows: 100
 		},
-		onInput: () => props.promptValue(input.value),
-		onKeydown: e => {
-			if(e.key === "Enter"){
-				props.startGeneration()
-			}
+		onInput: () => props.promptValue(input.value)
+	})
+
+	input.addEventListener("keydown", e => {
+		if(e.key === "Enter" && !e.shiftKey){
+			e.preventDefault()
+			props.startGeneration()
 		}
 	})
 

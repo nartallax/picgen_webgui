@@ -144,7 +144,6 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		referenceElement: input,
 		body: listWrap,
 		visible: isDropdownVisible,
-		parent: wrap,
 		referencePosition: "bottomLeft",
 		overlayPosition: "topLeft",
 		zIndex: 100
