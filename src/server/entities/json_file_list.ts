@@ -93,7 +93,9 @@ export class JSONFileListController {
 		list.watcher = watch(
 			list.directory,
 			{filter: /.json$/i, recursive: false, delay: 100, persistent: false},
-			async() => {
+			async(evt, path) => {
+				log("File watcher event: " + evt + " in " + path)
+
 				const callCount = list.reload.callCount
 				await list.reload()
 				if(list.reload.callCount !== callCount + 1){
