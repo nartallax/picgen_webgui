@@ -1,4 +1,4 @@
-import {MRBox, RBox, WBox, box, constBoxWrap, unbox, viewBox} from "@nartallax/cardboard"
+import {MRBox, RBox, WBox, box, calcBox, constBoxWrap, unbox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
@@ -23,24 +23,25 @@ interface TaskPictureProps {
 
 class TaskPictureContext {
 	readonly favAddTime: WBox<number | null>
+	private readonly haveTask: RBox<boolean>
 
 	constructor(
 		readonly picture: WBox<Picture>,
 		readonly generationTask?: MRBox<GenerationTaskWithPictures>
 	) {
 		this.favAddTime = picture.prop("favoritesAddTime")
+		this.haveTask = calcBox(
+			[this.picture, constBoxWrap(this.generationTask)],
+			(pic, task) => pictureHasAttachedTask(pic) || !!task
+		)
 	}
 
 	private getPictureArgs(): GenerationTaskInputData {
-		return getTaskInputDataFromPicture(this.picture(), this.getTask())
-	}
-
-	private haveTask(): boolean {
-		return pictureHasAttachedTask(this.picture()) || !!unbox(this.generationTask)
+		return getTaskInputDataFromPicture(this.picture.get(), this.getTask())
 	}
 
 	private getTask(): GenerationTaskInputData {
-		const pic = this.picture()
+		const pic = this.picture.get()
 		let task: GenerationTask | undefined = unbox(this.generationTask)
 		if(pictureHasAttachedTask(pic)){
 			task = pic.task
@@ -55,7 +56,7 @@ class TaskPictureContext {
 		const linkButton = tag({class: ["icon-link-ext", css.iconLink]})
 		linkButton.addEventListener("click", e => {
 			e.stopPropagation()
-			const picture = this.picture()
+			const picture = this.picture.get()
 			window.open(ClientApi.getPictureUrl(picture.id, picture.salt), "_blank")
 		})
 		return linkButton
@@ -74,7 +75,7 @@ class TaskPictureContext {
 		const copyTaskButton = tag({
 			class: ["icon-copy-task", css.iconCopy],
 			style: {
-				display: viewBox(() => this.haveTask() ? "" : "none")
+				display: this.haveTask.map(haveTask => haveTask ? "" : "none")
 			}
 		})
 		copyTaskButton.addEventListener("click", e => {
@@ -88,7 +89,7 @@ class TaskPictureContext {
 		const btn = tag({
 			class: [css.iconShowParams, `icon-copy-json-${isTaskOnly ? "task" : "single"}`],
 			style: {
-				display: isTaskOnly ? viewBox(() => this.haveTask() ? "" : "none") : ""
+				display: isTaskOnly ? this.haveTask.map(haveTask => haveTask ? "" : "none") : ""
 			}
 		})
 		btn.addEventListener("click", e => {
@@ -107,9 +108,9 @@ class TaskPictureContext {
 		]})
 		favoriteButton.addEventListener("click", async e => {
 			e.stopPropagation()
-			const isFavoriteNow = this.favAddTime() !== null
-			this.favAddTime(isFavoriteNow ? null : 1)
-			await ClientApi.setPictureFavorite(this.picture().id, !isFavoriteNow)
+			const isFavoriteNow = this.favAddTime.get() !== null
+			this.favAddTime.set(isFavoriteNow ? null : 1)
+			await ClientApi.setPictureFavorite(this.picture.get().id, !isFavoriteNow)
 		})
 		return favoriteButton
 	}
@@ -142,7 +143,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			},
 			onMousedown: e => {
 				if(e.button === 1){
-					window.open(url(), "_blank")
+					window.open(url.get(), "_blank")
 				}
 			}
 		}, [
@@ -158,7 +159,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	]);
 
 	(async() => {
-		const img = await props.thumbContext.getThumbnail(props.picture())
+		const img = await props.thumbContext.getThumbnail(props.picture.get())
 		imgPlaceholder.before(img)
 		imgPlaceholder.remove()
 		// FIXME: load animation...?
@@ -167,7 +168,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				props.onLoad()
 			}
 		} else {
-			isLoaded(true)
+			isLoaded.set(true)
 			if(props.onLoad){
 				setTimeout(() => {
 					props.onLoad!()
@@ -208,7 +209,7 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 	} satisfies Partial<ShowImageViewerProps<Picture>>
 	if(task){
 		const pictures = constBoxWrap(task).prop("pictures").map(x => [...x].reverse())
-		const pictureIndex = pictures().indexOf(unbox(picture))
+		const pictureIndex = pictures.get().indexOf(unbox(picture))
 		props = {
 			...commonProps,
 			// makeUrl: picture => `https://dummyimage.com/256x${((picture.id % pictures().length) + 1) * 2}00`,

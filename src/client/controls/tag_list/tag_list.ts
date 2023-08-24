@@ -1,5 +1,5 @@
 import {RBox, WBox, isWBox} from "@nartallax/cardboard"
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./tag_list.module.scss"
 
 interface TagListProps {
@@ -13,7 +13,7 @@ export function TagList(props: TagListProps): HTMLElement {
 		[css.center!]: !!props.center
 	}]})
 
-	whileMounted(result, props.values, values => {
+	bindBox(result, props.values, values => {
 		while(result.firstChild){
 			result.firstChild.remove()
 		}
@@ -27,7 +27,7 @@ export function TagList(props: TagListProps): HTMLElement {
 			if(isWBox(valueBox)){
 				const cross = tag({
 					class: "icon-cancel",
-					onClick: () => valueBox(valueBox().filter(x => x !== tagStr))
+					onClick: () => valueBox.set(valueBox.get().filter(x => x !== tagStr))
 				})
 				item.appendChild(cross)
 				item.classList.add(css.editable!)

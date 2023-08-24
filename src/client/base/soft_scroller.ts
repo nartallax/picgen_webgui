@@ -154,11 +154,11 @@ export class SoftScroller {
 	refresh(): void {
 		const pos = this.getPosition()
 		const limit = this.getLimit()
-		this.atStart(pos <= 0)
-		this.atFinish(pos >= limit)
-		this.limit(limit)
-		this.position(pos)
-		this.contentSize(this.getScrollSize())
+		this.atStart.set(pos <= 0)
+		this.atFinish.set(pos >= limit)
+		this.limit.set(limit)
+		this.position.set(pos)
+		this.contentSize.set(this.getScrollSize())
 	}
 
 }

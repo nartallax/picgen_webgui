@@ -1,4 +1,4 @@
-import {waitDocumentLoaded, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, waitDocumentLoaded} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {currentPage, currentUser, isUserControlEnabled, pages, uiScale, visualTheme} from "client/app/global_values"
 import {MultiPanel} from "client/controls/multi_panel/multi_panel"
@@ -14,11 +14,11 @@ export async function main() {
 
 	document.body.appendChild(rootPanel)
 
-	whileMounted(rootPanel, uiScale, scale => {
+	bindBox(rootPanel, uiScale, scale => {
 		document.documentElement.style.fontSize = Math.round((12 * scale)) + "px"
 	})
 
-	whileMounted(rootPanel, visualTheme, theme => {
+	bindBox(rootPanel, visualTheme, theme => {
 		document.body.setAttribute("data-visual-theme", theme)
 	})
 
@@ -27,17 +27,17 @@ export async function main() {
 			ClientApi.getUserData(),
 			ClientApi.getIsUserControlEnabled()
 		])
-		isUserControlEnabled(isUserControlEnabledValue)
-		currentUser(user)
-		currentPage("main")
+		isUserControlEnabled.set(isUserControlEnabledValue)
+		currentUser.set(user)
+		currentPage.set("main")
 	} catch(e){
 		if(ApiError.isApiError(e)){
 			switch(e.errorType){
 				case "not_logged_in":
-					currentPage("login")
+					currentPage.set("login")
 					return
 				case "permission":
-					currentPage("not_allowed")
+					currentPage.set("not_allowed")
 					return
 			}
 		}

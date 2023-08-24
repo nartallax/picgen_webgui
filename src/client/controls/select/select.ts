@@ -1,5 +1,5 @@
-import {MRBox, WBox, box, constBoxWrap, viewBox} from "@nartallax/cardboard"
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {MRBox, WBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
+import {bindBox, containerTag, tag} from "@nartallax/cardboard-dom"
 import * as css from "./select.module.scss"
 import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
 
@@ -31,7 +31,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			return
 		}
 
-		searchText(input.value)
+		searchText.set(input.value)
 	}
 
 	const input: HTMLInputElement = tag({
@@ -41,7 +41,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			readonly: !props.isSearchable
 		},
 		onFocus: () => {
-			isDropdownVisible(true)
+			isDropdownVisible.set(true)
 			window.addEventListener("click", handleWindowClick)
 			if(props.isSearchable){
 				input.value = ""
@@ -50,7 +50,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		},
 		onBlur: () => {
 			window.removeEventListener("click", handleWindowClick)
-			isDropdownVisible(false)
+			isDropdownVisible.set(false)
 			updateValue()
 		},
 		onChange: onChange,
@@ -71,17 +71,17 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		const up = e.key === "ArrowUp"
 		if(down || up){
 			e.preventDefault()
-			let value = selectedItem()
+			let value = selectedItem.get()
 			if(down){
 				value++
 			} else if(up){
 				value--
 			}
 			const listLength = listWrap.children.length
-			selectedItem((value + listLength) % listLength)
+			selectedItem.set((value + listLength) % listLength)
 		} else if(e.key === "Enter"){
-			if(selectedItem() >= 0){
-				const item = listWrap.children[selectedItem()]
+			if(selectedItem.get() >= 0){
+				const item = listWrap.children[selectedItem.get()]
 				if(item instanceof HTMLElement){
 					// a bit of a hack, but whatever
 					item.onclick!(new MouseEvent(""))
@@ -95,12 +95,12 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		return str.replace(/\s/g, "").toLowerCase()
 	}
 
-	const filteredOptions = viewBox(() => {
-		const srcText = normalize(searchText())
+	const filteredOptions = calcBox([searchText, options], (searchText, options) => {
+		const srcText = normalize(searchText)
 		if(!srcText){
-			return options()
+			return options
 		}
-		return options()
+		return options
 			.map(opt => ({
 				opt,
 				index: normalize(opt.label.toLowerCase()).indexOf(srcText)
@@ -110,26 +110,26 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			.map(pair => pair.opt)
 	})
 
-	const listWrap = tag({
+	const listWrap = containerTag({
 		class: [css.dropdown],
 		style: {
 			maxHeight: ((props.listSizeLimit ?? 10) * 2) + "em"
 		}
-	}, filteredOptions.mapArray(
-		value => value,
-		value => {
-			const option = tag({
-				class: css.option
-			}, [value.prop("label")])
-			option.onclick = () => {
-				props.value(value().value)
-				selectedItem(-1)
-				input.blur()
-				updateValue()
-			}
-			return option
+	},
+	filteredOptions,
+	value => value,
+	value => {
+		const option = tag({
+			class: css.option
+		}, [value.prop("label")])
+		option.onclick = () => {
+			props.value.set(value.get().value)
+			selectedItem.set(-1)
+			input.blur()
+			updateValue()
 		}
-	))
+		return option
+	})
 
 	const wrap = tag({
 		class: [css.select, {[css.argumentInput!]: props.isArgumentInput}]
@@ -150,12 +150,12 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	})
 
 	function updateValue(): void {
-		const value = props.value()
-		const opts = options()
-		const valuePair = options().find(x => x.value === value)
+		const value = props.value.get()
+		const opts = options.get()
+		const valuePair = opts.find(x => x.value === value)
 		if(!valuePair){
 			if(opts.length > 0){
-				props.value(opts[0]!.value)
+				props.value.set(opts[0]!.value)
 			}
 			// there are some semi-legitimate cases when this could happen
 			// for example, when stuff is just being loaded and no value is present yet
@@ -166,10 +166,10 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		input.value = valuePair.label
 	}
 
-	whileMounted(wrap, props.value, updateValue)
-	whileMounted(wrap, options, updateValue)
+	bindBox(wrap, props.value, updateValue)
+	bindBox(wrap, options, updateValue)
 
-	whileMounted(wrap, selectedItem, selectedItem => {
+	bindBox(wrap, selectedItem, selectedItem => {
 		for(let i = 0; i < listWrap.children.length; i++){
 			const child = listWrap.children[i]!
 			const hasClass = child.classList.contains(css.selectedItem!)

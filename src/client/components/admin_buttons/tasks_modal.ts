@@ -20,7 +20,7 @@ export async function showTasksModal(): Promise<void> {
 
 	const isQueuePaused = box(false)
 	async function refreshPauseState(): Promise<void> {
-		isQueuePaused(await ClientApi.getIsQueuePaused())
+		isQueuePaused.set(await ClientApi.getIsQueuePaused())
 	}
 	refreshPauseState()
 
@@ -61,7 +61,7 @@ export async function showTasksModal(): Promise<void> {
 			}, {
 				label: "User",
 				getValue: task => {
-					const user = getUser(task.userId)()
+					const user = getUser(task.userId).get()
 					return "#" + task.userId + (!user ? "" : ", " + user.displayName)
 				}
 			}, {
@@ -82,14 +82,13 @@ export async function showTasksModal(): Promise<void> {
 	])
 
 	onAdminTaskUpdate.subscribeUntil(modal.waitClose(), task => {
-		const tasks = values()
+		const tasks = values.get()
 		const taskWithIdIndex = tasks.findIndex(x => x.id === task.id)
 		if(taskWithIdIndex < 0){
 			return
 		}
 
-		tasks[taskWithIdIndex] = task
-		values([...tasks])
+		values.setElementAtIndex(taskWithIdIndex, task)
 	})
 
 }

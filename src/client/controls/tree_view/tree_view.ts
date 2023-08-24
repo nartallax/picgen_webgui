@@ -1,5 +1,5 @@
 import {isWBox, MRBox, RBox, unbox, WBox} from "@nartallax/cardboard"
-import {BoxedProps, defineControl, tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./tree_view.module.scss"
 import {addMouseDragHandler, pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 
@@ -22,13 +22,13 @@ export type TreeViewProps<T> = {
 	render: (value: T) => string | HTMLElement
 }
 
-const defaults = {
-	uncollapseLevel: 0,
-	grow: 0,
-	shrink: 0
-} satisfies Partial<TreeViewProps<unknown>>
+// const defaults = {
+// 	uncollapseLevel: 0,
+// 	grow: 0,
+// 	shrink: 0
+// } satisfies Partial<TreeViewProps<unknown>>
 
-export const TreeView = defineControl<TreeViewProps<unknown>, typeof defaults>(defaults, <T>(props: BoxedProps<TreeViewProps<T>, typeof defaults>) => {
+export const TreeView = defineControl(<T>(props: TreeViewProps<T>) => {
 
 	let selectedNode: HTMLElement | null = null
 
@@ -62,7 +62,7 @@ export const TreeView = defineControl<TreeViewProps<unknown>, typeof defaults>(d
 	const TreeElement = (node: TreeViewNode<T>, depth: number): HTMLElement => {
 		allNodes.set(node.id, node)
 		const haveChildren = node.children && node.children.length > 0
-		let collapsed = !haveChildren ? false : !uncollapsedNodes.has(node.id) && unbox(props.uncollapseLevel) <= depth
+		let collapsed = !haveChildren ? false : !uncollapsedNodes.has(node.id) && unbox(props.uncollapseLevel ?? 0) <= depth
 		let childWrap: HTMLElement | null = null
 		if(!collapsed && haveChildren){
 			childWrap = renderChildWrap(node.children!, depth)
@@ -94,7 +94,7 @@ export const TreeView = defineControl<TreeViewProps<unknown>, typeof defaults>(d
 					}
 				}
 				if(node.selectable && props.value){
-					props.value(node)
+					props.value.set(node)
 				}
 			}
 		}, [unbox(props.render)(node.value)])
@@ -112,9 +112,10 @@ export const TreeView = defineControl<TreeViewProps<unknown>, typeof defaults>(d
 		if(!isWBox(props.nodes)){
 			throw new Error("Cannot reorder tree: nodes are not writable")
 		}
-		props.nodes(reorderTree(props.nodes(), target, dest, pos))
+		props.nodes.set(reorderTree(props.nodes.get(), target, dest, pos))
 	})
 
+	// TODO: try to implement proper tree view
 	// yuuup, extra unoptimal, but who cares
 	// if I'll ever need something more optimal - I could do that, but right now I just don't want to
 	// (this weird trick with another wrapper node is required for proper line sizing in display: grid)
@@ -122,17 +123,19 @@ export const TreeView = defineControl<TreeViewProps<unknown>, typeof defaults>(d
 	const treeRoot = tag({
 		class: css.tree,
 		style: {
-			flexGrow: props.grow,
-			flexShrink: props.shrink
+			flexGrow: props.grow ?? 0,
+			flexShrink: props.shrink ?? 0
 		}
-	}, [tag(props.nodes.map(nodes => {
+	})
+
+	bindBox(treeRoot, props.nodes, nodes => {
 		allNodes.clear()
 		nodes.forEach(node => traverse(node, node => allNodes.set(node.id, node)))
 		const result = nodes.map(node => TreeElement(node, 0))
-		return result
-	}))])
+		treeRoot.replaceChildren(...result)
+	})
 
-	whileMounted<TreeViewNode<T> | null | undefined>(treeRoot, props.value, value => {
+	bindBox(treeRoot, props.value, value => {
 		updateNodeSelection(value ?? null)
 	})
 

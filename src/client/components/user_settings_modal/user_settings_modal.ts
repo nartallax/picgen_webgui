@@ -19,21 +19,21 @@ export const showUserSettingsModal = (): Modal => {
 			}),
 			label: "UI scale",
 			revertable: uiScale.map(scale => scale !== 1),
-			onRevert: () => uiScale(1),
+			onRevert: () => uiScale.set(1),
 			hint: "Allows to magnify or shrink interface without breaking anything.\n\nWorks by changing font unit size."
 		}),
 		FormField({
 			input: BoolInput({value: hideSomeScrollbars}),
 			label: "Hide some scrollbars",
 			revertable: hideSomeScrollbars,
-			onRevert: () => hideSomeScrollbars(false),
+			onRevert: () => hideSomeScrollbars.set(false),
 			hint: "Hide scrollbars in the parameter column and in the task list. The content still will be scrollable through other means.\n\nScrollbars are shown by default for accessibility reasons."
 		}),
 		FormField({
 			input: BoolInput({value: preventGalleryImageInteractions}),
 			label: "Block gallery image click",
 			revertable: preventGalleryImageInteractions,
-			onRevert: () => preventGalleryImageInteractions(false),
+			onRevert: () => preventGalleryImageInteractions.set(false),
 			hint: "Try enabling this setting if having trouble with drag in the gallery.\n\nThis can have also negative effects, so if drag works fine for you - don't change this setting."
 		}),
 		FormField({
@@ -45,21 +45,21 @@ export const showUserSettingsModal = (): Modal => {
 			}),
 			label: "Params column width",
 			revertable: paramsColumnWidth.map(str => str !== "20vw"),
-			onRevert: () => paramsColumnWidth("20vw"),
+			onRevert: () => paramsColumnWidth.set("20vw"),
 			hint: "Width of parameters column, in page widths (1 = full page width).\n\nConstrained by max and min widths. Note that max/min widths are changed based on UI scale, but width of the column is calculated based on page width."
 		}),
 		FormField({
 			input: NumberInput({value: paramsColumnMaxWidth.map(str => parseInt(str), num => num + "rem"), int: true}),
 			label: "Params column max width",
 			revertable: paramsColumnMaxWidth.map(str => str !== "35rem"),
-			onRevert: () => paramsColumnMaxWidth("35rem"),
+			onRevert: () => paramsColumnMaxWidth.set("35rem"),
 			hint: "Upper bound of width of parameters column, in font units."
 		}),
 		FormField({
 			input: NumberInput({value: paramsColumnMinWidth.map(str => parseInt(str), num => num + "rem"), int: true}),
 			label: "Params column min width",
 			revertable: paramsColumnMinWidth.map(str => str !== "20rem"),
-			onRevert: () => paramsColumnMinWidth("20rem"),
+			onRevert: () => paramsColumnMinWidth.set("20rem"),
 			hint: "Lower bound of width of parameters column, in font units."
 		}),
 		FormField({
@@ -71,14 +71,14 @@ export const showUserSettingsModal = (): Modal => {
 			}),
 			label: "Form label width",
 			revertable: formLabelWidth.map(str => str !== "50%"),
-			onRevert: () => formLabelWidth("50%"),
+			onRevert: () => formLabelWidth.set("50%"),
 			hint: "Width of labels in various forms, most notably parameter form, in rate related to form width."
 		}),
 		FormField({
 			input: BoolInput({value: visualTheme.map(theme => theme === "dark", isDark => isDark ? "dark" : "default")}),
 			label: "Dark theme",
 			revertable: visualTheme.map(theme => theme !== "default"),
-			onRevert: () => visualTheme("default")
+			onRevert: () => visualTheme.set("default")
 		})
 	])
 

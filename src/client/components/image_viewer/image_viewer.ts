@@ -1,7 +1,7 @@
-import {onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, onMount, tag} from "@nartallax/cardboard-dom"
 import {showModalBase} from "client/controls/modal_base/modal_base"
 import * as css from "./image_viewer.module.scss"
-import {RBox, box, viewBox} from "@nartallax/cardboard"
+import {RBox, box, calcBox} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {SoftValueChanger} from "client/base/soft_value_changer"
@@ -130,19 +130,19 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	}
 
 	const updateMaxNatHeight = debounce(1, () => {
-		const imgArr = imgs()
-		let natHeight = maxNatHeight()
+		const imgArr = imgs.get()
+		let natHeight = maxNatHeight.get()
 		for(const img of imgArr){
 			natHeight = Math.max(img.naturalHeight, natHeight)
 		}
 		lastKnownHeight = null
-		maxNatHeight(natHeight)
+		maxNatHeight.set(natHeight)
 	})
 
 	const updateBounds = debounce(1, async() => {
 		await updateMaxNatHeight.waitForScheduledRun() // just in case
 
-		const imgArr = imgs()
+		const imgArr = imgs.get()
 
 		const halfWidth = (window.innerWidth / 2)// * zoom()
 		const halfHeight = (window.innerHeight / 2)// * zoom()
@@ -153,21 +153,21 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			right = Number.MIN_SAFE_INTEGER
 		for(const img of imgArr){
 			const rect = img.getBoundingClientRect()
-			top = Math.min(top, rect.top - halfHeight + yPos())
-			bottom = Math.max(bottom, rect.bottom - halfHeight + yPos())
-			left = Math.min(left, rect.left - halfWidth + xPos())
-			right = Math.max(right, rect.right - halfWidth + xPos())
+			top = Math.min(top, rect.top - halfHeight + yPos.get())
+			bottom = Math.max(bottom, rect.bottom - halfHeight + yPos.get())
+			left = Math.min(left, rect.left - halfWidth + xPos.get())
+			right = Math.max(right, rect.right - halfWidth + xPos.get())
 		}
 
 		const verticalBounds = calculateBoundsForImageViewer({
 			min: top, max: bottom,
 			borderOffset: (window.innerHeight / 2) * (1 - defaultOffsetZoomMult),
-			type: props.panBounds?.y ?? "none", windowSize: window.innerHeight, zoom: zoom()
+			type: props.panBounds?.y ?? "none", windowSize: window.innerHeight, zoom: zoom.get()
 		})
 		const horisontalBounds = calculateBoundsForImageViewer({
 			min: left, max: right,
 			borderOffset: (window.innerWidth / 2) * (1 - defaultOffsetZoomMult),
-			type: props.panBounds?.x ?? "none", windowSize: window.innerWidth, zoom: zoom()
+			type: props.panBounds?.x ?? "none", windowSize: window.innerWidth, zoom: zoom.get()
 		})
 		bounds.top = verticalBounds.min
 		bounds.bottom = verticalBounds.max
@@ -183,8 +183,8 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	let defaultZoom = 1
 	const zoom = box(defaultZoom)
 	const zoomChanger = new SoftValueChanger({
-		getValue: zoom,
-		setValue: zoom,
+		getValue: () => zoom.get(),
+		setValue: value => zoom.set(value),
 		timeMs: 50
 	})
 
@@ -195,7 +195,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	function scrollToNextImage(direction: -1 | 1): void {
 		const targetIndex = getCentralImageIndex() + direction
-		const imgArr = imgs()
+		const imgArr = imgs.get()
 		if(targetIndex >= imgArr.length || targetIndex < 0){
 			return
 		}
@@ -204,7 +204,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	function getCentralImageIndex(): number {
 		const windowCenter = window.innerWidth / 2
-		const imgArr = imgs()
+		const imgArr = imgs.get()
 		for(let i = 0; i < imgArr.length; i++){
 			const img = imgArr[i]!
 			const rect = img.getBoundingClientRect()
@@ -216,19 +216,19 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	}
 
 	function centerOn(img: HTMLImageElement): void {
-		const natHeight = props.equalizeByHeight ? maxNatHeight() : img.naturalHeight
-		const natWidth = props.equalizeByHeight ? (img.naturalWidth / img.naturalHeight) * maxNatHeight() : img.naturalWidth
+		const natHeight = props.equalizeByHeight ? maxNatHeight.get() : img.naturalHeight
+		const natWidth = props.equalizeByHeight ? (img.naturalWidth / img.naturalHeight) * maxNatHeight.get() : img.naturalWidth
 		const hRatio = window.innerHeight / natHeight
 		const wRatio = window.innerWidth / natWidth
 		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * defaultOffsetZoomMult)
-		zoom(defaultZoom)
+		zoom.set(defaultZoom)
 		zoomChanger.reset()
 
 		const imgRect = img.getBoundingClientRect()
 		const imgLeft = imgRect.left - (window.innerWidth / 2)
 
-		yPos(0)
-		xPos(xPos() + imgLeft + (imgRect.width / 2))
+		yPos.set(0)
+		xPos.set(xPos.get() + imgLeft + (imgRect.width / 2))
 
 		updatePanX()
 		updatePanY()
@@ -237,12 +237,12 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	// scroll view in a way that point of the picture is present at the coords of the screen
 	// relPoint is normalized
 	function scrollCoordsToPoint(absCoords: {x: number, y: number}, relPoint: {x: number, y: number}): void {
-		const width = wrap.scrollWidth * zoom()
-		const height = wrap.scrollHeight * zoom()
+		const width = wrap.scrollWidth * zoom.get()
+		const height = wrap.scrollHeight * zoom.get()
 		const left = -((relPoint.x * width) - absCoords.x)
 		const top = -((relPoint.y * height) - absCoords.y)
-		xPos(left)
-		yPos(top)
+		xPos.set(left)
+		yPos.set(top)
 	}
 
 	function setZoomByCoords(absCoords: {x: number, y: number}, value: number, instant?: boolean): void {
@@ -250,13 +250,13 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		absCoords.x = (-absCoords.x + (window.innerWidth / 2))
 		absCoords.y = (-absCoords.y + (window.innerHeight / 2))
 		const relOffsetCoords = {
-			x: (absCoords.x - xPos()) / (wrap.scrollWidth * zoom()),
-			y: (absCoords.y - yPos()) / (wrap.scrollHeight * zoom())
+			x: (absCoords.x - xPos.get()) / (wrap.scrollWidth * zoom.get()),
+			y: (absCoords.y - yPos.get()) / (wrap.scrollHeight * zoom.get())
 		}
 		lastScrollActionCoords = {abs: absCoords, rel: relOffsetCoords}
 
 		if(instant){
-			zoom(value)
+			zoom.set(value)
 			scrollCoordsToPoint(lastScrollActionCoords.abs, lastScrollActionCoords.rel)
 		} else {
 			zoomChanger.set(value)
@@ -275,40 +275,41 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return height / img.naturalHeight
 	}
 
+	// TODO: this should be done differently, maybe..?
+	// HTMLElements in boxes - no bueno
 	const imgsWithLabels = props.imageDescriptions.mapArray(
-		desc => props.makeUrl(desc),
 		desc => {
 			const natSideRatio = box(1)
 			const loaded = box(false)
-			const widthByHeight = viewBox(() => (natSideRatio() * maxNatHeight()))
-			const heightBox = viewBox(() => !loaded() ? null : maxNatHeight() + "px")
+			const widthByHeight = calcBox([natSideRatio, maxNatHeight], (ratio, height) => ratio * height)
+			const heightBox = calcBox([loaded, maxNatHeight], (loaded, height) => !loaded ? null : height + "px")
 
 			let _img: HTMLImageElement | null = null
 			_img = tag({
 				tag: "img",
 				attrs: {alt: ""},
 				style: {
-					width: !props.equalizeByHeight ? undefined : viewBox(() => !loaded() ? null : widthByHeight() + "px"),
+					width: !props.equalizeByHeight ? undefined : calcBox([loaded, widthByHeight], (loaded, width) => !loaded ? null : width + "px"),
 					height: !props.equalizeByHeight ? undefined : heightBox,
 					imageRendering: zoom.map(() => _img && calcZoomnessRate(_img) >= 1 ? "pixelated" : "auto")
 				},
 				onMousedown: e => {
 					if(e.button === 1){
-						window.open(props.makeUrl(desc()), "_blank")
+						window.open(props.makeUrl(desc), "_blank")
 					}
 				}
 			})
 			const img: HTMLImageElement = _img
-			img.setAttribute("src", props.makeUrl(desc()))
+			img.setAttribute("src", props.makeUrl(desc))
 			if(props.updateImg){
-				props.updateImg(desc(), img)
+				props.updateImg(desc, img)
 			}
 
 			waitLoadAndPaint(img).then(() => {
-				natSideRatio(img.naturalWidth / img.naturalHeight)
+				natSideRatio.set(img.naturalWidth / img.naturalHeight)
 				updateMaxNatHeight()
 				updateBounds()
-				loaded(true)
+				loaded.set(true)
 			})
 
 			const label = tag({
@@ -321,9 +322,9 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			const updateLabel = debounce(1, () => {
 				label.textContent = `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
 			})
-			whileMounted(label, loaded, updateLabel)
-			whileMounted(label, zoom, updateLabel)
-			whileMounted(label, heightBox, updateLabel)
+			bindBox(label, loaded, updateLabel)
+			bindBox(label, zoom, updateLabel)
+			bindBox(label, heightBox, updateLabel)
 
 			let additionalControls: HTMLElement | null = null
 			if(props.getAdditionalControls){
@@ -331,12 +332,12 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 					class: css.additionalControls,
 					style: {
 						transform: zoom.map(zoom => `scale(${1 / zoom})`),
-						width: viewBox(() => {
-							const w = !props.equalizeByHeight ? img.naturalWidth : widthByHeight()
-							return (w * zoom()) + "px"
+						width: calcBox([zoom, widthByHeight], (zoom, width) => {
+							const w = !props.equalizeByHeight ? img.naturalWidth : width
+							return (w * zoom) + "px"
 						})
 					}
-				}, desc.map(desc => props.getAdditionalControls!(desc)))
+				}, props.getAdditionalControls!(desc))
 			}
 
 			// this exists to prevent native browser behaviour about image dragging
@@ -358,19 +359,48 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			transform: zoom.map(zoom => `scale(${zoom})`)
 		},
 		onClick: () => modal.close()
-	}, imgsWithLabels)
+	})
+
+	bindBox(wrap, imgsWithLabels, els => wrap.replaceChildren(...els))
+
+	onMount(wrap, async() => {
+		const targetIndex = props.centerOn ?? 0
+
+		const imgArr = imgs.get()
+		const imgsBeforeTarget = imgArr.slice(0, targetIndex + 1)
+		await Promise.all(imgsBeforeTarget.map(img => waitLoadAndPaint(img)))
+		const targetImg = imgArr[targetIndex]!
+
+		await updateBounds.waitForScheduledRun()
+		await updateMaxNatHeight.waitForScheduledRun()
+		centerOn(targetImg)
+	})
+
+	onMount(wrap, () => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if(e.key === "ArrowRight"){
+				scrollToNextImage(1)
+			} else if(e.key === "ArrowLeft"){
+				scrollToNextImage(-1)
+			} else if(e.key === "Escape"){
+				modal.close()
+			}
+		}
+		window.addEventListener("keydown", onKeyDown)
+		return () => window.removeEventListener("keydown", onKeyDown)
+	})
 
 	const onScrollHandler = debounce(1, () => {
 		if(props.onScroll){
-			props.onScroll({x: xPos(), y: yPos(), zoom: zoom(), bounds})
+			props.onScroll({x: xPos.get(), y: yPos.get(), zoom: zoom.get(), bounds})
 		}
 	})
 
 	const updatePanX = () => {
-		const x = xPos()
+		const x = xPos.get()
 		const fx = Math.max(bounds.left, Math.min(bounds.right, x))
 		if(fx !== x){
-			xPos(fx)
+			xPos.set(fx)
 			return
 		}
 		wrap.style.left = (-x + (window.innerWidth / 2)) + "px"
@@ -378,10 +408,10 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	}
 
 	const updatePanY = () => {
-		const y = yPos()
+		const y = yPos.get()
 		const fy = Math.max(bounds.top, Math.min(bounds.bottom, y))
 		if(fy !== y){
-			yPos(fy)
+			yPos.set(fy)
 			return
 		}
 		wrap.style.top = (-y + (window.innerHeight / 2)) + "px"
@@ -390,10 +420,10 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	// those handlers are only to have better control over updates
 	// (i.e. to impose boundaries)
-	whileMounted(wrap, xPos, updatePanX)
-	whileMounted(wrap, yPos, updatePanY)
+	bindBox(wrap, xPos, updatePanX)
+	bindBox(wrap, yPos, updatePanY)
 
-	whileMounted(wrap, zoom, () => {
+	bindBox(wrap, zoom, () => {
 		updateBounds()
 		lastKnownHeight = null
 		if(lastScrollActionCoords){
@@ -436,26 +466,12 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	modal.overlay.addEventListener("wheel", e => {
 		e.preventDefault()
 		const centralIndex = getCentralImageIndex()
-		const centralImage = imgs()[centralIndex]!
+		const centralImage = imgs.get()[centralIndex]!
 		setZoom(e, getNextZoomValue(
 			e.deltaY > 0 ? -1 : 1,
 			calcZoomnessRate(centralImage),
 			props.zoomSpeed ?? 0.2
 		))
-	})
-
-	onMount(wrap, () => {
-		const onKeyDown = (e: KeyboardEvent) => {
-			if(e.key === "ArrowRight"){
-				scrollToNextImage(1)
-			} else if(e.key === "ArrowLeft"){
-				scrollToNextImage(-1)
-			} else if(e.key === "Escape"){
-				modal.close()
-			}
-		}
-		window.addEventListener("keydown", onKeyDown)
-		return () => window.removeEventListener("keydown", onKeyDown)
 	})
 
 	addDragScroll({
@@ -470,20 +486,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	addTouchZoom({
 		target: modal.overlay,
 		multiplier: 1.5,
-		getZoom: zoom,
+		getZoom: () => zoom.get(),
 		setZoom: (zoomValue, centerCoords) => setZoomByCoords(centerCoords, zoomValue, true)
-	})
-
-	onMount(wrap, async() => {
-		const targetIndex = props.centerOn ?? 0
-
-		const imgArr = imgs()
-		const imgsBeforeTarget = imgArr.slice(0, targetIndex + 1)
-		await Promise.all(imgsBeforeTarget.map(img => waitLoadAndPaint(img)))
-		const targetImg = imgArr[targetIndex]!
-
-		await updateBounds.waitForScheduledRun()
-		await updateMaxNatHeight.waitForScheduledRun()
-		centerOn(targetImg)
 	})
 }

@@ -15,10 +15,10 @@ export function showUsersModal(): void {
 		const modal = showUserModal({value})
 		const closeEvt = await modal.waitClose()
 		if(closeEvt.reason === "confirm"){
-			await ClientApi.adminUpdateUser(value())
-			values([])
-			if(user.id === currentUser()?.id){
-				currentUser(await ClientApi.getUserData())
+			await ClientApi.adminUpdateUser(value.get())
+			values.deleteAllElements()
+			if(user.id === currentUser.get()?.id){
+				currentUser.set(await ClientApi.getUserData())
 			}
 		}
 	}

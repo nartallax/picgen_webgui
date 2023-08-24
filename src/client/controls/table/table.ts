@@ -1,5 +1,5 @@
-import {WBox, viewBox} from "@nartallax/cardboard"
-import {tag} from "@nartallax/cardboard-dom"
+import {RBox, WBox} from "@nartallax/cardboard"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {Feed, makeSimpleFeedFetcher} from "client/controls/feed/feed"
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {IdentifiedEntity} from "server/dao"
@@ -41,13 +41,20 @@ export function Table<T extends Record<string, unknown> & IdentifiedEntity, O ex
 					gridTemplateColumns: templateCols
 				},
 				tag: onRowClick ? "button" : "div",
-				onClick: !onRowClick ? undefined : () => onRowClick(rowBox())
-			}, viewBox(() => { // viewBox here because getValue can refer to some external box
-				const row = rowBox()
-				return props.headers.map(header => {
-					return tag([header.getValue(row)])
-				})
-			}))
+				onClick: !onRowClick ? undefined : () => onRowClick(rowBox.get())
+			}, props.headers.map(header => RowCell({render: header.getValue, rowBox})))
 		})
 	])
+}
+
+// TODO: think about it. it's like the third time I have to write something like this
+// (also SwitchPanel and RoutePanel)
+// maybe I could generalize it somehow..?
+const RowCell = <T>(props: {render: (row: T) => string | HTMLElement, rowBox: RBox<T>}) => {
+	const result = tag()
+
+	// FIXME: this could be bad. header.getValue could refer to some box, but it won't be bound to
+	bindBox(result, props.rowBox, value => result.replaceChildren(props.render(value)))
+
+	return result
 }

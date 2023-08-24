@@ -1,5 +1,5 @@
 import {RBox, WBox, box} from "@nartallax/cardboard"
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {PrefixTree} from "client/data_structure/prefix_tree"
 import * as css from "./select_search.module.scss"
 
@@ -15,28 +15,28 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 		tag: "input",
 		class: css.searchInput,
 		onInput: () => {
-			props.value(input.value)
-			selectedItem(-1)
+			props.value.set(input.value)
+			selectedItem.set(-1)
 		},
-		onFocus: () => listHidden(false),
-		onBlur: () => listHidden(true),
+		onFocus: () => listHidden.set(false),
+		onBlur: () => listHidden.set(true),
 		onKeydown: e => {
 			const down = e.key === "ArrowDown"
 			const up = e.key === "ArrowUp"
 			if(down || up){
-				let value = selectedItem()
+				let value = selectedItem.get()
 				if(down){
 					value++
 				} else if(up){
 					value--
 				}
 				const listLength = listWrap.children.length
-				selectedItem((value + listLength) % listLength)
+				selectedItem.set((value + listLength) % listLength)
 			} else if(e.key === "Enter"){
-				if(selectedItem() >= 0){
-					const item = listWrap.children[selectedItem()]
+				if(selectedItem.get() >= 0){
+					const item = listWrap.children[selectedItem.get()]
 					if(item){
-						props.value(item.textContent + "")
+						props.value.set(item.textContent + "")
 						input.blur()
 					}
 				}
@@ -77,11 +77,11 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 	function onItemClick(this: HTMLElement, e: MouseEvent | TouchEvent): void {
 		e.preventDefault()
 		e.stopPropagation()
-		props.value(this.textContent + "")
+		props.value.set(this.textContent + "")
 		input.blur()
 	}
 
-	whileMounted(wrap, props.value, searchStr => {
+	bindBox(wrap, props.value, searchStr => {
 		if(input.value !== searchStr){
 			input.value = searchStr ?? ""
 		}
@@ -92,9 +92,9 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 
 		let selectedItems: Iterable<string>
 		if(searchStr === "" || searchStr === null){
-			selectedItems = (props.availableValues() || []).slice(0, props.listSizeLimit)
+			selectedItems = (props.availableValues.get() || []).slice(0, props.listSizeLimit)
 		} else {
-			selectedItems = prefixTree().getAllValuesWhichKeysInclude(searchStr.toLowerCase(), undefined, props.listSizeLimit)
+			selectedItems = prefixTree.get().getAllValuesWhichKeysInclude(searchStr.toLowerCase(), undefined, props.listSizeLimit)
 		}
 		for(const item of selectedItems){
 			const itemEl = tag({class: css.item}, [item])
@@ -104,7 +104,7 @@ export function SelectSearch(props: SelectSearchProps): HTMLElement {
 		}
 	})
 
-	whileMounted(wrap, selectedItem, selectedItem => {
+	bindBox(wrap, selectedItem, selectedItem => {
 		for(let i = 0; i < listWrap.children.length; i++){
 			const child = listWrap.children[i]!
 			const hasClass = child.classList.contains(css.selectedItem!)

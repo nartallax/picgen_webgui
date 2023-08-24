@@ -1,5 +1,5 @@
 import {WBox} from "@nartallax/cardboard"
-import {onMount, svgTag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, onMount, svgTag} from "@nartallax/cardboard-dom"
 import * as css from "./image_mask_input.module.scss"
 import {Point2D, Polygon} from "common/entities/picture"
 
@@ -74,10 +74,7 @@ export function PolygonsInput(props: PolygonsInputProps): SVGElement {
 		window.removeEventListener("mouseup", onEnd)
 		window.removeEventListener("touchend", onEnd)
 		finalizeCurrentPolygonElement()
-		props.value([
-			...props.value(),
-			[...currentPolygon]
-		])
+		props.value.appendElement([...currentPolygon])
 		currentPolygon.length = 0
 	}
 
@@ -98,9 +95,8 @@ export function PolygonsInput(props: PolygonsInputProps): SVGElement {
 
 	function onKey(evt: KeyboardEvent): void {
 		if(evt.key === "z" && (evt.ctrlKey || evt.metaKey)){
-			const polygons = [...props.value()]
-			polygons.pop()
-			props.value(polygons)
+			const polygons = props.value.get()
+			props.value.deleteElementAtIndex(polygons.length - 1)
 		}
 	}
 
@@ -123,7 +119,7 @@ export function PolygonsInput(props: PolygonsInputProps): SVGElement {
 		return () => window.removeEventListener("keydown", onKey)
 	})
 
-	whileMounted(svg, props.value, polygons => {
+	bindBox(svg, props.value, polygons => {
 		requestAnimationFrame(() => {
 			removeAllPolygonElements() // eww.
 			for(const polygon of polygons){

@@ -1,5 +1,5 @@
 import {WBox, box} from "@nartallax/cardboard"
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, containerTag, tag} from "@nartallax/cardboard-dom"
 import {VisibilityNotifier} from "client/controls/visibility_notifier/visibility_notifier"
 import * as css from "./feed.module.scss"
 import {IdentifiedEntity} from "server/dao"
@@ -18,6 +18,7 @@ interface FeedProps<T> {
 	scrollToTopButton?: boolean
 }
 
+// TODO: control?
 export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	const values = props.values ?? box([])
 	const isBottomVisible = box(false)
@@ -30,12 +31,12 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	const result = tag({
 		class: [css.feed, props.class],
 		onScroll: () => {
-			scrollToTopVisible(result.scrollTop >= 100)
+			scrollToTopVisible.set(result.scrollTop >= 100)
 		}
 	}, [
-		tag({
+		containerTag({
 			class: [css.feedItemsContainer, props.containerClass]
-		}, values.mapArray(props.getId, props.renderElement)),
+		}, values, props.getId, props.renderElement),
 		VisibilityNotifier({
 			isOnScreen: isBottomVisible,
 			hide: reachedEndOfFeed
@@ -64,12 +65,10 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	}
 
 	async function loadNext(): Promise<void> {
-		let currentValues = values()
 		// console.log("Loading next, starting with " + currentValues.length)
-		const newValues = await Promise.resolve(props.loadNext(currentValues))
-		currentValues = [...currentValues, ...newValues]
-		values(currentValues)
-		reachedEndOfFeed(newValues.length === 0)
+		const newValues = await Promise.resolve(props.loadNext(values.get()))
+		values.appendElements(newValues)
+		reachedEndOfFeed.set(newValues.length === 0)
 		// if(reachedEndOfFeed()){
 		// 	console.log("Reached end of feed.")
 		// }
@@ -82,7 +81,7 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 	}
 
 	async function tryLoadNext() {
-		if(!isBottomVisible() || isLoadingNow || reachedEndOfFeed()){
+		if(!isBottomVisible.get() || isLoadingNow || reachedEndOfFeed.get()){
 			return
 		}
 		isLoadingNow = true
@@ -93,9 +92,10 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 		}
 	}
 
-	whileMounted(result, isBottomVisible, tryLoadNext)
-	whileMounted(result, reachedEndOfFeed, tryLoadNext)
-	whileMounted(result, values, () => reachedEndOfFeed(false))
+	bindBox(result, isBottomVisible, tryLoadNext)
+	bindBox(result, reachedEndOfFeed, tryLoadNext)
+	// TODO: uhhh what?
+	bindBox(result, values, () => reachedEndOfFeed.set(false))
 
 	return result
 }

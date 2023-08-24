@@ -1,9 +1,12 @@
-import {MRBox, constBoxWrap} from "@nartallax/cardboard"
-import {MRBoxed} from "@nartallax/cardboard-dom"
+import {MRBox} from "@nartallax/cardboard"
 import {Modal, ModalBaseProps, showModalBase} from "client/controls/modal_base/modal_base"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {capitalize} from "common/utils/capitalize"
+
+// TODO: think about centralizing all the overlay elements, and removing z-index
+// when you need to show an overlay element (hint, dropdown menu, toaster, modal)
+// it should always be shown on top of everything else you have at the moment
 
 type Size = string | [string | null, string | null, string | null]
 
@@ -26,19 +29,20 @@ function setSize(el: HTMLElement, baseName: "width" | "height", size: Size | und
 }
 
 type ModalProps = ModalBaseProps & {
-	title: MRBoxed<string>
+	title: MRBox<string>
 	width?: Size
 	height?: Size
 }
 
-export function showModal(props: ModalProps, children: MRBox<HTMLElement[]>): Modal {
+export function showModal(props: ModalProps, children: HTMLElement[]): Modal {
 	const header = BlockPanelHeader({
 		header: props.title,
 		onClose: () => {
 			modal.close()
 		}
 	})
-	const body = BlockPanel(constBoxWrap(children).map(arr => [header, ...arr]))
+
+	const body = BlockPanel([header, ...children])
 	setSize(body, "width", props.width)
 	setSize(body, "height", props.height)
 	const modal = showModalBase(props, [body])

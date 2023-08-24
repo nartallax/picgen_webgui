@@ -1,5 +1,5 @@
 import {RBox, WBox} from "@nartallax/cardboard"
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {SelectSearch} from "client/controls/select_search/select_search"
 import * as css from "./prompt_input.module.scss"
 
@@ -19,7 +19,7 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 			placeholder: "...Enter a description of the desired result",
 			rows: 100
 		},
-		onInput: () => props.promptValue(input.value)
+		onInput: () => props.promptValue.set(input.value)
 	})
 
 	input.addEventListener("keydown", e => {
@@ -47,7 +47,7 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 		])
 	])
 
-	whileMounted(result, props.promptValue, v => input.value = v)
+	bindBox(result, props.promptValue, v => input.value = v)
 
 	return result
 }

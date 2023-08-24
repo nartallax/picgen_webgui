@@ -1,5 +1,5 @@
-import {WBox, viewBox} from "@nartallax/cardboard"
-import {BoxedProps, defineControl, tag} from "@nartallax/cardboard-dom"
+import {WBox, calcBox, constBoxWrap} from "@nartallax/cardboard"
+import {containerTag, defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./tabs.module.scss"
 
 type Props<T> = {
@@ -7,16 +7,17 @@ type Props<T> = {
 	value: WBox<T>
 }
 
-export const Tabs = defineControl<Props<unknown>>(<T>(props: BoxedProps<Props<T>>) => {
-	return tag({class: css.tabs}, props.options.mapArray(
+export const Tabs = defineControl(<T>(props: Props<T>) => {
+	return containerTag({class: css.tabs},
+		constBoxWrap(props.options),
 		option => option.value,
 		option => tag({
 			tag: "button",
 			class: [
 				css.tab,
-				{[css.active!]: viewBox(() => props.value() === option().value)}
+				{[css.active!]: calcBox([props.value, option], (value, option) => value === option.value)}
 			],
-			onClick: () => props.value(option().value)
+			onClick: () => props.value.set(option.get().value)
 		}, [option.prop("label")])
-	))
+	)
 })

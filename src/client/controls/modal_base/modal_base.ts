@@ -1,5 +1,5 @@
 import {MRBox, box} from "@nartallax/cardboard"
-import {tag} from "@nartallax/cardboard-dom"
+import {HTMLChildArray, tag} from "@nartallax/cardboard-dom"
 import * as css from "./modal_base.module.scss"
 
 export interface ModalBaseProps {
@@ -18,7 +18,7 @@ export interface Modal {
 	overlay: HTMLElement
 }
 
-export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement[]>): Modal {
+export function showModalBase(props: ModalBaseProps, children: HTMLChildArray): Modal {
 	const isClosed = box(true)
 
 	const result = tag({
@@ -29,7 +29,7 @@ export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement
 	}, children)
 
 	document.body.appendChild(result)
-	requestAnimationFrame(() => isClosed(false))
+	requestAnimationFrame(() => isClosed.set(false))
 
 	let closeReason: ModalCloseEvent["reason"] | null = null
 	const closeWaiters = [] as ((evt: ModalCloseEvent) => void)[]
@@ -38,7 +38,7 @@ export function showModalBase(props: ModalBaseProps, children: MRBox<HTMLElement
 			window.removeEventListener("keydown", escHandler)
 		}
 		closeReason = reason
-		isClosed(true)
+		isClosed.set(true)
 		setTimeout(() => result.remove(), 1000)
 		const waiters = [...closeWaiters]
 		closeWaiters.length = 0

@@ -8,7 +8,7 @@ export function fetchToBoxMap<I, T>(fetch: (id: I) => Promise<T>): (id: I) => RB
 			const wb = b = box<T | null>(null)
 			map.set(id, b)
 			fetch(id).then(
-				value => wb(value),
+				value => wb.set(value),
 				error => console.error(error)
 			)
 		}

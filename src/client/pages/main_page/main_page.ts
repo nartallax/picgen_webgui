@@ -6,8 +6,8 @@ import {ArgumentsInputBlock} from "client/components/arguments_input_block/argum
 import {PromptInput} from "client/components/prompt_input/prompt_input"
 import {Select} from "client/controls/select/select"
 import {TaskPanel} from "client/components/task_panel/task_panel"
-import {box, unbox, viewBox} from "@nartallax/cardboard"
-import {isInDOM, localStorageBox, onMount, tag, whileMounted} from "@nartallax/cardboard-dom"
+import {box, calcBox, unbox} from "@nartallax/cardboard"
+import {bindBox, localStorageBox, onMount, tag} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenParameterGroup, GenParameterGroupToggle, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
@@ -39,23 +39,24 @@ function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup
 		}
 	}
 
-	const boxMap = {...currentArgumentBoxes()}
+	const boxMap = {...currentArgumentBoxes.get()}
 	for(const name in boxMap){
 		delete boxMap[name]
 	}
 
 	for(const def of defs){
-		boxMap[def.jsonName] = localStorageBox(`genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
+		// TODO: they will never go out of memory, cringe
+		// maybe we need some global provider...? to not create them over and over again
+		// or, better yet, create a single box for each set once and that's it
+		boxMap[def.jsonName] = localStorageBox(document.body, `genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
 	}
 
-	currentArgumentBoxes(boxMap)
+	currentArgumentBoxes.set(boxMap)
 }
 
 export function MainPage(): HTMLElement {
 
-	const selectedParamSet = viewBox(() => {
-		const paramSetName = currentParamSetName()
-		const paramSets = allKnownParamSets()
+	const selectedParamSet = calcBox([currentParamSetName, allKnownParamSets], (paramSetName, paramSets) => {
 		const selectedSet = paramSets.find(set => set.internalName === paramSetName) ?? paramSets[0]
 		return selectedSet ?? paramSets[0] ?? GenerationParameterSet.getValue()
 	})
@@ -66,8 +67,8 @@ export function MainPage(): HTMLElement {
 
 	const startGeneration = async() => {
 		const fullPrompt = composePrompt({
-			shape: currentShapeTag(),
-			body: currentPrompt()
+			shape: currentShapeTag.get(),
+			body: currentPrompt.get()
 		})
 		const paramValuesForApi = {} as Record<string, GenerationTaskArgument>
 		const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
@@ -75,7 +76,7 @@ export function MainPage(): HTMLElement {
 			return
 		}
 		const paramDefsByName = new Map(paramDefs.map(def => [def.jsonName, def]))
-		const boxMap = currentArgumentBoxes()
+		const boxMap = currentArgumentBoxes.get()
 		for(const paramName in boxMap){
 			const paramValue = unbox(boxMap[paramName])!
 			const def = paramDefsByName.get(paramName)
@@ -87,7 +88,7 @@ export function MainPage(): HTMLElement {
 		// TODO: cringe
 		paramValuesForApi["prompt"] = fullPrompt
 		await ClientApi.createGenerationTask({
-			paramSetName: currentParamSetName(),
+			paramSetName: currentParamSetName.get(),
 			arguments: paramValuesForApi
 		})
 	}
@@ -106,7 +107,7 @@ export function MainPage(): HTMLElement {
 			Row({align: "start", gap: true, padding: "bottom"}, [
 				IconButton({
 					icon: "icon-menu",
-					onClick: () => isMenuOpen(!isMenuOpen()),
+					onClick: () => isMenuOpen.set(!isMenuOpen.get()),
 					class: css.menuButton
 				}),
 				PromptInput({
@@ -168,7 +169,7 @@ export function MainPage(): HTMLElement {
 				Row({align: "start"}, [
 					IconButton({
 						icon: "icon-menu",
-						onClick: () => isMenuOpen(!isMenuOpen()),
+						onClick: () => isMenuOpen.set(!isMenuOpen.get()),
 						class: css.menuButton
 					}),
 					LoginBar(),
@@ -196,8 +197,8 @@ export function MainPage(): HTMLElement {
 		return () => websocket?.stop()
 	})
 
-	whileMounted(result, paramGroups, groups => {
-		updateArgumentBoxes(currentParamSetName(), groups)
+	bindBox(result, paramGroups, groups => {
+		updateArgumentBoxes(currentParamSetName.get(), groups)
 	});
 
 	(async() => {
@@ -211,26 +212,27 @@ export function MainPage(): HTMLElement {
 		for(const list of jsonFileLists){
 			jsonListsMap[list.directory] = list.items
 		}
-		allKnownJsonFileLists(jsonListsMap)
+		allKnownJsonFileLists.set(jsonListsMap)
 
 		websocket = new WebsocketListener(knownTasks)
-		if(isInDOM(result)){
+		// TODO: use onMount here?
+		if(result.isConnected){
 			websocket.start()
 		}
 
-		allKnownShapeTags(shapeTags)
-		if(currentShapeTag() === null){
-			currentShapeTag(shapeTags[0] || "Landscape")
+		allKnownShapeTags.set(shapeTags)
+		if(currentShapeTag.get() === null){
+			currentShapeTag.set(shapeTags[0] || "Landscape")
 		}
 
-		allKnownParamSets(paramSets)
+		allKnownParamSets.set(paramSets)
 
-		const paramSetName = currentParamSetName()
+		const paramSetName = currentParamSetName.get()
 		const paramSet = paramSets.find(set => set.internalName === paramSetName)
 		if(!paramSet){
 			const firstParamSet = paramSets[0]
 			if(firstParamSet){
-				currentParamSetName(firstParamSet.internalName)
+				currentParamSetName.set(firstParamSet.internalName)
 			}
 		}
 

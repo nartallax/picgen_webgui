@@ -1,5 +1,5 @@
 import {WBox, unbox} from "@nartallax/cardboard"
-import {defineControl, tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./number_input.module.scss"
 
 interface NumberInputProps {
@@ -21,17 +21,9 @@ function formatToPrecision(value: number, precision?: number): string {
 	return value.toFixed(precision ?? 4).replace(/\.?0*$/, "")
 }
 
-const defaults = {
-	int: false,
-	min: undefined,
-	max: undefined,
-	step: undefined,
-	precision: undefined
-} satisfies Partial<NumberInputProps>
+export const NumberInput = defineControl((props: NumberInputProps) => {
 
-export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defaults, props => {
-
-	const dflt = props.value()
+	const dflt = props.value.get()
 
 	const fixValue = (valueNum: number) => {
 		if(Number.isNaN(valueNum)){
@@ -65,7 +57,7 @@ export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defa
 		let valueNum = parseFloat(valueStr.replace(/,/g, "."))
 		valueNum = fixValue(valueNum)
 		input.value = formatToPrecision(valueNum, unbox(props.precision))
-		props.value(valueNum)
+		props.value.set(valueNum)
 	}
 
 	const tryUpdateValueWithoutFixing = () => {
@@ -73,7 +65,7 @@ export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defa
 		const valueNum = parseFloat(valueStr.replace(/,/g, "."))
 		const fixedValue = fixValue(valueNum)
 		if(formatToPrecision(fixedValue, unbox(props.precision)) === valueStr){
-			props.value(valueNum)
+			props.value.set(valueNum)
 		}
 	}
 
@@ -106,7 +98,7 @@ export const NumberInput = defineControl<NumberInputProps, typeof defaults>(defa
 
 	input.addEventListener("blur", fixAndUpdateValue)
 
-	whileMounted(input, props.value, v => {
+	bindBox(input, props.value, v => {
 		input.value = formatToPrecision(v, unbox(props.precision))
 	})
 

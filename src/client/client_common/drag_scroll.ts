@@ -27,8 +27,8 @@ export function addDragScroll(props: DragScrollProps): void {
 
 	const changePosition = (dx: number, dy: number) => {
 		if(props.type === "box"){
-			props.x && props.x(props.x() + dx)
-			props.y && props.y(props.y() + dy)
+			props.x && props.x.set(props.x.get() + dx)
+			props.y && props.y.set(props.y.get() + dy)
 		} else {
 			const el = props.draggedElement ?? props.element
 			el.scrollLeft += dx
@@ -42,7 +42,7 @@ export function addDragScroll(props: DragScrollProps): void {
 		constraintDirection: props.constraintDirection,
 		onClick: props.onClick,
 		start: () => {
-			props.isDragging && props.isDragging(true)
+			props.isDragging && props.isDragging.set(true)
 			return true
 		},
 		downIsMove: true,
@@ -57,7 +57,7 @@ export function addDragScroll(props: DragScrollProps): void {
 		},
 		stop: () => {
 			prevCoords = null
-			props.isDragging && props.isDragging(false)
+			props.isDragging && props.isDragging.set(false)
 		}
 	})
 }

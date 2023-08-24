@@ -1,12 +1,12 @@
 import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./sidebar.module.scss"
-import {WBox, box, viewBox} from "@nartallax/cardboard"
+import {WBox, box, calcBox} from "@nartallax/cardboard"
 
 type Props = {
 	isOpen?: WBox<boolean>
 }
 
-export const Sidebar = defineControl<Props>((props, children) => {
+export const Sidebar = defineControl((props: Props, children) => {
 	const isOpen = props.isOpen ?? box(false)
 	const isDragging = box(false)
 	const dragProgress = box(0)
@@ -14,20 +14,27 @@ export const Sidebar = defineControl<Props>((props, children) => {
 	const overlay = tag({
 		class: css.sidebarOverlay,
 		style: {
-			opacity: viewBox(() => isDragging() ? dragProgress() : isOpen() ? 1 : 0),
-			display: viewBox(() => isDragging() || isOpen() ? "" : "none")
+			opacity: calcBox(
+				[isDragging, dragProgress, isOpen],
+				(isDragging, dragProgress, isOpen) => isDragging ? dragProgress : isOpen ? 1 : 0
+			),
+			display: calcBox([isDragging, isOpen], (isDragging, isOpen) => isDragging || isOpen ? "" : "none")
 		}
 	})
 	const wrap = tag({
 		class: css.positioningWrap,
 		style: {
-			transform: viewBox(() => `translateX(${(isDragging() ? dragProgress() : isOpen() ? 1 : 0) * 100}%)`)
+			transform: calcBox(
+				[isDragging, dragProgress, isOpen],
+				(isDragging, dragProgress, isOpen) => `translateX(${(isDragging ? dragProgress : isOpen ? 1 : 0) * 100}%)`
+			)
 		}
 	}, children)
 	const result = tag({
 		class: [css.sidebar]
 	}, [overlay, wrap])
 
+	// TODO: remove this shit?
 	// turns out it's a bad idea to add a handler to the window
 	// because it fucks up a lot of native behaviours
 	/*

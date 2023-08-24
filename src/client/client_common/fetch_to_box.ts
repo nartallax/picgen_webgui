@@ -5,7 +5,7 @@ export function fetchToBox<T>(fetcher: () => Promise<T>): RBox<T | undefined> {
 
 	(async() => {
 		try {
-			b(await fetcher())
+			b.set(await fetcher())
 		} catch(e){
 			console.error(e)
 		}

@@ -1,5 +1,5 @@
-import {WBox, box, viewBox} from "@nartallax/cardboard"
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {WBox, box, calcBox} from "@nartallax/cardboard"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {fetchToBox} from "client/client_common/fetch_to_box"
 import {windowSizeBox} from "client/client_common/window_size_box"
@@ -25,13 +25,11 @@ export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalC
 	const imageInfo = fetchToBox(() => ClientApi.getPictureInfoById(props.imageId, props.imageSalt))
 
 	const winSize = windowSizeBox()
-	const imageDims = viewBox(() => {
-		const pic = imageInfo()
+	const imageDims = calcBox([imageInfo, winSize], (pic, windowSize) => {
 		if(!pic){
 			return {width: 0, height: 0}
 		}
 
-		const windowSize = winSize()
 		const limWidth = windowSize.width * offsetRatio
 		const limHeight = windowSize.height * offsetRatio
 		let width = pic.width
@@ -60,13 +58,13 @@ export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalC
 		class: "image-mask-input-background"
 	})
 
-	const polygons = box(decodePictureMask(props.value()))
+	const polygons = box(decodePictureMask(props.value.get()))
 	const polygonsInput = PolygonsInput({
 		value: polygons
 	})
 
 	function clear(): void {
-		polygons([])
+		polygons.deleteAllElements()
 	}
 
 	const wrap = tag({
@@ -98,8 +96,8 @@ export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalC
 		])
 	])
 
-	whileMounted(wrap, polygons, polygons => {
-		props.value(encodePictureMask(polygons))
+	bindBox(wrap, polygons, polygons => {
+		props.value.set(encodePictureMask(polygons))
 	})
 
 	return wrap
@@ -107,13 +105,13 @@ export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalC
 }
 
 export function showImageMaskInput(opts: ImageMaskInputProps): Modal {
-	const preEditValue = opts.value()
+	const preEditValue = opts.value.get()
 	const innerModal: Modal = showModalBase({closeByBackgroundClick: true}, [
 		ImageMaskInput({
 			...opts,
 			onApply: () => innerModal.close(),
 			onCancel: () => {
-				opts.value(preEditValue)
+				opts.value.set(preEditValue)
 				innerModal.close()
 			}
 		})
@@ -124,7 +122,7 @@ export function showImageMaskInput(opts: ImageMaskInputProps): Modal {
 		waitClose: async() => {
 			const closeEvt = await innerModal.waitClose()
 			if(closeEvt.reason === "background_click"){
-				opts.value(preEditValue)
+				opts.value.set(preEditValue)
 			}
 			return closeEvt
 		}

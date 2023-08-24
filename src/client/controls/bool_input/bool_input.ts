@@ -6,13 +6,13 @@ interface BoolInputProps {
 	readonly value: WBox<boolean>
 }
 
-export const BoolInput = defineControl<BoolInputProps>(props => {
+export const BoolInput = defineControl((props: BoolInputProps) => {
 	const result = tag({
 		class: [css.boolInput, {[css.on!]: props.value}],
-		onClick: () => props.value(!props.value()),
+		onClick: () => props.value.set(!props.value.get()),
 		onKeydown: e => {
 			if(e.key === "Enter" || e.key === "Space" || e.key === " "){
-				props.value(!props.value())
+				props.value.set(!props.value.get())
 			}
 		}
 	}, [

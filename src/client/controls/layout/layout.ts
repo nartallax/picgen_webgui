@@ -1,5 +1,5 @@
 import {MRBox, RBox, isRBox} from "@nartallax/cardboard"
-import {BoxedProps, StyleValues} from "@nartallax/cardboard-dom"
+import {StyleValues} from "@nartallax/cardboard-dom"
 
 export type DefaultableSpacing = "vertical" | "horisontal" | "top" | "bottom" | "left" | "right" | boolean | string
 
@@ -7,6 +7,7 @@ const defaultSpacing = "0.5rem"
 
 export function resolveSpacing(padding: DefaultableSpacing | undefined): string | undefined
 export function resolveSpacing(padding: RBox<DefaultableSpacing | undefined> | undefined): RBox<string | undefined>
+export function resolveSpacing(padding: MRBox<DefaultableSpacing | undefined> | undefined): MRBox<string | undefined>
 export function resolveSpacing(spacing: MRBox<DefaultableSpacing | undefined>): MRBox<string | undefined> {
 	if(!spacing){
 		return undefined
@@ -31,12 +32,12 @@ export function resolveSpacing(spacing: MRBox<DefaultableSpacing | undefined>): 
 
 
 export type LayoutCommonProps = {
-	padding?: DefaultableSpacing
-	grow?: number
-	shrink?: number
+	padding?: MRBox<DefaultableSpacing>
+	grow?: MRBox<number>
+	shrink?: MRBox<number>
 }
 
-export function makeCommonLayoutStyle(props: BoxedProps<LayoutCommonProps>): StyleValues {
+export function makeCommonLayoutStyle(props: LayoutCommonProps): StyleValues {
 	const result: StyleValues = {
 		padding: resolveSpacing(props.padding),
 		flexGrow: props.grow,

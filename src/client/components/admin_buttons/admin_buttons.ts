@@ -1,4 +1,4 @@
-import {viewBox} from "@nartallax/cardboard"
+import {calcBox} from "@nartallax/cardboard"
 import {defineControl, tag} from "@nartallax/cardboard-dom"
 import {currentUser, isUserControlEnabled} from "client/app/global_values"
 import {showUsersModal} from "client/components/admin_buttons/users_modal"
@@ -11,7 +11,7 @@ import {showTasksModal} from "client/components/admin_buttons/tasks_modal"
 export const AdminButtons = defineControl(() => {
 	return tag({
 		style: {
-			display: viewBox(() => !isUserControlEnabled() || currentUser()?.isAdmin ? "" : "none")
+			display: calcBox([isUserControlEnabled, currentUser], (enabled, user) => !enabled || user?.isAdmin ? "" : "none")
 		}
 	}, [BlockPanel([
 		BlockPanelHeader({header: "Admin actions"}),

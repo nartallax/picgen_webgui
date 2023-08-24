@@ -16,7 +16,7 @@ export function getTaskInputDataFromPicture(picture: Picture, task: GenerationTa
 }
 
 export function loadArguments(task: GenerationTaskInputData): void {
-	const paramSet = allKnownParamSets().find(paramSet => paramSet.internalName === task.paramSetName)
+	const paramSet = allKnownParamSets.get().find(paramSet => paramSet.internalName === task.paramSetName)
 	if(!paramSet){
 		showToast({
 			text: `There's no parameter set ${task.paramSetName} anymore. This task used that parameter set. Cannot load values.`,
@@ -28,12 +28,12 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	const args = {...task.arguments}
 
 	const promptStr = (args["prompt"] + "") ?? "" // TODO: cringe
-	const prompt = decomposePrompt(promptStr, allKnownShapeTags() ?? [])
+	const prompt = decomposePrompt(promptStr, allKnownShapeTags.get() ?? [])
 	delete args["prompt"]
 
-	currentParamSetName(task.paramSetName)
-	currentShapeTag(prompt.shape)
-	currentPrompt(prompt.body)
+	currentParamSetName.set(task.paramSetName)
+	currentShapeTag.set(prompt.shape)
+	currentPrompt.set(prompt.body)
 
 
 	// legacy naming
@@ -43,14 +43,14 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	}
 
 	const nonLoadableParamNames: string[] = []
-	const boxMap = currentArgumentBoxes()
+	const boxMap = currentArgumentBoxes.get()
 	for(const [key, value] of Object.entries(args)){
 		const argBox = boxMap[key]
 		if(!argBox){
 			nonLoadableParamNames.push(key)
 			continue
 		}
-		(argBox as WBox<GenerationTaskArgument>)(value)
+		(argBox as WBox<GenerationTaskArgument>).set(value)
 	}
 
 	if(nonLoadableParamNames.length > 0){

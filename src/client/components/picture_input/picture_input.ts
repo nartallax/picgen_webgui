@@ -1,5 +1,5 @@
-import {WBox, box, viewBox} from "@nartallax/cardboard"
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {WBox, box, calcBox} from "@nartallax/cardboard"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {generateUniqDomID} from "client/client_common/generate_uniq_dom_id"
 import {readFileToArrayBuffer} from "client/client_common/read_file_to_array_buffer"
@@ -52,12 +52,12 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 
 	async function onFileSelected(file: File | undefined) {
 		if(!file){
-			props.value({id: 0, salt: 0})
-			state({type: "empty"})
+			props.value.set({id: 0, salt: 0})
+			state.set({type: "empty"})
 			return
 		}
 
-		state({type: "uploading", file})
+		state.set({type: "uploading", file})
 
 		try {
 			const fileData = await readFileToArrayBuffer(file)
@@ -67,14 +67,14 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 			}
 			const name = file.name
 			const nameWithoutExt = name.replace(/\.[^.]*$/, "")
-			const picture = await ClientApi.uploadPictureAsArgument(currentParamSetName(), props.param.jsonName, nameWithoutExt, fileData)
+			const picture = await ClientApi.uploadPictureAsArgument(currentParamSetName.get(), props.param.jsonName, nameWithoutExt, fileData)
 			if(!isUploadingThisFile(file)){
 				console.log("Stopping upload process after file is uploaded because different file is selected")
 				return
 			}
 
-			state({type: "value", picture: picture})
-			props.value({id: picture.id, salt: picture.salt})
+			state.set({type: "value", picture: picture})
+			props.value.set({id: picture.id, salt: picture.salt})
 		} catch(e){
 			console.error(e)
 			if(!isUploadingThisFile(file)){
@@ -86,8 +86,8 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 				throw e
 			}
 
-			state({type: "error", error: e})
-			props.value({id: 0, salt: 0})
+			state.set({type: "error", error: e})
+			props.value.set({id: 0, salt: 0})
 		}
 	}
 
@@ -102,27 +102,27 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		onChange: () => onFileSelected(input.files?.[0])
 	})
 
-	whileMounted(input, props.value, async({id, salt}) => {
+	bindBox(input, props.value, async({id, salt}) => {
 		// handing external ID changes
 		// need to download data about picture and put it into state
 		if(id === 0){
-			state({type: "empty"})
+			state.set({type: "empty"})
 			input.value = ""
 			return
 		}
 
-		const s = state()
+		const s = state.get()
 		if(s.type === "value" && s.picture.id === id){
 			return
 		}
 
-		state({type: "loading", id})
+		state.set({type: "loading", id})
 		try {
 			const picture = await ClientApi.getPictureInfoById(id, salt)
 			if(!isLoadingThisPicture(id)){
 				return
 			}
-			state({type: "value", picture})
+			state.set({type: "value", picture})
 		} catch(e){
 			console.error(e)
 			if(!isLoadingThisPicture(id)){
@@ -133,25 +133,23 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 				throw e
 			}
 
-			state({type: "error", error: e})
-			props.value({id: 0, salt: 0})
+			state.set({type: "error", error: e})
+			props.value.set({id: 0, salt: 0})
 		}
 	})
 
 
 	function isUploadingThisFile(file: File): boolean {
-		const s = state()
+		const s = state.get()
 		return s.type === "uploading" && s.file === file
 	}
 
 	function isLoadingThisPicture(id: number): boolean {
-		const s = state()
+		const s = state.get()
 		return s.type === "loading" && s.id === id
 	}
 
-	const text = viewBox(() => {
-		const stateValue = state()
-		const inFocus = isFocused()
+	const text = calcBox([state, isFocused], (stateValue, inFocus) => {
 		switch(stateValue.type){
 			case "loading": return `Loading (#${stateValue.id})`
 			case "uploading": return `Uploading (${stateValue.file.name})`
@@ -179,7 +177,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		} catch(e){
 			if(e instanceof Error){
 				console.error(e)
-				state({type: "error", error: e})
+				state.set({type: "error", error: e})
 			} else {
 				throw e
 			}
@@ -190,8 +188,8 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 	const result = tag({
 		class: [css.pictureInput, state.map(state => css[state.type])],
 		attrs: {tabindex: 0},
-		onFocus: () => isFocused(true),
-		onBlur: () => isFocused(false),
+		onFocus: () => isFocused.set(true),
+		onBlur: () => isFocused.set(false),
 		onPaste: e => {
 			const file = e.clipboardData?.files?.[0]
 			if(file){
@@ -217,15 +215,15 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 			}],
 			attrs: {title: "Draw mask for this picture"},
 			onClick: async() => {
-				const maskBox = box(props.value().mask || "")
+				const maskBox = box(props.value.get().mask || "")
 				await showImageMaskInput({
-					imageId: props.value().id,
-					imageSalt: props.value().salt,
+					imageId: props.value.get().id,
+					imageSalt: props.value.get().salt,
 					value: maskBox
 				}).waitClose()
-				props.value({
-					...props.value(),
-					mask: maskBox()
+				props.value.set({
+					...props.value.get(),
+					mask: maskBox.get()
 				})
 			}
 		})

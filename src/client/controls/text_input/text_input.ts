@@ -1,30 +1,26 @@
-import {WBox} from "@nartallax/cardboard"
-import {defineControl, tag, whileMounted} from "@nartallax/cardboard-dom"
+import {MRBox, WBox, constBoxWrap, unbox} from "@nartallax/cardboard"
+import {bindBox, defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./text_input.module.scss"
 
 interface TextInputProps {
 	value: WBox<string>
-	updateAsUserType?: boolean
-	maxLength?: number
-	minLength?: number
-	disabled?: boolean
-	lineCount?: number
+	updateAsUserType?: MRBox<boolean>
+	maxLength?: MRBox<number>
+	minLength?: MRBox<number>
+	disabled?: MRBox<boolean>
+	lineCount?: MRBox<number>
 }
 
-const defaults = {
-	updateAsUserType: false,
-	maxLength: undefined,
-	minLength: undefined,
-	disabled: false,
-	lineCount: 1
-} satisfies Partial<TextInputProps>
+export const TextInput = defineControl((props: TextInputProps) => {
+	const lineCount = constBoxWrap(props.lineCount ?? 1)
+	const minLength = constBoxWrap(props.minLength)
+	const maxLength = constBoxWrap(props.maxLength)
 
-export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults, props => {
-	const isTextarea = props.lineCount() === 1
+	const isTextarea = lineCount.get() === 1
 	const input: HTMLInputElement | HTMLTextAreaElement = tag({
 		tag: isTextarea ? "input" : "textarea",
 		class: css.textInput,
-		onBlur: () => props.value(input.value),
+		onBlur: () => props.value.set(input.value),
 		attrs: {
 			disabled: props.disabled,
 			rows: isTextarea ? undefined : props.lineCount
@@ -35,24 +31,24 @@ export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults
 	})
 
 	function clamp(x: string): string {
-		const min = props.minLength()
+		const min = minLength.get()
 		if(min !== undefined){
 			while(x.length < min){
 				x += "?"
 			}
 		}
 
-		const max = props.maxLength()
+		const max = maxLength.get()
 		if(max !== undefined && x.length > max){
 			x = x.substring(0, max)
 		}
 		return x
 	}
 
-	if(props.updateAsUserType()){
+	if(unbox(props.updateAsUserType)){
 		input.addEventListener("input", () => {
 			const v = clamp(input.value)
-			props.value(v)
+			props.value.set(v)
 			if(v !== input.value){
 				input.value = v
 			}
@@ -61,10 +57,10 @@ export const TextInput = defineControl<TextInputProps, typeof defaults>(defaults
 
 	const wrap = tag({class: css.textInputWrap}, [input])
 
-	whileMounted(input, props.value, v => {
+	bindBox(input, props.value, v => {
 		const clamped = clamp(v)
 		if(clamped !== v){
-			props.value(clamped)
+			props.value.set(clamped)
 		} else {
 			input.value = clamped
 		}

@@ -15,6 +15,7 @@ type FormFieldProps = {
 	isFavorite?: MRBox<boolean>
 }
 
+// TODO: control?
 export const FormField = (props: FormFieldProps): HTMLElement => {
 	const display = constBoxWrap(props.visible).map(visible => visible === false ? "none" : "")
 
@@ -58,7 +59,7 @@ export const FormField = (props: FormFieldProps): HTMLElement => {
 				],
 				onClick: () => {
 					const favBox = props.isFavorite as WBox<boolean>
-					favBox(!favBox())
+					favBox.set(!favBox.get())
 				}
 			})
 		])

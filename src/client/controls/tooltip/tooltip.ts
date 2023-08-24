@@ -17,8 +17,8 @@ export const TooltipIcon = (props: TooltipIconProps): HTMLElement => {
 			display: constBoxWrap(props.tooltip).map(tt => !tt ? "none" : "")
 		},
 		class: css.tooltipIcon,
-		onMouseenter: () => overlayItemVisible(true),
-		onMouseleave: () => overlayItemVisible(false)
+		onMouseenter: () => overlayItemVisible.set(true),
+		onMouseleave: () => overlayItemVisible.set(false)
 	}, ["?"])
 
 	makeOverlayItem({

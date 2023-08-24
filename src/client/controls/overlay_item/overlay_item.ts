@@ -1,4 +1,4 @@
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./overlay_item.module.scss"
 import {RBox} from "@nartallax/cardboard"
 
@@ -41,7 +41,7 @@ function parseCorner(corner: Corner): ParsedCorner {
  * Something like a dropdown, or hint. */
 export const makeOverlayItem = (props: Props): void => {
 	let item: OverlayItem | null = null
-	whileMounted(props.referenceElement, props.visible, visible => {
+	bindBox(props.referenceElement, props.visible, visible => {
 		if(item){
 			item.hide()
 			item = null

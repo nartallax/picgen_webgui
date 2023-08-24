@@ -1,5 +1,5 @@
 import {RBox} from "@nartallax/cardboard"
-import {tag, whileMounted} from "@nartallax/cardboard-dom"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./switch_panel.module.scss"
 
 type Props<T extends string> = {
@@ -8,6 +8,7 @@ type Props<T extends string> = {
 	class?: string
 }
 
+// TODO: control?
 export const SwitchPanel = <T extends string>(props: Props<T>) => {
 	const result = tag({class: [css.switchPanel, props.class]})
 
@@ -15,11 +16,8 @@ export const SwitchPanel = <T extends string>(props: Props<T>) => {
 		return props.routes[route]()
 	}
 
-	whileMounted(result, props.value, route => {
-		while(result.firstChild){
-			result.firstChild.remove()
-		}
-		result.appendChild(renderRoute(route))
+	bindBox(result, props.value, route => {
+		result.replaceChildren(renderRoute(route))
 	})
 
 	return result

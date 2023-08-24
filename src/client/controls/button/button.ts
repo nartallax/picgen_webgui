@@ -1,43 +1,39 @@
-import {box, viewBox} from "@nartallax/cardboard"
+import {MRBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
 import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./button.module.scss"
 
 interface ButtonProps {
+	// TODO: capitalization
 	onclick(): void | Promise<void>
-	text?: string | null
-	iconClass?: string | null
-	class?: string | null
-	variant?: "normal" | "small" | "big"
+	text?: MRBox<string | null>
+	iconClass?: MRBox<string | null>
+	class?: MRBox<string | null>
+	variant?: MRBox<"normal" | "small" | "big">
 	moreHPadding?: boolean
-	isDisabled?: boolean
+	isDisabled?: MRBox<boolean>
 }
 
-const defaults = {
-	text: null,
-	iconClass: null,
-	variant: "normal",
-	isDisabled: false,
-	moreHPadding: undefined
-} satisfies Partial<ButtonProps>
-
-export const Button = defineControl<ButtonProps, typeof defaults>(defaults, props => {
+export const Button = defineControl((props: ButtonProps) => {
 
 	const clickIsActive = box(false)
 
 	async function wrappedOnclick() {
-		clickIsActive(true)
+		clickIsActive.set(true)
 		try {
-			await Promise.resolve(props.onclick()())
+			await Promise.resolve(props.onclick())
 		} finally {
-			clickIsActive(false)
+			clickIsActive.set(false)
 		}
 	}
 
 	return tag({
 		tag: "button",
-		class: [css.button, props.iconClass, props.class, css[props.variant()], {
-			[css.disabled!]: viewBox(() => clickIsActive() || props.isDisabled()),
-			[css.moreHPadding!]: viewBox(() => props.moreHPadding() ?? !!props.text())
+		class: [css.button, props.iconClass, props.class, css[constBoxWrap(props.variant ?? "normal").get()], {
+			[css.disabled!]: calcBox(
+				[clickIsActive, props.isDisabled ?? false],
+				(isClicking, isDisabled) => isClicking || isDisabled
+			),
+			[css.moreHPadding!]: calcBox([props.moreHPadding, props.text], (morePadding, text) => morePadding ?? !!text)
 		}],
 		onClick: wrappedOnclick
 	}, [props.text])

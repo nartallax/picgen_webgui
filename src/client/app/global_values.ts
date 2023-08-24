@@ -1,7 +1,7 @@
 import {WBox, box} from "@nartallax/cardboard"
 import {localStorageBox} from "@nartallax/cardboard-dom"
 import {ThumbnailProvider} from "client/app/thumbnail_provider"
-import {cssVariableLocalStorageBox} from "client/base/css_variable_box"
+import {globalCssVariableLocalStorageBox} from "client/base/css_variable_box"
 import {LoadingPage} from "client/pages/loading_page/loading_page"
 import {LoginPage} from "client/pages/login_page/login_page"
 import {MainPage} from "client/pages/main_page/main_page"
@@ -16,20 +16,21 @@ export const currentUser = box<User | null>(null)
 export const currentPage = box<PageName>("loading")
 export const isUserControlEnabled = box(true)
 
-export const uiScale = localStorageBox("userSettings.uiScale", 1)
-export const jsonFileListOrdering = localStorageBox<Record<string, string[]>>("userSettings.jsonFileListOrdering", {})
-export const hideSomeScrollbars = localStorageBox<boolean>("userSettings.hideSomeScrollbars", false)
-export const preventGalleryImageInteractions = localStorageBox("preventGalleryImageInteractions", false)
-export const paramsColumnWidth = cssVariableLocalStorageBox("--params-column-width", "20vw")
-export const paramsColumnMaxWidth = cssVariableLocalStorageBox("--params-column-max-width", "35rem")
-export const paramsColumnMinWidth = cssVariableLocalStorageBox("--params-column-min-width", "20rem")
-export const formLabelWidth = cssVariableLocalStorageBox("--form-label-width", "50%")
-export const visualTheme = localStorageBox<"default" | "dark">("userSettings.visualTheme", "default")
+export const uiScale = localStorageBox(document.body, "userSettings.uiScale", 1)
+export const jsonFileListOrdering = localStorageBox<Record<string, string[]>>(document.body, "userSettings.jsonFileListOrdering", {})
+export const hideSomeScrollbars = localStorageBox<boolean>(document.body, "userSettings.hideSomeScrollbars", false)
+export const preventGalleryImageInteractions = localStorageBox(document.body, "preventGalleryImageInteractions", false)
+export const paramsColumnWidth = globalCssVariableLocalStorageBox("--params-column-width", "20vw")
+export const paramsColumnMaxWidth = globalCssVariableLocalStorageBox("--params-column-max-width", "35rem")
+export const paramsColumnMinWidth = globalCssVariableLocalStorageBox("--params-column-min-width", "20rem")
+export const formLabelWidth = globalCssVariableLocalStorageBox("--form-label-width", "50%")
+export const visualTheme = localStorageBox<"default" | "dark">(document.body, "userSettings.visualTheme", "default")
 
+// TODO: this box is cringe, it shouldn't be like that
 export const currentArgumentBoxes = box<{[key: string]: WBox<GenerationTaskArgument>}>({})
-export const currentParamSetName = localStorageBox("fixedGenArgument.selectedParamSetName", "")
-export const currentShapeTag = localStorageBox<string | null>("fixedGenArgument.prompt.shape", null)
-export const currentPrompt = localStorageBox("fixedGenArgument.prompt.prompt", "")
+export const currentParamSetName = localStorageBox(document.body, "fixedGenArgument.selectedParamSetName", "")
+export const currentShapeTag = localStorageBox<string | null>(document.body, "fixedGenArgument.prompt.shape", null)
+export const currentPrompt = localStorageBox(document.body, "fixedGenArgument.prompt.prompt", "")
 
 export const allKnownShapeTags = box<null | readonly string[]>(null)
 export const allKnownParamSets = box<GenerationParameterSet[]>([])

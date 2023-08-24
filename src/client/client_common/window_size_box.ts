@@ -12,8 +12,9 @@ function getWindowSize(): WH {
 export function windowSizeBox(): RBox<WH> {
 	const b = box<WH>(getWindowSize())
 
+	// TODO: never unsubscribes. cringe!
 	window.addEventListener("resize", () => {
-		b(getWindowSize())
+		b.set(getWindowSize())
 	}, {passive: true})
 
 	return b

@@ -1,5 +1,4 @@
-import {viewBox} from "@nartallax/cardboard"
-import {tag} from "@nartallax/cardboard-dom"
+import {containerTag, tag} from "@nartallax/cardboard-dom"
 import {allKnownJsonFileLists, jsonFileListOrdering} from "client/app/global_values"
 import {Col} from "client/controls/layout/row_col"
 import {showModal} from "client/controls/modal_base/modal"
@@ -11,6 +10,7 @@ import {Button} from "client/controls/button/button"
 import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {JsonFileListGenParam} from "common/entities/parameter"
+import {calcBox} from "@nartallax/cardboard"
 
 type Props = {
 	def: JsonFileListGenParam
@@ -27,20 +27,20 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 	const listOrderingIds = jsonFileListOrdering.prop(listName)
 
 	const update = (ids: string[]) => {
-		jsonFileListOrdering({
-			...jsonFileListOrdering(),
+		jsonFileListOrdering.set({
+			...jsonFileListOrdering.get(),
 			[listName]: ids
 		})
 	}
-	if(!listOrderingIds()){
+	if(!listOrderingIds.get()){
 		update([])
 	}
 
 	const activeTreeNodes = listOrderingIds.map(
 		itemIds => {
-			const itemById = new Map(allItems()
+			const itemById = new Map(allItems.get()
 				.map(item => [item.id, item] as const))
-			const itemIndexById = new Map(allItems()
+			const itemIndexById = new Map(allItems.get()
 				.map(item => item.id)
 				.sort()
 				.map((id, index) => [id, index] as const)
@@ -59,9 +59,8 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 		treeNodes => treeNodes.map(node => node.value.id)
 	)
 
-	const inactiveItems = viewBox(() => {
-		const items = allItems()
-		const activeItemIds = new Set(listOrderingIds())
+	const inactiveItems = calcBox([allItems, listOrderingIds], (items, listOrderingIds) => {
+		const activeItemIds = new Set(listOrderingIds)
 		return items.filter(item => !activeItemIds.has(item.id)).sort((a, b) => a.id < b.id ? -1 : 1)
 	})
 
@@ -86,13 +85,13 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 						text: "remove",
 						variant: "small",
 						onclick: () => {
-							update(listOrderingIds().filter(id => id !== (item as JsonFileListItemDescription).id))
+							update(listOrderingIds.get().filter(id => id !== (item as JsonFileListItemDescription).id))
 						}
 					})
 				])
 			}),
 			BlockPanelHeader({header: "Not selected items"}),
-			tag({class: css.inactiveItemContainer}, inactiveItems.mapArray(item => item.id, item => tag({
+			containerTag({class: css.inactiveItemContainer}, inactiveItems, item => item.id, item => tag({
 				class: css.inactiveItem
 			}, [
 				tag([item.prop("name")]),
@@ -100,10 +99,10 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 					variant: "small",
 					iconClass: "icon-star",
 					onclick: () => {
-						update([...listOrderingIds(), item().id])
+						update([...listOrderingIds.get(), item.get().id])
 					}
 				})
-			])))
+			]))
 		])
 	])
 }

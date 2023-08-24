@@ -54,10 +54,7 @@ export class WebsocketListener {
 	private applyNotification(notification: ApiNotification): void {
 		switch(notification.type){
 			case "task_created":
-				this.tasks([
-					{...notification.task, pictures: []},
-					...this.tasks()
-				])
+				this.tasks.prependElement({...notification.task, pictures: []})
 				break
 			case "task_started":
 				this.updateTaskById(
@@ -116,9 +113,9 @@ export class WebsocketListener {
 				)
 				break
 			case "json_file_list_update": {
-				const newMap = {...allKnownJsonFileLists()}
+				const newMap = {...allKnownJsonFileLists.get()}
 				newMap[notification.directory] = notification.items
-				allKnownJsonFileLists(newMap)
+				allKnownJsonFileLists.set(newMap)
 				break
 			}
 			default:
@@ -128,13 +125,13 @@ export class WebsocketListener {
 	}
 
 	private updateTaskById(taskId: number, updater: (task: GenerationTaskWithPictures) => GenerationTaskWithPictures): void {
-		let tasks = this.tasks()
+		let tasks = this.tasks.get()
 		for(let i = 0; i < tasks.length; i++){
 			const task = tasks[i]!
 			if(task.id === taskId){
 				tasks = [...tasks]
 				tasks[i] = updater(task)
-				this.tasks(tasks)
+				this.tasks.setElementAtIndex(i, updater(task))
 				return
 			}
 		}
