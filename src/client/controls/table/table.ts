@@ -53,8 +53,9 @@ export function Table<T extends Record<string, unknown> & IdentifiedEntity, O ex
 const RowCell = <T>(props: {render: (row: T) => string | HTMLElement, rowBox: RBox<T>}) => {
 	const result = tag()
 
-	// FIXME: this could be bad. header.getValue could refer to some box, but it won't be bound to
-	bindBox(result, props.rowBox, value => result.replaceChildren(props.render(value)))
+	bindBox(result, props.rowBox, value => {
+		result.replaceChildren(props.render(value))
+	})
 
 	return result
 }

@@ -1,4 +1,5 @@
 import {box} from "@nartallax/cardboard"
+import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {onAdminTaskUpdate} from "client/app/websocket_listener"
 import {fetchToBoxMap} from "client/client_common/fetch_to_box_map"
@@ -60,10 +61,7 @@ export async function showTasksModal(): Promise<void> {
 				width: "4rem"
 			}, {
 				label: "User",
-				getValue: task => {
-					const user = getUser(task.userId).get()
-					return "#" + task.userId + (!user ? "" : ", " + user.displayName)
-				}
+				getValue: task => tag([getUser(task.userId).map(user => "#" + task.userId + (!user ? "" : ", " + user.displayName))])
 			}, {
 				label: "Status",
 				getValue: task => `${task.status}, ${task.generatedPictures} / ${task.expectedPictures ?? "???"}`,
