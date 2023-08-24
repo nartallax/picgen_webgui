@@ -1,7 +1,6 @@
-import {tag} from "@nartallax/cardboard-dom"
+import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./block_panel.module.scss"
 
-// TODO: control?
-export function BlockPanel(children: HTMLElement[]): HTMLElement {
+export const BlockPanel = defineControl((_: unknown, children) => {
 	return tag({class: css.blockPanel}, children)
-}
+})

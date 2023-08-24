@@ -63,7 +63,6 @@ export function MainPage(): HTMLElement {
 
 	const paramGroups = selectedParamSet.map(set => set.parameterGroups)
 	const knownTasks = box([] as GenerationTaskWithPictures[])
-	let websocket: WebsocketListener | null = null
 
 	const startGeneration = async() => {
 		const fullPrompt = composePrompt({
@@ -192,11 +191,6 @@ export function MainPage(): HTMLElement {
 		])
 	])
 
-	onMount(result, () => {
-		websocket?.start()
-		return () => websocket?.stop()
-	})
-
 	bindBox(result, paramGroups, groups => {
 		updateArgumentBoxes(currentParamSetName.get(), groups)
 	});
@@ -214,11 +208,11 @@ export function MainPage(): HTMLElement {
 		}
 		allKnownJsonFileLists.set(jsonListsMap)
 
-		websocket = new WebsocketListener(knownTasks)
-		// TODO: use onMount here?
-		if(result.isConnected){
+		const websocket = new WebsocketListener(knownTasks)
+		onMount(result, () => {
 			websocket.start()
-		}
+			return () => websocket.stop()
+		}, {ifInDom: "call"})
 
 		allKnownShapeTags.set(shapeTags)
 		if(currentShapeTag.get() === null){

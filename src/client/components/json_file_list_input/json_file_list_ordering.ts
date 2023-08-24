@@ -84,25 +84,25 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 					Button({
 						text: "remove",
 						variant: "small",
-						onclick: () => {
+						onClick: () => {
 							update(listOrderingIds.get().filter(id => id !== (item as JsonFileListItemDescription).id))
 						}
 					})
 				])
 			}),
 			BlockPanelHeader({header: "Not selected items"}),
-			tag({class: css.inactiveItemContainer}, [inactiveItems.mapArray(item => item.id, item => tag({
-				class: css.inactiveItem
-			}, [
-				tag([item.prop("name")]),
-				Button({
-					variant: "small",
-					iconClass: "icon-star",
-					onclick: () => {
-						update([...listOrderingIds.get(), item.get().id])
-					}
-				})
-			]))])
+			tag({class: css.inactiveItemContainer}, [
+				inactiveItems.mapArray(item => item.id, item => tag({
+					class: css.inactiveItem
+				}, [
+					tag([item.prop("name")]),
+					Button({
+						variant: "small",
+						iconClass: "icon-star",
+						onClick: () => update([...listOrderingIds.get(), item.get().id])
+					})
+				]))
+			])
 		])
 	])
 }

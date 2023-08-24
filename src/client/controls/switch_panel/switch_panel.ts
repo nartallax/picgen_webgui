@@ -1,5 +1,5 @@
 import {RBox} from "@nartallax/cardboard"
-import {bindBox, tag} from "@nartallax/cardboard-dom"
+import {bindBox, defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./switch_panel.module.scss"
 
 type Props<T extends string> = {
@@ -8,8 +8,7 @@ type Props<T extends string> = {
 	class?: string
 }
 
-// TODO: control?
-export const SwitchPanel = <T extends string>(props: Props<T>) => {
+export const SwitchPanel = defineControl(<T extends string>(props: Props<T>) => {
 	const result = tag({class: [css.switchPanel, props.class]})
 
 	function renderRoute(route: T): HTMLElement {
@@ -21,4 +20,4 @@ export const SwitchPanel = <T extends string>(props: Props<T>) => {
 	})
 
 	return result
-}
+})

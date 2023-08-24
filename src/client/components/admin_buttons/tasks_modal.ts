@@ -31,7 +31,7 @@ export async function showTasksModal(): Promise<void> {
 			Button({
 				text: "Pause",
 				isDisabled: isQueuePaused,
-				onclick: async() => {
+				onClick: async() => {
 					await ClientApi.adminPauseQueue()
 					await refreshPauseState()
 				}
@@ -39,18 +39,18 @@ export async function showTasksModal(): Promise<void> {
 			Button({
 				text: "Unpause",
 				isDisabled: isQueuePaused.map(x => !x),
-				onclick: async() => {
+				onClick: async() => {
 					await ClientApi.adminUnpauseQueue()
 					await refreshPauseState()
 				}
 			}),
 			Button({
 				text: "Kill queued",
-				onclick: () => ClientApi.adminKillAllQueuedTasks()
+				onClick: () => ClientApi.adminKillAllQueuedTasks()
 			}),
 			Button({
 				text: "Kill queued and running",
-				onclick: () => ClientApi.adminKillAllQueuedAndRunningTasks()
+				onClick: () => ClientApi.adminKillAllQueuedAndRunningTasks()
 			})
 		]),
 		Table<GenerationTask>({
@@ -71,7 +71,7 @@ export async function showTasksModal(): Promise<void> {
 				render: task => Row({gap: true}, [
 					task.map(task => getTaskAdminActions(task).map(([name, action]) => Button({
 						text: name,
-						onclick: action,
+						onClick: action,
 						variant: "small"
 					})))
 				]),

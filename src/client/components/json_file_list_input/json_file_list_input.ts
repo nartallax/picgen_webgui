@@ -69,7 +69,7 @@ export const JsonFileListInput = (props: Props) => {
 			}),
 			Button({
 				iconClass: "icon-cog",
-				onclick: () => {
+				onClick: () => {
 					showJsonFileListOrderModal(props)
 				}
 			})

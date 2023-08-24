@@ -8,8 +8,8 @@ type Props<T> = {
 }
 
 export const Tabs = defineControl(<T>(props: Props<T>) => {
-	return tag({class: css.tabs},
-		[constBoxWrap(props.options).mapArray(
+	return tag({class: css.tabs}, [
+		constBoxWrap(props.options).mapArray(
 			option => option.value,
 			option => tag({
 				tag: "button",
@@ -18,6 +18,6 @@ export const Tabs = defineControl(<T>(props: Props<T>) => {
 					{[css.active!]: calcBox([props.value, option], (value, option) => value === option.value)}
 				],
 				onClick: () => props.value.set(option.get().value)
-			}, [option.prop("label")]))]
-	)
+			}, [option.prop("label")]))
+	])
 })

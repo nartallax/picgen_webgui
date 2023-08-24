@@ -1,4 +1,4 @@
-import {tag} from "@nartallax/cardboard-dom"
+import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./form.module.scss"
 import {MRBox, WBox, constBoxWrap, isConstBox, isRBox, unbox} from "@nartallax/cardboard"
 import {TooltipIcon} from "client/controls/tooltip/tooltip"
@@ -15,8 +15,7 @@ type FormFieldProps = {
 	isFavorite?: MRBox<boolean>
 }
 
-// TODO: control?
-export const FormField = (props: FormFieldProps): HTMLElement => {
+export const FormField = defineControl((props: FormFieldProps) => {
 	const display = constBoxWrap(props.visible).map(visible => visible === false ? "none" : "")
 
 	return tag({
@@ -64,4 +63,4 @@ export const FormField = (props: FormFieldProps): HTMLElement => {
 			})
 		])
 	])
-}
+})

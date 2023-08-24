@@ -1,8 +1,7 @@
 import {WBox, box, calcBox} from "@nartallax/cardboard"
-import {bindBox, tag} from "@nartallax/cardboard-dom"
+import {bindBox, onMount, tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import {fetchToBox} from "client/client_common/fetch_to_box"
-import {windowSizeBox} from "client/client_common/window_size_box"
 import {PolygonsInput} from "client/components/image_mask_input/polygons_input"
 import {Modal, showModalBase} from "client/controls/modal_base/modal_base"
 import {decodePictureMask, encodePictureMask} from "common/picture_mask_encoding"
@@ -21,10 +20,19 @@ interface ImageMaskInputModalControlProps {
 
 const offsetRatio = 0.9
 
+type WH = {width: number, height: number}
+
+function getWindowSize(): WH {
+	return {
+		width: window.innerWidth,
+		height: window.innerHeight
+	}
+}
+
 export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalControlProps) {
 	const imageInfo = fetchToBox(() => ClientApi.getPictureInfoById(props.imageId, props.imageSalt))
 
-	const winSize = windowSizeBox()
+	const winSize = box(getWindowSize())
 	const imageDims = calcBox([imageInfo, winSize], (pic, windowSize) => {
 		if(!pic){
 			return {width: 0, height: 0}
@@ -98,6 +106,12 @@ export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalC
 
 	bindBox(wrap, polygons, polygons => {
 		props.value.set(encodePictureMask(polygons))
+	})
+
+	onMount(wrap, () => {
+		const handler = () => winSize.set(getWindowSize())
+		window.addEventListener("resize", handler, {passive: true})
+		return () => window.removeEventListener("resize", handler)
 	})
 
 	return wrap

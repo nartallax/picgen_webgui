@@ -18,11 +18,11 @@ export const AdminButtons = defineControl(() => {
 		Col({align: "stretch", gap: true}, [
 			Button({
 				text: "Users",
-				onclick: showUsersModal
+				onClick: showUsersModal
 			}),
 			Button({
 				text: "Tasks",
-				onclick: showTasksModal
+				onClick: showTasksModal
 			})
 		])
 	])])

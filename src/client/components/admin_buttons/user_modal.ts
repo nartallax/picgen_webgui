@@ -28,8 +28,8 @@ export function showUserModal(props: Props): Modal {
 		FormField({label: "Is allowed", input: BoolInput({value: props.value.prop("isAllowed")})}),
 		FormField({label: "Is admin", input: BoolInput({value: props.value.prop("isAdmin")})}),
 		Row({gap: true, justify: "end", padding: "top"}, [
-			Button({text: "Save", onclick: () => modal.close("confirm")}),
-			Button({text: "Cancel", onclick: () => modal.close()})
+			Button({text: "Save", onClick: () => modal.close("confirm")}),
+			Button({text: "Cancel", onClick: () => modal.close()})
 		])
 	])
 

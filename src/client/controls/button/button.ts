@@ -3,8 +3,7 @@ import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./button.module.scss"
 
 interface ButtonProps {
-	// TODO: capitalization
-	onclick(): void | Promise<void>
+	onClick(): void | Promise<void>
 	text?: MRBox<string | null>
 	iconClass?: MRBox<string | null>
 	class?: MRBox<string | null>
@@ -20,7 +19,7 @@ export const Button = defineControl((props: ButtonProps) => {
 	async function wrappedOnclick() {
 		clickIsActive.set(true)
 		try {
-			await Promise.resolve(props.onclick())
+			await Promise.resolve(props.onClick())
 		} finally {
 			clickIsActive.set(false)
 		}

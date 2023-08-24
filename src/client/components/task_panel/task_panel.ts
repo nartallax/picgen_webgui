@@ -1,5 +1,4 @@
 import {formatTimeSpan} from "client/client_common/format"
-import {getNowBox} from "client/base/now_box"
 import {TaskPicture} from "client/components/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
@@ -19,7 +18,6 @@ interface TaskPanelProps {
 }
 
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
-	const nowBox = getNowBox()
 	const taskDeletionProgress = box(0)
 	const taskDeletionOpacity = taskDeletionProgress.map(x => 1 - x)
 	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse(), arr => [...arr].reverse())
@@ -153,6 +151,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		return `linear-gradient(to right, rgba(0,0,0,0) 0, rgba(0,0,0,1) ${startBlur + "px"}, rgba(0,0,0,1) ${endBlur + "px"}, rgba(0,0,0,0) 100%)`
 	})
 
+	const nowBox = box(Date.now())
+
 	const result = tag({class: [css.taskPanel]}, [
 		tag({class: css.body}, [
 			tag({class: css.header}, [
@@ -258,6 +258,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		scrollLeftButton,
 		scrollRightButton
 	])
+
+	onMount(result, () => {
+		nowBox.set(Date.now())
+		const interval = setInterval(() => nowBox.set(Date.now()), 1000)
+		return () => clearInterval(interval)
+	})
 
 	return result
 }

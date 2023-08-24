@@ -32,11 +32,11 @@ export async function showTaskArgsModal(args?: GenerationTaskInputData): Promise
 		args ? null : Row({gap: true}, [
 			Button({
 				text: "OK",
-				onclick: () => modal.close("confirm")
+				onClick: () => modal.close("confirm")
 			}),
 			Button({
 				text: "Cancel",
-				onclick: () => modal.close()
+				onClick: () => modal.close()
 			})
 		])
 	])])

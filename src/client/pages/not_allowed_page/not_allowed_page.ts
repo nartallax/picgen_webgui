@@ -13,7 +13,7 @@ export function NotAllowedPage(): HTMLElement {
 				Row({padding: "top"}, [
 					Button({
 						text: "Refresh page",
-						onclick: () => window.location.reload()
+						onClick: () => window.location.reload()
 					})
 				])
 			])

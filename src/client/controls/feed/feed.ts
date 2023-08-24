@@ -18,8 +18,7 @@ interface FeedProps<T> {
 	scrollToTopButton?: boolean
 }
 
-// TODO: control?
-export function Feed<T>(props: FeedProps<T>): HTMLElement {
+export const Feed = <T>(props: FeedProps<T>) => {
 	const values = props.values ?? box([])
 	const isBottomVisible = box(false)
 	const reachedEndOfFeed = box(false)
@@ -94,14 +93,14 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 
 	bindBox(result, isBottomVisible, tryLoadNext)
 	bindBox(result, reachedEndOfFeed, tryLoadNext)
-	// TODO: uhhh what?
+	// don't remember why it is like that
 	bindBox(result, values, () => reachedEndOfFeed.set(false))
 
 	return result
 }
 
 
-type SimpleFeedFetcherParams<T extends Record<string, unknown> & IdentifiedEntity, O = T> = {
+interface SimpleFeedFetcherParams<T extends Record<string, unknown> & IdentifiedEntity, O = T> {
 	sortBy?: keyof T & string
 	fetch: (query: SimpleListQueryParams<T>) => Promise<O[]>
 	desc?: boolean

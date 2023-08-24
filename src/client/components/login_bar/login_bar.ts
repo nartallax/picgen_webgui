@@ -24,13 +24,13 @@ export function LoginBar(): HTMLElement {
 		Button({
 			iconClass: "icon-cog",
 			class: css.settingsIcon,
-			onclick: () => {
+			onClick: () => {
 				showUserSettingsModal()
 			}
 		}),
 		Button({
 			iconClass: "icon-logout",
-			onclick: async() => {
+			onClick: async() => {
 				await ClientApi.logout()
 				currentUser.set(null)
 				currentPage.set("login")
