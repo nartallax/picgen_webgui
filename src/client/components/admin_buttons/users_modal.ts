@@ -28,24 +28,22 @@ export function showUsersModal(): void {
 			values,
 			headers: [{
 				label: "ID",
-				getValue: user => user.id + "",
+				render: user => user.prop("id"),
 				width: "2.5rem"
 			}, {
 				label: "Discord ID",
-				getValue: user => user.discordId,
+				render: user => user.prop("discordId"),
 				width: "13rem"
 			}, {
 				label: "Name",
-				getValue: user => user.displayName
+				render: user => user.prop("displayName")
 			}, {
 				label: "Caps",
 				width: "9rem",
-				getValue: user => {
-					return [
-						!user.isAdmin ? "" : "admin",
-						!user.isAllowed ? "" : "allowed"
-					].filter(x => !!x).join(", ")
-				}
+				render: user => user.map(user => [
+					!user.isAdmin ? "" : "admin",
+					!user.isAllowed ? "" : "allowed"
+				].filter(x => !!x).join(", "))
 			}],
 			fetch: ClientApi.adminListUsers,
 			onRowClick: user => editUser(user)

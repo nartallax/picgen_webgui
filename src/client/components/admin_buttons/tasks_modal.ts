@@ -57,22 +57,24 @@ export async function showTasksModal(): Promise<void> {
 			values,
 			headers: [{
 				label: "ID",
-				getValue: task => task.id + "",
+				render: task => task.prop("id"),
 				width: "4rem"
 			}, {
 				label: "User",
-				getValue: task => tag([getUser(task.userId).map(user => "#" + task.userId + (!user ? "" : ", " + user.displayName))])
+				render: task => tag([getUser(task.get().userId).map(user => "#" + task.get().userId + (!user ? "" : ", " + user.displayName))])
 			}, {
 				label: "Status",
-				getValue: task => `${task.status}, ${task.generatedPictures} / ${task.expectedPictures ?? "???"}`,
+				render: task => task.map(task => `${task.status}, ${task.generatedPictures} / ${task.expectedPictures ?? "???"}`),
 				width: "15rem"
 			}, {
 				label: "Actions",
-				getValue: task => Row({gap: true}, getTaskAdminActions(task).map(([name, action]) => Button({
-					text: name,
-					onclick: action,
-					variant: "small"
-				}))),
+				render: task => Row({gap: true}, [
+					task.map(task => getTaskAdminActions(task).map(([name, action]) => Button({
+						text: name,
+						onclick: action,
+						variant: "small"
+					})))
+				]),
 				width: "10rem"
 			}],
 			fetch: ClientApi.adminListTasks

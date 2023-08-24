@@ -4,7 +4,7 @@ import {TaskPicture} from "client/components/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
 import {WBox, box, calcBox} from "@nartallax/cardboard"
-import {bindBox, containerTag, onMount, tag} from "@nartallax/cardboard-dom"
+import {bindBox, onMount, tag} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
 import {GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SoftScroller} from "client/base/soft_scroller"
@@ -74,27 +74,27 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const picturesWithDisableBoxes: {el: HTMLElement, isDisabled: WBox<boolean>}[] = []
 
-	const pictureContainer = containerTag({class: css.pictures},
-		pictures,
-		picture => picture.id,
-		picture => {
-			const isDisabled = box(true)
-			const el = TaskPicture({
-				picture,
-				isDisabled,
-				onLoad: debouncedUpdateDisabledState,
-				loadAnimation: isInDOM,
-				generationTask: props.task,
-				thumbContext,
-				onScroll: evt => {
-					const width = evt.bounds.right - evt.bounds.left
-					scroller.scrollToNow(scroller.scrollLimit.get() * (evt.x / width))
-				}
-			})
-			picturesWithDisableBoxes.push({el, isDisabled})
-			return el
-		}
-	)
+	const pictureContainer = tag({class: css.pictures},
+		[pictures.mapArray(
+			picture => picture.id,
+			picture => {
+				const isDisabled = box(true)
+				const el = TaskPicture({
+					picture,
+					isDisabled,
+					onLoad: debouncedUpdateDisabledState,
+					loadAnimation: isInDOM,
+					generationTask: props.task,
+					thumbContext,
+					onScroll: evt => {
+						const width = evt.bounds.right - evt.bounds.left
+						scroller.scrollToNow(scroller.scrollLimit.get() * (evt.x / width))
+					}
+				})
+				picturesWithDisableBoxes.push({el, isDisabled})
+				return el
+			}
+		)])
 
 	const picturesWrap = tag({class: css.picturesWrap}, [pictureContainer])
 

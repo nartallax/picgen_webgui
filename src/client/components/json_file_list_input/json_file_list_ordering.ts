@@ -1,4 +1,4 @@
-import {containerTag, tag} from "@nartallax/cardboard-dom"
+import {tag} from "@nartallax/cardboard-dom"
 import {allKnownJsonFileLists, jsonFileListOrdering} from "client/app/global_values"
 import {Col} from "client/controls/layout/row_col"
 import {showModal} from "client/controls/modal_base/modal"
@@ -91,7 +91,7 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 				])
 			}),
 			BlockPanelHeader({header: "Not selected items"}),
-			containerTag({class: css.inactiveItemContainer}, inactiveItems, item => item.id, item => tag({
+			tag({class: css.inactiveItemContainer}, [inactiveItems.mapArray(item => item.id, item => tag({
 				class: css.inactiveItem
 			}, [
 				tag([item.prop("name")]),
@@ -102,7 +102,7 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 						update([...listOrderingIds.get(), item.get().id])
 					}
 				})
-			]))
+			]))])
 		])
 	])
 }

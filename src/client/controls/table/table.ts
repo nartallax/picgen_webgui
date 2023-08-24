@@ -1,5 +1,5 @@
 import {RBox, WBox} from "@nartallax/cardboard"
-import {bindBox, tag} from "@nartallax/cardboard-dom"
+import {HTMLChildArray, tag} from "@nartallax/cardboard-dom"
 import {Feed, makeSimpleFeedFetcher} from "client/controls/feed/feed"
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {IdentifiedEntity} from "server/dao"
@@ -8,7 +8,7 @@ import * as css from "./table.module.scss"
 type TableHeader<T> = {
 	label: string
 	width?: string
-	getValue: (row: T) => string | HTMLElement
+	render: (row: RBox<T>) => HTMLChildArray[number]
 }
 
 type Props<T extends Record<string, unknown> & IdentifiedEntity, O extends Record<string, unknown> & IdentifiedEntity = T> = {
@@ -18,6 +18,8 @@ type Props<T extends Record<string, unknown> & IdentifiedEntity, O extends Recor
 	onRowClick?: (row: O) => void
 }
 
+// TODO: maybe unify this with Tree?
+// things to consider: infinite scroll, tree-like structure, multiple columns
 export function Table<T extends Record<string, unknown> & IdentifiedEntity, O extends Record<string, unknown> & IdentifiedEntity = T>(props: Props<T, O>): HTMLElement {
 
 	const onRowClick = props.onRowClick
@@ -42,20 +44,7 @@ export function Table<T extends Record<string, unknown> & IdentifiedEntity, O ex
 				},
 				tag: onRowClick ? "button" : "div",
 				onClick: !onRowClick ? undefined : () => onRowClick(rowBox.get())
-			}, props.headers.map(header => RowCell({render: header.getValue, rowBox})))
+			}, props.headers.map(header => tag([header.render(rowBox)])))
 		})
 	])
-}
-
-// TODO: think about it. it's like the third time I have to write something like this
-// (also SwitchPanel and RoutePanel)
-// maybe I could generalize it somehow..?
-const RowCell = <T>(props: {render: (row: T) => string | HTMLElement, rowBox: RBox<T>}) => {
-	const result = tag()
-
-	bindBox(result, props.rowBox, value => {
-		result.replaceChildren(props.render(value))
-	})
-
-	return result
 }

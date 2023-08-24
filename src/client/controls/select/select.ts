@@ -1,5 +1,5 @@
 import {MRBox, WBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
-import {bindBox, containerTag, tag} from "@nartallax/cardboard-dom"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./select.module.scss"
 import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
 
@@ -110,26 +110,26 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			.map(pair => pair.opt)
 	})
 
-	const listWrap = containerTag({
+	const listWrap = tag({
 		class: [css.dropdown],
 		style: {
 			maxHeight: ((props.listSizeLimit ?? 10) * 2) + "em"
 		}
 	},
-	filteredOptions,
-	value => value,
-	value => {
-		const option = tag({
-			class: css.option
-		}, [value.prop("label")])
-		option.onclick = () => {
-			props.value.set(value.get().value)
-			selectedItem.set(-1)
-			input.blur()
-			updateValue()
-		}
-		return option
-	})
+	[filteredOptions.mapArray(
+		value => value,
+		value => {
+			const option = tag({
+				class: css.option
+			}, [value.prop("label")])
+			option.onclick = () => {
+				props.value.set(value.get().value)
+				selectedItem.set(-1)
+				input.blur()
+				updateValue()
+			}
+			return option
+		})])
 
 	const wrap = tag({
 		class: [css.select, {[css.argumentInput!]: props.isArgumentInput}]

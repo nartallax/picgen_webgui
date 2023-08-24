@@ -1,5 +1,5 @@
 import {WBox, box, calcBox} from "@nartallax/cardboard"
-import {bindBox, containerTag, tag} from "@nartallax/cardboard-dom"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {allKnownJsonFileLists, currentPrompt, jsonFileListOrdering} from "client/app/global_values"
 import {showJsonFileListOrderModal} from "client/components/json_file_list_input/json_file_list_ordering"
 import {Button} from "client/controls/button/button"
@@ -74,7 +74,7 @@ export const JsonFileListInput = (props: Props) => {
 				}
 			})
 		]),
-		containerTag(props.value,
+		tag([props.value.mapArray(
 			selectedItem => selectedItem.id,
 			selectedItem => {
 				const id = selectedItem.get().id
@@ -93,14 +93,14 @@ export const JsonFileListInput = (props: Props) => {
 							[css.hidden!]: itemDef.prop("description").map(desc => !desc),
 							[css.bottomMargin!]: itemDef.prop("triggerWords").map(triggers => triggers && triggers.length > 0)
 						}]}, [itemDef.prop("description")]),
-						containerTag(
+						tag(
 							{class: [css.hintTriggerList]},
-							itemDef.prop("triggerWords").map(triggers => triggers ?? []),
-							word => word,
-							word => tag({
-								class: css.hintTrigger,
-								onClick: () => currentPrompt.set(word.get() + " " + currentPrompt.get())
-							}, [word])
+							[itemDef.prop("triggerWords").map(triggers => triggers ?? []).mapArray(
+								word => word,
+								word => tag({
+									class: css.hintTrigger,
+									onClick: () => currentPrompt.set(word.get() + " " + currentPrompt.get())
+								}, [word]))]
 						)
 					]),
 					revertable: false,
@@ -119,7 +119,8 @@ export const JsonFileListInput = (props: Props) => {
 						}
 					)
 				})
-			})
+			})]
+		)
 	])
 
 	bindBox(result, selectValue, value => {

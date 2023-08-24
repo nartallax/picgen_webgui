@@ -1,5 +1,5 @@
 import {WBox, box} from "@nartallax/cardboard"
-import {bindBox, containerTag, tag} from "@nartallax/cardboard-dom"
+import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {VisibilityNotifier} from "client/controls/visibility_notifier/visibility_notifier"
 import * as css from "./feed.module.scss"
 import {IdentifiedEntity} from "server/dao"
@@ -34,9 +34,9 @@ export function Feed<T>(props: FeedProps<T>): HTMLElement {
 			scrollToTopVisible.set(result.scrollTop >= 100)
 		}
 	}, [
-		containerTag({
+		tag({
 			class: [css.feedItemsContainer, props.containerClass]
-		}, values, props.getId, props.renderElement),
+		}, [values.mapArray(props.getId, props.renderElement)]),
 		VisibilityNotifier({
 			isOnScreen: isBottomVisible,
 			hide: reachedEndOfFeed

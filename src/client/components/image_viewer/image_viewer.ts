@@ -276,8 +276,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	}
 
 	// TODO: this should be done differently, maybe..?
-	// HTMLElements in boxes - no bueno
-	const imgsWithLabels = props.imageDescriptions.mapArray(
+	const imgsWithLabels = props.imageDescriptions.mapArrayElements(
 		desc => {
 			const natSideRatio = box(1)
 			const loaded = box(false)
