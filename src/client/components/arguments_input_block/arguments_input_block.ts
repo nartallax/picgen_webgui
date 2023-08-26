@@ -1,9 +1,8 @@
-import {MRBox, RBox, WBox, calcBox} from "@nartallax/cardboard"
+import {MRBox, RBox, WBox} from "@nartallax/cardboard"
 import {localStorageBox, tag} from "@nartallax/cardboard-dom"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {GenParameter, GenParameterGroup, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
-import {currentArgumentBoxes} from "client/app/global_values"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {TextInput} from "client/controls/text_input/text_input"
@@ -13,6 +12,7 @@ import {FormField} from "client/controls/form/form"
 import {GenerationTaskArgument, PictureArgument} from "common/entities/arguments"
 import {JsonFileListInput} from "client/components/json_file_list_input/json_file_list_input"
 import {JsonFileListArgument} from "common/entities/json_file_list"
+import {argumentsByParamSet} from "client/app/global_values"
 
 interface ArgumentsInputBlockProps {
 	readonly paramSet: RBox<GenerationParameterSet>
@@ -20,12 +20,13 @@ interface ArgumentsInputBlockProps {
 
 export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElement {
 	const container = tag([
-		calcBox([props.paramSet, currentArgumentBoxes], (paramSet, boxMap) => {
+		props.paramSet.map(paramSet => {
 			const groups = paramSet.parameterGroups
-
-			if(!groups){
+			if(groups.length === 0){
 				return [BlockPanelHeader({header: "Loading..."})]
 			}
+
+			const args = argumentsByParamSet.prop(paramSet.internalName)
 
 			const result: HTMLElement[] = []
 			for(const panelGroups of splitBySplitLines(groups)){
@@ -37,19 +38,15 @@ export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElemen
 						? undefined
 						: typeof(group.toggle.jsonName) !== "string"
 							? localStorageBox<boolean>(container, "namelessGroupToggle." + paramSet.internalName + "." + group.uiName, group.toggle.default)
-							: (boxMap[group.toggle.jsonName] as WBox<boolean> | undefined)
+							: args.prop(group.toggle.jsonName) as WBox<boolean>
 					if(group.toggle && !groupToggle){
 						continue
 					}
 					panelChildren.push(BlockPanelHeader({header: group.uiName, toggle: groupToggle}))
 
 					for(const def of defs){
-						const value = boxMap[def.jsonName]
-						if(!value){
-							// can happen if boxMap is just loading
-							continue
-						}
-						panelChildren.push(ArgumentField({def, value, visible: groupToggle, paramSet}))
+						const valueBox = args.prop(def.jsonName)
+						panelChildren.push(ArgumentField({def, value: valueBox, visible: groupToggle, paramSet}))
 					}
 				}
 				result.push(BlockPanel(panelChildren))

@@ -1,4 +1,4 @@
-import {WBox, box} from "@nartallax/cardboard"
+import {box} from "@nartallax/cardboard"
 import {localStorageBox} from "@nartallax/cardboard-dom"
 import {ThumbnailProvider} from "client/app/thumbnail_provider"
 import {globalCssVariableLocalStorageBox} from "client/base/css_variable_box"
@@ -26,15 +26,27 @@ export const paramsColumnMinWidth = globalCssVariableLocalStorageBox("--params-c
 export const formLabelWidth = globalCssVariableLocalStorageBox("--form-label-width", "50%")
 export const visualTheme = localStorageBox<"default" | "dark">(document.body, "userSettings.visualTheme", "default")
 
-// TODO: this box is cringe, it shouldn't be like that
-export const currentArgumentBoxes = box<{[key: string]: WBox<GenerationTaskArgument>}>({})
+export const argumentsByParamSet = localStorageBox<Record<string, Record<string, GenerationTaskArgument>>>(document.body, "genArguments", {})
 export const currentParamSetName = localStorageBox(document.body, "fixedGenArgument.selectedParamSetName", "")
 export const currentShapeTag = localStorageBox<string | null>(document.body, "fixedGenArgument.prompt.shape", null)
 export const currentPrompt = localStorageBox(document.body, "fixedGenArgument.prompt.prompt", "")
+export const currentParamSetArgs = box(argumentsByParamSet.get()[currentParamSetName.get()] ?? {})
 
 export const allKnownShapeTags = box<null | readonly string[]>(null)
 export const allKnownParamSets = box<GenerationParameterSet[]>([])
 export const allKnownJsonFileLists = box<{readonly [name: string]: readonly JsonFileListItemDescription[]}>({})
+
+// export const currentArguments = calcBox([argumentsByParamSet, currentParamSetName, allKnownParamSets],
+// 	(allArgs, name, allParamSets) => {
+// 		const paramSet = allParamSets.find(set => set.internalName === name)
+// 		if(!paramSet){
+// 			return null
+// 		}
+// 		console.log("fwdmap", allArgs)
+// 		return fixArgumentMap(allArgs[name] ?? {}, paramSet.parameterGroups)
+// 	},
+// 	(value, allArgs, name, allParamSets) => [value === null ? allArgs : {...allArgs, [name]: value}, name, allParamSets]
+// )
 
 export const thumbnailProvider = new ThumbnailProvider()
 

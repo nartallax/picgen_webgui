@@ -1,8 +1,6 @@
-import {WBox} from "@nartallax/cardboard"
-import {allKnownParamSets, allKnownShapeTags, currentArgumentBoxes, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
+import {allKnownParamSets, allKnownShapeTags, argumentsByParamSet, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
 import {decomposePrompt} from "client/app/prompt_composing"
 import {showToast} from "client/controls/toast/toast"
-import {GenerationTaskArgument} from "common/entities/arguments"
 import {GenerationTaskInputData} from "common/entities/generation_task"
 import {Picture} from "common/entities/picture"
 
@@ -43,15 +41,14 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	}
 
 	const nonLoadableParamNames: string[] = []
-	const boxMap = currentArgumentBoxes.get()
-	for(const [key, value] of Object.entries(args)){
-		const argBox = boxMap[key]
-		if(!argBox){
+	const newArgValues = {...argumentsByParamSet.get()[paramSet.internalName] ?? {}}
+	for(const key of Object.keys(args)){
+		if(!(key in newArgValues)){
 			nonLoadableParamNames.push(key)
-			continue
+			delete newArgValues[key]
 		}
-		(argBox as WBox<GenerationTaskArgument>).set(value)
 	}
+	argumentsByParamSet.set({...argumentsByParamSet.get(), [paramSet.internalName]: newArgValues})
 
 	if(nonLoadableParamNames.length > 0){
 		showToast({

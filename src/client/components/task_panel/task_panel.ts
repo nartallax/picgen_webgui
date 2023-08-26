@@ -261,7 +261,13 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	onMount(result, () => {
 		nowBox.set(Date.now())
-		const interval = setInterval(() => nowBox.set(Date.now()), 1000)
+		const interval = setInterval(() => {
+			if(props.task.get().status === "running"){
+				nowBox.set(Date.now())
+			} else if(props.task.get().status === "completed"){
+				clearInterval(interval)
+			}
+		}, 1000)
 		return () => clearInterval(interval)
 	})
 

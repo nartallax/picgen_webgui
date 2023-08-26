@@ -7,52 +7,25 @@ import {PromptInput} from "client/components/prompt_input/prompt_input"
 import {Select} from "client/controls/select/select"
 import {TaskPanel} from "client/components/task_panel/task_panel"
 import {box, calcBox, unbox} from "@nartallax/cardboard"
-import {bindBox, localStorageBox, onMount, tag} from "@nartallax/cardboard-dom"
+import {onMount, tag} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
-import {GenParameter, GenParameterGroup, GenParameterGroupToggle, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
+import {GenerationParameterSet} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentArgumentBoxes, currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, thumbnailProvider} from "client/app/global_values"
+import {currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, thumbnailProvider, argumentsByParamSet} from "client/app/global_values"
 import {composePrompt} from "client/app/prompt_composing"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
 import {Col, Row} from "client/controls/layout/row_col"
 import {IconButton} from "client/controls/icon_button/icon_button"
-import {GenerationTaskArgument, isPictureArgument} from "common/entities/arguments"
+import {isPictureArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
 import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 import {Picture, PictureWithTask} from "common/entities/picture"
 import {TaskPicture} from "client/components/task_picture/task_picture"
 import {PasteArgumentsButton} from "client/components/paste_arguments_button/paste_arguments_button"
 import {JsonFileListItemDescription} from "common/entities/json_file_list"
-
-type GenParamLike = (GenParameter | GenParameterGroupToggle) & {readonly jsonName: string}
-function isGenParamLike(param: GenParameter | GenParameterGroupToggle): param is GenParamLike {
-	return typeof((param as GenParamLike).jsonName) === "string"
-}
-
-function updateArgumentBoxes(setName: string, groups: readonly GenParameterGroup[]) {
-	const defs: GenParamLike[] = flatten(groups.map(group => group.parameters))
-	for(const group of groups){
-		if(group.toggle && isGenParamLike(group.toggle)){
-			defs.push(group.toggle)
-		}
-	}
-
-	const boxMap = {...currentArgumentBoxes.get()}
-	for(const name in boxMap){
-		delete boxMap[name]
-	}
-
-	for(const def of defs){
-		// TODO: they will never go out of memory, cringe
-		// maybe we need some global provider...? to not create them over and over again
-		// or, better yet, create a single box for each set once and that's it
-		boxMap[def.jsonName] = localStorageBox(document.body, `genArgument.${setName}.${def.jsonName}`, defaultValueOfParam(def))
-	}
-
-	currentArgumentBoxes.set(boxMap)
-}
+import {fixArgumentMap} from "client/app/fix_argument_object"
 
 export function MainPage(): HTMLElement {
 
@@ -69,20 +42,16 @@ export function MainPage(): HTMLElement {
 			shape: currentShapeTag.get(),
 			body: currentPrompt.get()
 		})
-		const paramValuesForApi = {} as Record<string, GenerationTaskArgument>
 		const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
 		if(!paramDefs){
 			return
 		}
-		const paramDefsByName = new Map(paramDefs.map(def => [def.jsonName, def]))
-		const boxMap = currentArgumentBoxes.get()
-		for(const paramName in boxMap){
-			const paramValue = unbox(boxMap[paramName])!
-			const def = paramDefsByName.get(paramName)
+		const paramValuesForApi = {...argumentsByParamSet.get()[selectedParamSet.get().internalName] ?? {}}
+		for(const def of paramDefs){
+			const paramValue = paramValuesForApi[def.jsonName]!
 			if(def && def.type === "picture" && isPictureArgument(paramValue) && paramValue.id === 0){
-				continue // not passed
+				delete paramValuesForApi[def.jsonName] // not passed
 			}
-			paramValuesForApi[paramName] = paramValue
 		}
 		// TODO: cringe
 		paramValuesForApi["prompt"] = fullPrompt
@@ -191,11 +160,7 @@ export function MainPage(): HTMLElement {
 		])
 	])
 
-	bindBox(result, paramGroups, groups => {
-		updateArgumentBoxes(currentParamSetName.get(), groups)
-	});
-
-	(async() => {
+	;(async() => {
 		const [paramSets, shapeTags, jsonFileLists] = await Promise.all([
 			ClientApi.getGenerationParameterSets(),
 			ClientApi.getShapeTags(),
@@ -219,6 +184,11 @@ export function MainPage(): HTMLElement {
 			currentShapeTag.set(shapeTags[0] || "Landscape")
 		}
 
+		const argsBySet = {...argumentsByParamSet.get()}
+		for(const paramSet of paramSets){
+			argsBySet[paramSet.internalName] = fixArgumentMap(argsBySet[paramSet.internalName] ?? {}, paramSet)
+		}
+		argumentsByParamSet.set(argsBySet)
 		allKnownParamSets.set(paramSets)
 
 		const paramSetName = currentParamSetName.get()

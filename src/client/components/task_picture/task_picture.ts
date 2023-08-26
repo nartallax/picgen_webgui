@@ -162,7 +162,6 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		const img = await props.thumbContext.getThumbnail(props.picture.get())
 		imgPlaceholder.before(img)
 		imgPlaceholder.remove()
-		// FIXME: load animation...?
 		if(!props.loadAnimation){
 			if(props.onLoad){
 				props.onLoad()
