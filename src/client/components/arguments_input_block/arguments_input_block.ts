@@ -1,5 +1,5 @@
 import {MRBox, RBox, WBox} from "@nartallax/cardboard"
-import {localStorageBox, tag} from "@nartallax/cardboard-dom"
+import {bindBox, localStorageBox, tag} from "@nartallax/cardboard-dom"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {GenParameter, GenParameterGroup, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
@@ -19,41 +19,39 @@ interface ArgumentsInputBlockProps {
 }
 
 export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElement {
-	const container = tag([
-		props.paramSet.map(paramSet => {
-			const groups = paramSet.parameterGroups
-			if(groups.length === 0){
-				return [BlockPanelHeader({header: "Loading..."})]
-			}
+	const container = tag()
 
-			const args = argumentsByParamSet.prop(paramSet.internalName)
+	bindBox(container, props.paramSet, paramSet => {
+		const args = argumentsByParamSet.prop(paramSet.internalName)
 
-			const result: HTMLElement[] = []
-			for(const panelGroups of splitBySplitLines(groups)){
-				const panelChildren: HTMLElement[] = []
-				for(const group of panelGroups){
-					const defs = group.parameters
+		const blocks: HTMLElement[] = []
+		const prompt = args.prop(paramSet.primaryParameter.jsonName) as WBox<string>
 
-					const groupToggle = !group.toggle
-						? undefined
-						: typeof(group.toggle.jsonName) !== "string"
-							? localStorageBox<boolean>(container, "namelessGroupToggle." + paramSet.internalName + "." + group.uiName, group.toggle.default)
-							: args.prop(group.toggle.jsonName) as WBox<boolean>
-					if(group.toggle && !groupToggle){
-						continue
-					}
-					panelChildren.push(BlockPanelHeader({header: group.uiName, toggle: groupToggle}))
+		for(const panelGroups of splitBySplitLines(paramSet.parameterGroups)){
+			const panelChildren: HTMLElement[] = []
+			for(const group of panelGroups){
+				const defs = group.parameters
 
-					for(const def of defs){
-						const valueBox = args.prop(def.jsonName)
-						panelChildren.push(ArgumentField({def, value: valueBox, visible: groupToggle, paramSet}))
-					}
+				const groupToggle = !group.toggle
+					? undefined
+					: typeof(group.toggle.jsonName) !== "string"
+						? localStorageBox<boolean>(container, "namelessGroupToggle." + paramSet.internalName + "." + group.uiName, group.toggle.default)
+						: args.prop(group.toggle.jsonName) as WBox<boolean>
+				if(group.toggle && !groupToggle){
+					continue
 				}
-				result.push(BlockPanel(panelChildren))
+				panelChildren.push(BlockPanelHeader({header: group.uiName, toggle: groupToggle}))
+
+				for(const def of defs){
+					const valueBox = args.prop(def.jsonName)
+					panelChildren.push(ArgumentField({def, value: valueBox, visible: groupToggle, paramSet, prompt}))
+				}
 			}
-			return result
-		})
-	])
+			blocks.push(BlockPanel(panelChildren))
+		}
+
+		container.replaceChildren(...blocks)
+	})
 
 	return container
 }
@@ -64,13 +62,15 @@ type ArgumentFieldProps = {
 	value: WBox<GenerationTaskArgument>
 	visible?: MRBox<boolean>
 	paramSet: GenerationParameterSet
+	prompt: WBox<string>
 }
 
 function ArgumentField(props: ArgumentFieldProps): HTMLElement {
 	if(props.def.type === "json_file_list"){
 		return JsonFileListInput({
 			def: props.def,
-			value: props.value as WBox<JsonFileListArgument[]>
+			value: props.value as WBox<JsonFileListArgument[]>,
+			prompt: props.prompt
 		})
 	} else {
 		return FormField({

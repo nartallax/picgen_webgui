@@ -10,7 +10,7 @@ import {SoftScroller} from "client/base/soft_scroller"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {debounce} from "client/client_common/debounce"
 import {loadArguments} from "client/app/load_arguments"
-import {thumbnailProvider} from "client/app/global_values"
+import {allKnownParamSets, thumbnailProvider} from "client/app/global_values"
 
 interface TaskPanelProps {
 	task: WBox<GenerationTaskWithPictures>
@@ -152,6 +152,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	})
 
 	const nowBox = box(Date.now())
+	const paramSetOfTask = allKnownParamSets.get().find(x => x.internalName === props.task.get().paramSetName)
 
 	const result = tag({class: [css.taskPanel]}, [
 		tag({class: css.body}, [
@@ -242,7 +243,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				}
 			}, [picturesWrap]),
 			tag({class: css.footer, style: {opacity: taskDeletionOpacity}}, [
-				tag({class: css.prompt}, [props.task.map(task => (task.arguments["prompt"] + "") ?? "")]),
+				tag({class: css.prompt}, [props.task.map(task => {
+					if(!paramSetOfTask){
+						return "<param set deleted, prompt parameter name unknown>"
+					}
+					return (task.arguments[paramSetOfTask.primaryParameter.jsonName] + "") ?? ""
+				})]),
 				tag({
 					class: [css.useArgumentsButton, "icon-docs"],
 					onClick: limitClickRate(function() {

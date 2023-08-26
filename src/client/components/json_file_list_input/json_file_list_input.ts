@@ -1,6 +1,6 @@
 import {WBox, box, calcBox} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
-import {allKnownJsonFileLists, currentPrompt, jsonFileListOrdering} from "client/app/global_values"
+import {allKnownJsonFileLists, jsonFileListOrdering} from "client/app/global_values"
 import {showJsonFileListOrderModal} from "client/components/json_file_list_input/json_file_list_ordering"
 import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
@@ -14,6 +14,7 @@ import * as css from "./json_file_list_input.module.scss"
 type Props = {
 	def: JsonFileListGenParam
 	value: WBox<JsonFileListArgument[]>
+	prompt: WBox<string>
 }
 
 export const JsonFileListInput = (props: Props) => {
@@ -99,7 +100,7 @@ export const JsonFileListInput = (props: Props) => {
 								word => word,
 								word => tag({
 									class: css.hintTrigger,
-									onClick: () => currentPrompt.set(word.get() + " " + currentPrompt.get())
+									onClick: () => props.prompt.set(word.get() + " " + props.prompt.get())
 								}, [word]))]
 						)
 					]),

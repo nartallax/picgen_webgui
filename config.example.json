@@ -20,6 +20,12 @@
 		"uiName": "Picture generation",
 		"internalName": "default",
 		"commandTemplate": "node picture_generator_example.js $INPUT_JSON --param-set-name $PARAM_SET",
+		"primaryParameter": {
+			"type": "string",
+			"jsonName": "prompt",
+			"uiName": "Prompt",
+			"default": ""
+		},
 		"parameterGroups": [{
 			"uiName": "Parameters",
 			"toggle": {
@@ -163,6 +169,12 @@
 		"uiName": "Inpaint",
 		"internalName": "inpaint",
 		"commandTemplate": "node picture_generator_example.js $INPUT_JSON",
+		"primaryParameter": {
+			"type": "string",
+			"jsonName": "prompt",
+			"uiName": "Prompt",
+			"default": ""
+		},
 		"parameterGroups": [{
 			"uiName": "Parameters",
 			"parameters": [{

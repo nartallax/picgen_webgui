@@ -1,4 +1,4 @@
-import {allKnownParamSets, argumentsByParamSet, currentParamSetName, currentPrompt} from "client/app/global_values"
+import {allKnownParamSets, argumentsByParamSet, currentParamSetName} from "client/app/global_values"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTaskInputData} from "common/entities/generation_task"
 import {Picture} from "common/entities/picture"
@@ -24,12 +24,7 @@ export function loadArguments(task: GenerationTaskInputData): void {
 
 	const args = {...task.arguments}
 
-	const promptStr = (args["prompt"] + "") ?? "" // TODO: cringe
-	delete args["prompt"]
-
 	currentParamSetName.set(task.paramSetName)
-	currentPrompt.set(promptStr)
-
 
 	// legacy naming
 	if("lores" in args){
@@ -43,6 +38,8 @@ export function loadArguments(task: GenerationTaskInputData): void {
 		if(!(key in newArgValues)){
 			nonLoadableParamNames.push(key)
 			delete newArgValues[key]
+		} else {
+			newArgValues[key] = args[key]!
 		}
 	}
 	argumentsByParamSet.set({...argumentsByParamSet.get(), [paramSet.internalName]: newArgValues})

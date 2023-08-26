@@ -11,6 +11,7 @@ export function getParamDefList(paramSet: GenerationParameterSet): GenParameter[
 	return flatten(paramSet.parameterGroups.map(group => group.parameters))
 }
 
+// TODO: think about dithing all of this shit and converting to protobuf
 type BaseGenParam = RC.Value<typeof BaseGenParam>
 const BaseGenParam = RC.struct(RC.structFields({
 	ro: {
@@ -152,7 +153,8 @@ export type GenerationParameterSet = RC.Value<typeof GenerationParameterSet>
 export const GenerationParameterSet = RC.roStruct({
 	uiName: RC.string(),
 	internalName: RC.string(),
-	parameterGroups: RC.roArray(GenParameterGroup),
+	primaryParameter: StringGenParam,
+	parameterGroups: RC.roArray(GenParameterGroup, {validators: [arr => arr.length > 0]}),
 	commandTemplate: RC.string()
 })
 

@@ -7,7 +7,7 @@ function isGenParamLike(param: GenParameter | GenParameterGroupToggle): param is
 	return typeof((param as GenParamLike).jsonName) === "string"
 }
 
-export function fixArgumentMap(args: Record<string, GenerationTaskArgument>, paramSet: GenerationParameterSet): Record<string, GenerationTaskArgument> {
+export function getAllGenParamDefs(paramSet: GenerationParameterSet): GenParamLike[] {
 	const groups = paramSet.parameterGroups
 	const defs: GenParamLike[] = flatten(groups.map(group => group.parameters))
 	for(const group of groups){
@@ -15,6 +15,12 @@ export function fixArgumentMap(args: Record<string, GenerationTaskArgument>, par
 			defs.push(group.toggle)
 		}
 	}
+	defs.push(paramSet.primaryParameter)
+	return defs
+}
+
+export function fixArgumentMap(args: Record<string, GenerationTaskArgument>, paramSet: GenerationParameterSet): Record<string, GenerationTaskArgument> {
+	const defs = getAllGenParamDefs(paramSet)
 
 	let changes = 0
 	const newArgs = {...args}
