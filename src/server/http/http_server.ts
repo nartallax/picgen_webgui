@@ -191,7 +191,6 @@ export class HttpServer {
 		let result: RequestRunResult<unknown> | null = null
 		let error: Error | null = null
 		try {
-			// TODO: uhhhh
 			result = await this.opts.runRequestHandler(req, async() => {
 				let callResult: unknown
 				if(apiMethod.length === 0){

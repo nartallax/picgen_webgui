@@ -34,7 +34,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 
 	protected override fieldFromDb<K extends keyof DbGenerationTask & keyof GenerationTask & string>(field: K, value: DbGenerationTask[K]): unknown {
 		switch(field){
-			case "status": return GenerationTaskStatus[value as DbGenerationTask["status"]] // TODO: cringe
+			case "status": return GenerationTaskStatus[value as DbGenerationTask["status"]]
 			case "arguments": return JSON.parse(value as DbGenerationTask["arguments"])
 			default: return value
 		}

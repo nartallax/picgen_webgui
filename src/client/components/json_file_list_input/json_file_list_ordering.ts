@@ -78,7 +78,6 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 				canReorder: true,
 				grow: 1,
 				shrink: 1,
-				// TODO: cringe
 				render: (item: unknown) => tag({class: css.itemTreeNode}, [
 					(item as JsonFileListItemDescription).name,
 					Button({

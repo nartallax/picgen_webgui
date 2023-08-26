@@ -23,6 +23,5 @@ export const JsonFileListItemDescriptionFile = RC.struct(RC.structFields({
 export type JsonFileListArgument = RC.Value<typeof JsonFileListArgument>
 export const JsonFileListArgument = RC.roStruct({
 	id: RC.string(),
-	// TODO: cringe
 	weight: RC.number()
 })

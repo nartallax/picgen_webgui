@@ -53,7 +53,6 @@ export class DiscordApiClient {
 
 	private readonly apiBase = "https://discord.com/api/v10"
 	private readonly cdnBase = "https://cdn.discordapp.com"
-	// TODO: pass somehow-real hosting URL and version number here? right now it is pain to retrieve7
 	private readonly ua = "NartallaxsPictureGeneratorWebgui (http://localhost, 0.0.1)"
 
 	constructor(private readonly clientId: string, private readonly clientSecret: string) {}

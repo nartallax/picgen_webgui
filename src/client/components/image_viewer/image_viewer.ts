@@ -275,7 +275,6 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return height / img.naturalHeight
 	}
 
-	// TODO: this should be done differently, maybe..?
 	const imgsWithLabels = props.imageDescriptions.mapArrayElements(
 		desc => {
 			const natSideRatio = box(1)

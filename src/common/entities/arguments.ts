@@ -1,4 +1,5 @@
 import {RC} from "@nartallax/ribcage"
+import {RCV} from "@nartallax/ribcage-validation"
 import {JsonFileListArgument} from "common/entities/json_file_list"
 
 export type PictureArgument = RC.Value<typeof PictureArgument>
@@ -12,10 +13,7 @@ export const PictureArgument = RC.struct(RC.structFields({
 	}
 }))
 
-export function isPictureArgument(x: GenerationTaskArgument): x is PictureArgument {
-	// TODO: rewrite to validator
-	return typeof(x) === "object" && x !== null && typeof((x as PictureArgument).salt) === "number"
-}
+export const isPictureArgument = RCV.getValidatorBuilder().build(PictureArgument)
 
 export type GenerationTaskArgument = RC.Value<typeof GenerationTaskArgument>
 export const GenerationTaskArgument = RC.union([

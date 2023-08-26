@@ -22,7 +22,7 @@ export class UserDAO extends DAO<ServerUser> {
 		switch(field){
 			case "isAllowed":
 			case "isAdmin":
-				return !!value // TODO: cringe
+				return !!value
 			default: return value
 		}
 	}
@@ -124,7 +124,6 @@ export class UserDAO extends DAO<ServerUser> {
 		this.setDiscordTokenProps(user, token)
 	}
 
-	// TODO: think about updating current user; this may lead to inconsistencies
 	private currentUserCacheKey = "current-user"
 	private getCachedCurrentUser(): ServerUser | null | undefined {
 		return context.get().cache[this.currentUserCacheKey] as ServerUser | null | undefined

@@ -66,7 +66,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 	protected override fieldFromDb<K extends keyof ServerPicture & string>(field: K, value: ServerPicture[K]): unknown {
 		switch(field){
 			case "deleted":
-				return !!value // TODO: cringe
+				return !!value
 			case "modifiedArguments": return value === null ? null : JSON.parse(value as string)
 			default: return value
 		}

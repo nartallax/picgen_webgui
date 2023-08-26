@@ -26,13 +26,23 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 		}
 	})
 
+	let lastClickTime = 0
+	const onStartGeneration = () => {
+		const now = Date.now()
+		if(now - lastClickTime < 500){
+			return
+		}
+		lastClickTime = now
+		props.startGeneration()
+	}
+
 	const result = tag({class: css.promptInput}, [
 		tag({class: css.firstLine}, [
 			tag({class: css.inputWrap}, [input]),
 			tag({
 				tag: "button",
 				class: [css.generateButton, "icon-brush"],
-				onClick: props.startGeneration // TODO: falloff to prevent doubleclicking
+				onClick: onStartGeneration
 			})
 		])
 	])

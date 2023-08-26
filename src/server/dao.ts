@@ -223,7 +223,6 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 		return result
 	}
 
-	// TODO: replace with list()
 	protected async querySortedFiltered<K extends keyof T & string>(fieldName: K, value: T[K], sortBy: string & keyof T, desc: boolean, limit = -1): Promise<T[]> {
 		this.validateFieldNames([fieldName, sortBy])
 		const result: S[] = await context.get().db.query(`

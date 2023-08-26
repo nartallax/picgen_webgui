@@ -32,7 +32,6 @@ export const BinaryQueryCondition = <F extends RC.StructFields>(itemType: RC.Str
 	op: FilterOp
 })
 
-// TODO: cringe. we need generic type support in ribcage
 export type SimpleListQueryParams<T extends Record<string, unknown>> = RC.Value<ReturnType<typeof SimpleListQueryParams<RC.FieldsOf<RCise<T>>>>>
 export const SimpleListQueryParams = <F extends RC.StructFields>(itemType: RC.Struct<F>) => RC.struct(RC.structFields({opt: {
 	sortBy: RC.keyOf(itemType),

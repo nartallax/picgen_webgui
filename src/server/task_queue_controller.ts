@@ -81,7 +81,6 @@ export class TaskQueueController {
 			exitCode: 0
 		}
 
-		// TODO: fix runOrder here? after creation
 		const result = await generationTaskDao.create(genTask)
 		log("Enqueued task #" + result.id)
 

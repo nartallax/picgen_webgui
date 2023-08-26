@@ -47,7 +47,6 @@ interface ModifyTaskArguments {
 	modifyTaskArguments: Record<string, GenerationTaskArgument>
 }
 function isModifyTaskArgumentsLine(line: OutputLine): line is ModifyTaskArguments {
-	// TODO: validate here
 	return typeof((line as ModifyTaskArguments).modifyTaskArguments) === "object"
 }
 
