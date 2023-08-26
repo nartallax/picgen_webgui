@@ -1,5 +1,4 @@
-import {allKnownParamSets, allKnownShapeTags, argumentsByParamSet, currentParamSetName, currentPrompt, currentShapeTag} from "client/app/global_values"
-import {decomposePrompt} from "client/app/prompt_composing"
+import {allKnownParamSets, argumentsByParamSet, currentParamSetName, currentPrompt} from "client/app/global_values"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTaskInputData} from "common/entities/generation_task"
 import {Picture} from "common/entities/picture"
@@ -26,12 +25,10 @@ export function loadArguments(task: GenerationTaskInputData): void {
 	const args = {...task.arguments}
 
 	const promptStr = (args["prompt"] + "") ?? "" // TODO: cringe
-	const prompt = decomposePrompt(promptStr, allKnownShapeTags.get() ?? [])
 	delete args["prompt"]
 
 	currentParamSetName.set(task.paramSetName)
-	currentShapeTag.set(prompt.shape)
-	currentPrompt.set(prompt.body)
+	currentPrompt.set(promptStr)
 
 
 	// legacy naming

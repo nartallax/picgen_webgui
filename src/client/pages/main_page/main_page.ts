@@ -12,8 +12,7 @@ import * as css from "./main_page.module.scss"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenerationParameterSet} from "common/entities/parameter"
 import {flatten} from "common/utils/flatten"
-import {currentParamSetName, currentPrompt, currentShapeTag, allKnownShapeTags, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, thumbnailProvider, argumentsByParamSet} from "client/app/global_values"
-import {composePrompt} from "client/app/prompt_composing"
+import {currentParamSetName, currentPrompt, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, thumbnailProvider, argumentsByParamSet} from "client/app/global_values"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
 import {Col, Row} from "client/controls/layout/row_col"
@@ -38,10 +37,6 @@ export function MainPage(): HTMLElement {
 	const knownTasks = box([] as GenerationTaskWithPictures[])
 
 	const startGeneration = async() => {
-		const fullPrompt = composePrompt({
-			shape: currentShapeTag.get(),
-			body: currentPrompt.get()
-		})
 		const paramDefs = flatten(unbox(paramGroups).map(group => group.parameters))
 		if(!paramDefs){
 			return
@@ -54,7 +49,7 @@ export function MainPage(): HTMLElement {
 			}
 		}
 		// TODO: cringe
-		paramValuesForApi["prompt"] = fullPrompt
+		paramValuesForApi["prompt"] = currentPrompt.get()
 		await ClientApi.createGenerationTask({
 			paramSetName: currentParamSetName.get(),
 			arguments: paramValuesForApi
@@ -80,8 +75,6 @@ export function MainPage(): HTMLElement {
 				}),
 				PromptInput({
 					promptValue: currentPrompt,
-					shapeValue: currentShapeTag,
-					shapeValues: allKnownShapeTags,
 					startGeneration: startGeneration
 				})
 			]),
@@ -161,9 +154,8 @@ export function MainPage(): HTMLElement {
 	])
 
 	;(async() => {
-		const [paramSets, shapeTags, jsonFileLists] = await Promise.all([
+		const [paramSets, jsonFileLists] = await Promise.all([
 			ClientApi.getGenerationParameterSets(),
-			ClientApi.getShapeTags(),
 			ClientApi.getAllJsonFileLists()
 		])
 
@@ -178,11 +170,6 @@ export function MainPage(): HTMLElement {
 			websocket.start()
 			return () => websocket.stop()
 		}, {ifInDom: "call"})
-
-		allKnownShapeTags.set(shapeTags)
-		if(currentShapeTag.get() === null){
-			currentShapeTag.set(shapeTags[0] || "Landscape")
-		}
 
 		const argsBySet = {...argumentsByParamSet.get()}
 		for(const paramSet of paramSets){

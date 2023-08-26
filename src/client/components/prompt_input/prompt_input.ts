@@ -1,11 +1,8 @@
-import {RBox, WBox} from "@nartallax/cardboard"
+import {WBox} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
-import {SelectSearch} from "client/controls/select_search/select_search"
 import * as css from "./prompt_input.module.scss"
 
 interface PromptInputProps {
-	shapeValues: RBox<null | readonly string[]>
-	shapeValue: WBox<string | null>
 	promptValue: WBox<string>
 	startGeneration(): void
 }
@@ -31,13 +28,6 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 
 	const result = tag({class: css.promptInput}, [
 		tag({class: css.firstLine}, [
-			tag({class: css.selectSearchWrap}, [
-				SelectSearch({
-					availableValues: props.shapeValues,
-					value: props.shapeValue,
-					listSizeLimit: 10
-				})
-			]),
 			tag({class: css.inputWrap}, [input]),
 			tag({
 				tag: "button",

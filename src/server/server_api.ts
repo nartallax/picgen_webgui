@@ -24,12 +24,6 @@ export namespace ServerApi {
 			return config.parameterSets
 		})
 
-	export const getShapeTags = RCV.validatedFunction(
-		[],
-		(): readonly string[] => {
-			return config.tags.shape
-		})
-
 	const Protocol = RC.constUnion(["http", "https"])
 	export const getDiscordLoginUrl = RCV.validatedFunction(
 		[RC.struct({protocol: Protocol, domain: RC.string()})],

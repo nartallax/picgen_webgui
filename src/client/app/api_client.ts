@@ -20,7 +20,6 @@ export class ApiClient {
 			queryStr = "?" + queryStr
 		}
 
-		// TODO: rewrite to XHR, for sake of progress event
 		return fetch(this.urlBase + name + queryStr, {
 			method: "PUT",
 			body: body

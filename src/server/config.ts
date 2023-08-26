@@ -6,9 +6,6 @@ import {GenerationParameterSet} from "common/entities/parameter"
 
 interface AuxConfigFilesData {
 	readonly discordClientSecret: string
-	readonly tags: {
-		readonly shape: readonly string[]
-	}
 }
 
 const ConfigFile = RC.struct(RC.structFields({
@@ -27,9 +24,6 @@ const ConfigFile = RC.struct(RC.structFields({
 		]),
 		dbFilePath: RC.string(),
 		parameterSets: RC.roArray(GenerationParameterSet),
-		tags: RC.struct(RC.structFields({ro: {
-			shapeTagsFile: RC.string()
-		}})),
 		thumbnails: RC.roStruct({
 			directory: RC.string(),
 			height: RC.int()
@@ -59,18 +53,11 @@ export async function loadConfig(): Promise<Config> {
 	const newConfig: ConfigFile = JSON.parse(await Fs.readFile(args.paramsConfig, "utf-8"))
 	configFileValidator(newConfig)
 
-	const [discordClientSecret, shapeTagsJson] = await Promise.all([
-		Fs.readFile(newConfig.discordClientSecretFile, "utf-8"),
-		Fs.readFile(newConfig.tags.shapeTagsFile, "utf-8")
-	])
+	const discordClientSecret = await Fs.readFile(newConfig.discordClientSecretFile, "utf-8")
 
 	return {
 		...args,
 		...newConfig,
-		discordClientSecret: discordClientSecret.trim(),
-		tags: {
-			...newConfig.tags,
-			shape: JSON.parse(shapeTagsJson)
-		}
+		discordClientSecret: discordClientSecret.trim()
 	}
 }

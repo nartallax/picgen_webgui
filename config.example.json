@@ -9,9 +9,6 @@
 	"httpHost": "localhost",
 	"haveHttps": false,	
 	"dbFilePath": "./db.sqlite",
-	"tags": {
-		"shapeTagsFile": "./shape_tags.json"
-	},
 	"thumbnails": {
 		"directory": "./thumbnails",
 		"height": 276

@@ -16,9 +16,6 @@ export namespace ClientApi {
 	export const getGenerationParameterSets = () =>
 		client.call<GenerationParameterSet[]>("getGenerationParameterSets", {})
 
-	export const getShapeTags = () =>
-		client.call<readonly string[]>("getShapeTags", {})
-
 	export const getDiscordLoginUrl = (protocol: "http" | "https", domain: string) =>
 		client.call<string>("getDiscordLoginUrl", {protocol, domain})
 

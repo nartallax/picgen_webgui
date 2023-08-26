@@ -28,10 +28,12 @@ export const visualTheme = localStorageBox<"default" | "dark">(document.body, "u
 
 export const argumentsByParamSet = localStorageBox<Record<string, Record<string, GenerationTaskArgument>>>(document.body, "genArguments", {})
 export const currentParamSetName = localStorageBox(document.body, "fixedGenArgument.selectedParamSetName", "")
+// TODO: rm
 export const currentShapeTag = localStorageBox<string | null>(document.body, "fixedGenArgument.prompt.shape", null)
 export const currentPrompt = localStorageBox(document.body, "fixedGenArgument.prompt.prompt", "")
 export const currentParamSetArgs = box(argumentsByParamSet.get()[currentParamSetName.get()] ?? {})
 
+// TODO: rm
 export const allKnownShapeTags = box<null | readonly string[]>(null)
 export const allKnownParamSets = box<GenerationParameterSet[]>([])
 export const allKnownJsonFileLists = box<{readonly [name: string]: readonly JsonFileListItemDescription[]}>({})
