@@ -1,4 +1,4 @@
-import {MRBox, RBox, WBox} from "@nartallax/cardboard"
+import {MRBox, RBox, WBox, isWBox} from "@nartallax/cardboard"
 import {bindBox, localStorageBox, tag} from "@nartallax/cardboard-dom"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
@@ -13,6 +13,7 @@ import {GenerationTaskArgument, PictureArgument} from "common/entities/arguments
 import {JsonFileListInput} from "client/components/json_file_list_input/json_file_list_input"
 import {JsonFileListArgument} from "common/entities/json_file_list"
 import {argumentsByParamSet} from "client/app/global_values"
+import {getGroupLockBoxes, getLockBox, makeGroupLockBox} from "client/controls/lock_button/lock_button"
 
 interface ArgumentsInputBlockProps {
 	readonly paramSet: RBox<GenerationParameterSet>
@@ -32,6 +33,10 @@ export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElemen
 			for(const group of panelGroups){
 				const defs = group.parameters
 
+				const groupLockBoxes = getGroupLockBoxes(paramSet, group)
+				const groupLockBox = !group.toggle?.jsonName
+					? makeGroupLockBox(groupLockBoxes)
+					: getLockBox(paramSet, group.toggle.jsonName)
 				const groupToggle = !group.toggle
 					? undefined
 					: typeof(group.toggle.jsonName) !== "string"
@@ -40,7 +45,21 @@ export function ArgumentsInputBlock(props: ArgumentsInputBlockProps): HTMLElemen
 				if(group.toggle && !groupToggle){
 					continue
 				}
-				panelChildren.push(BlockPanelHeader({header: group.uiName, toggle: groupToggle}))
+				panelChildren.push(BlockPanelHeader({
+					header: group.uiName,
+					toggle: groupToggle,
+					isLocked: groupLockBox,
+					onLockChange: isGroupChange => {
+						if(isGroupChange || !isWBox(groupLockBox)){
+							const shouldBeLocked = !!groupLockBoxes.find(x => !x.get())
+							for(const lock of groupLockBoxes){
+								lock.set(shouldBeLocked)
+							}
+						} else if(isWBox(groupLockBox)){
+							groupLockBox.set(!groupLockBox.get())
+						}
+					}
+				}))
 
 				for(const def of defs){
 					const valueBox = args.prop(def.jsonName)
@@ -66,14 +85,18 @@ type ArgumentFieldProps = {
 }
 
 function ArgumentField(props: ArgumentFieldProps): HTMLElement {
+	const lockBox = getLockBox(props.paramSet, props.def.jsonName)
+
 	if(props.def.type === "json_file_list"){
 		return JsonFileListInput({
+			isLocked: lockBox,
 			def: props.def,
 			value: props.value as WBox<JsonFileListArgument[]>,
 			prompt: props.prompt
 		})
 	} else {
 		return FormField({
+			isLocked: lockBox,
 			label: props.def.uiName,
 			hint: props.def.tooltip,
 			input: ArgumentInput(props.def, props.value),

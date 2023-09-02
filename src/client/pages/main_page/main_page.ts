@@ -14,7 +14,7 @@ import {GenParameter, GenerationParameterSet} from "common/entities/parameter"
 import {currentParamSetName, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, thumbnailProvider, argumentsByParamSet} from "client/app/global_values"
 import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
 import {Sidebar} from "client/controls/sidebar/sidebar"
-import {Col, Row} from "client/controls/layout/row_col"
+import {Row} from "client/controls/layout/row_col"
 import {IconButton} from "client/controls/icon_button/icon_button"
 import {isPictureArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
@@ -25,6 +25,7 @@ import {PasteArgumentsButton} from "client/components/paste_arguments_button/pas
 import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {fixArgumentMap, getAllGenParamDefs} from "client/app/fix_argument_object"
 import {Icon} from "client/generated/icons"
+import {LockButton, getLockBox, getSetLockBoxes, makeGroupLockBox} from "client/controls/lock_button/lock_button"
 
 export function MainPage(): HTMLElement {
 
@@ -76,6 +77,7 @@ export function MainPage(): HTMLElement {
 						class: css.menuButton
 					}),
 					selectedParamSet.map(paramSet => PromptInput({
+						isLocked: getLockBox(paramSet, paramSet.primaryParameter.jsonName),
 						promptValue: argumentsByParamSet
 							.prop(paramSet.internalName)
 							.prop(paramSet.primaryParameter.jsonName) as WBox<string>,
@@ -140,8 +142,22 @@ export function MainPage(): HTMLElement {
 						LoginBar(),
 						PasteArgumentsButton()
 					]),
-					Col({class: css.propSetSelector, align: "stretch"}, [
+					Row({class: css.propSetSelector, align: "stretch", gap: true}, [
+						selectedParamSet.map(paramSet => {
+							const setLocks = getSetLockBoxes(paramSet)
+							const groupLock = makeGroupLockBox(setLocks)
+							return LockButton({
+								isLocked: groupLock,
+								onChange: () => {
+									const shouldBeLocked = !groupLock.get()
+									for(const lock of setLocks){
+										lock.set(shouldBeLocked)
+									}
+								}
+							})
+						}),
 						Select({
+							class: css.paramSetSelect,
 							options: allKnownParamSets.map(sets => sets.map(set => ({
 								label: set.uiName,
 								value: set.internalName

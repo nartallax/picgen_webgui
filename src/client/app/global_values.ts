@@ -27,6 +27,7 @@ export const formLabelWidth = globalCssVariableLocalStorageBox("--form-label-wid
 export const visualTheme = localStorageBox<"default" | "dark">(document.body, "userSettings.visualTheme", "default")
 
 export const argumentsByParamSet = localStorageBox<Record<string, Record<string, GenerationTaskArgument>>>(document.body, "genArguments", {})
+export const lockedParameters = localStorageBox<Record<string, boolean>>(document.body, "lockedParameters", {})
 export const currentParamSetName = localStorageBox(document.body, "fixedGenArgument.selectedParamSetName", "")
 export const currentParamSetArgs = box(argumentsByParamSet.get()[currentParamSetName.get()] ?? {})
 

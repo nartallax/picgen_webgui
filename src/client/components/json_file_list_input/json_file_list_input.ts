@@ -11,11 +11,13 @@ import {JsonFileListArgument} from "common/entities/json_file_list"
 import {JsonFileListGenParam} from "common/entities/parameter"
 import * as css from "./json_file_list_input.module.scss"
 import {Icon} from "client/generated/icons"
+import {LockButton} from "client/controls/lock_button/lock_button"
 
 type Props = {
 	def: JsonFileListGenParam
 	value: WBox<JsonFileListArgument[]>
 	prompt: WBox<string>
+	isLocked?: WBox<boolean>
 }
 
 export const JsonFileListInput = (props: Props) => {
@@ -38,6 +40,7 @@ export const JsonFileListInput = (props: Props) => {
 
 	const result = tag([
 		Row({gap: true}, [
+			!props.isLocked ? null : LockButton({isLocked: props.isLocked}),
 			Select({
 				value: selectValue,
 				isArgumentInput: true,

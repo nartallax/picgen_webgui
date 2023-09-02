@@ -2,8 +2,10 @@ import {WBox} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./prompt_input.module.scss"
 import {Icon} from "client/generated/icons"
+import {LockButton} from "client/controls/lock_button/lock_button"
 
 interface PromptInputProps {
+	isLocked: WBox<boolean>
 	promptValue: WBox<string>
 	startGeneration(): void
 }
@@ -38,6 +40,9 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 	}
 
 	const result = tag({class: css.promptInput}, [
+		tag({class: css.lockButton}, [
+			LockButton({isLocked: props.isLocked})
+		]),
 		tag({class: css.firstLine}, [
 			tag({class: css.inputWrap}, [input]),
 			tag({

@@ -10,6 +10,7 @@ interface Props<T> {
 	listSizeLimit?: number
 	isArgumentInput?: boolean
 	isSearchable?: boolean
+	class?: string
 }
 
 export function Select<T>(props: Props<T>): HTMLElement {
@@ -133,7 +134,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		})])
 
 	const wrap = tag({
-		class: [css.select, {[css.argumentInput!]: props.isArgumentInput}]
+		class: [css.select, {[css.argumentInput!]: props.isArgumentInput}, props.class]
 	}, [
 		input,
 		tag({class: [css.dropdownIcon, Icon.downOpen, {

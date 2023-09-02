@@ -3,6 +3,7 @@ import * as css from "./form.module.scss"
 import {MRBox, WBox, constBoxWrap, isConstBox, isRBox, unbox} from "@nartallax/cardboard"
 import {TooltipIcon} from "client/controls/tooltip/tooltip"
 import {Icon} from "client/generated/icons"
+import {LockButton} from "client/controls/lock_button/lock_button"
 
 type FormFieldProps = {
 	label: MRBox<string>
@@ -11,6 +12,7 @@ type FormFieldProps = {
 	onRevert?: () => void
 	revertable?: MRBox<boolean>
 	visible?: MRBox<boolean>
+	isLocked?: WBox<boolean>
 	onDelete?: () => void
 	isInputOnNextLine?: boolean
 	isFavorite?: MRBox<boolean>
@@ -29,6 +31,7 @@ export const FormField = defineControl((props: FormFieldProps) => {
 			tag({class: css.labelText}, [props.label]),
 			!props.hint ? null : TooltipIcon({tooltip: props.hint})
 		]),
+		!props.isLocked ? null : LockButton({isLocked: props.isLocked}),
 		tag({
 			style: {
 				display: (isConstBox(props.revertable) || !isRBox(props.revertable)) && !unbox(props.revertable) ? "none" : ""

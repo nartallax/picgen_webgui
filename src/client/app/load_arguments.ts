@@ -1,4 +1,5 @@
 import {allKnownParamSets, argumentsByParamSet, currentParamSetName} from "client/app/global_values"
+import {isParameterLocked} from "client/controls/lock_button/lock_button"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTaskInputData} from "common/entities/generation_task"
 import {Picture} from "common/entities/picture"
@@ -38,9 +39,15 @@ export function loadArguments(task: GenerationTaskInputData): void {
 		if(!(key in newArgValues)){
 			nonLoadableParamNames.push(key)
 			delete newArgValues[key]
-		} else {
-			newArgValues[key] = args[key]!
+			continue
 		}
+
+		if(isParameterLocked(paramSet, key)){
+			delete args[key]
+			continue
+		}
+
+		newArgValues[key] = args[key]!
 	}
 	argumentsByParamSet.set({...argumentsByParamSet.get(), [paramSet.internalName]: newArgValues})
 

@@ -38,3 +38,11 @@ body {
 	font-weight: bold;
 	font-style: normal;
 }
+
+.lock-unlocked:before {
+	// lock-unlocked needs to be aligned with lock-locked
+	// both of them are centered, hovewer logical center of lock-unlocked is shifted
+	// that's why we need to shift it back
+	position: relative;
+	left: 0.15em;
+}
