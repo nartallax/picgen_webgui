@@ -1,6 +1,7 @@
 import {RBox, WBox, isWBox} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./tag_list.module.scss"
+import {Icon} from "client/generated/icons"
 
 interface TagListProps {
 	values: WBox<string[]> | RBox<readonly string[]>
@@ -26,7 +27,7 @@ export function TagList(props: TagListProps): HTMLElement {
 			const valueBox = props.values
 			if(isWBox(valueBox)){
 				const cross = tag({
-					class: "icon-cancel",
+					class: Icon.cancel,
 					onClick: () => valueBox.set(valueBox.get().filter(x => x !== tagStr))
 				})
 				item.appendChild(cross)

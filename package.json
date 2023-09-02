@@ -8,20 +8,22 @@
   "scripts": {
     "release": "npm run typecheck && npm run release:prepare && npm run release:client && npm run release:server && npm run release:supplementals && npm run release:packagejson && npm run release:package",
     "release:prepare": "rm -rf ./target && rm -rf ./dist && mkdir target",
-    "release:client": "./node_modules/.bin/parcel build --target client_release --no-cache && mv dist/client_release target/static",
+    "release:client": "npm run icons:generate && ./node_modules/.bin/parcel build --target client_release --no-cache && mv dist/client_release target/static",
     "release:server": "./node_modules/.bin/parcel build --target server_release --no-cache && mv dist/server_release/server_main.js target/server.js",
     "release:packagejson": "cp package.json target && cp package-lock.json target",
     "release:supplementals": "mkdir target/supplemental && cp picture_generator_example.js target/supplemental && cp config.example.json target/supplemental && cp README.md target/supplemental",
     "release:package": "cd target && zip -r `date +\"picgen_webgui.%Y_%m_%d_%H_%M_%S.zip\"` ./* && echo \"Done; result is\" `ls *.zip` && cd ..",
-    "dev": "npm run typecheck && npm run dev:client & npm run dev:server & wait",
+    "dev": "npm run typecheck && npm run icons:generate && npm run dev:client & npm run dev:server & wait",
     "dev:client": "./node_modules/.bin/parcel serve --target client_dev --no-cache --no-hmr --port 24658",
     "dev:server": "npm run dev:server:build && (npm run dev:server:watch & npm run dev:server:run & wait)",
     "dev:server:build": "./node_modules/.bin/parcel build --target server_dev --no-cache",
     "dev:server:watch": "./node_modules/.bin/parcel watch --target server_dev --no-cache --no-hmr",
     "dev:server:run": "./node_modules/.bin/nodemon ./dist/server_dev/server_main.js --watch ./dist/server_dev/server_main.js -- --config config.example.json --http-root-url 'http://localhost:24658'",
-    "typecheck": "cd src && ../node_modules/typescript/bin/tsc --noEmit && cd - > /dev/null"
+    "typecheck": "cd src && ../node_modules/typescript/bin/tsc --noEmit && cd - > /dev/null",
+    "icons:generate": "./node_modules/.bin/icon-font-tool --svg-dir src/client/icons --font-path src/client/generated/icons --font-normalize --font-descent 150 --css-path src/client/generated/icons.css --ts-path src/client/generated/icons.ts --ts-css-import-style star --ts-name Icon"
   },
   "devDependencies": {
+    "@nartallax/icon-font-tool": "^1.0.6",
     "@nartallax/package_syncer": "^1.0.4",
     "@parcel/core": "^2.9.1",
     "@parcel/transformer-html": "^2.9.1",

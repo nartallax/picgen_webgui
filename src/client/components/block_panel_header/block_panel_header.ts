@@ -2,6 +2,7 @@ import {MRBox, WBox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import * as css from "./block_panel_header.module.scss"
+import {Icon} from "client/generated/icons"
 
 interface BlockPanelHeader {
 	header: MRBox<string>
@@ -17,7 +18,7 @@ export function BlockPanelHeader(props: BlockPanelHeader): HTMLElement {
 		tag({tag: "hr"}),
 		!props.onClose ? null : tag({
 			tag: "button",
-			class: [css.closeButton, "icon-cancel"],
+			class: [css.closeButton, Icon.cancel],
 			onClick: props.onClose
 		})
 	])

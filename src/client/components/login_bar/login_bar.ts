@@ -4,6 +4,7 @@ import {currentPage, currentUser} from "client/app/global_values"
 import {Button} from "client/controls/button/button"
 import * as css from "./login_bar.module.scss"
 import {showUserSettingsModal} from "client/components/user_settings_modal/user_settings_modal"
+import {Icon} from "client/generated/icons"
 
 export function LoginBar(): HTMLElement {
 
@@ -22,14 +23,14 @@ export function LoginBar(): HTMLElement {
 		}),
 		nicknameEl,
 		Button({
-			iconClass: "icon-cog",
+			icon: Icon.cog,
 			class: css.settingsIcon,
 			onClick: () => {
 				showUserSettingsModal()
 			}
 		}),
 		Button({
-			iconClass: "icon-logout",
+			icon: Icon.logout,
 			onClick: async() => {
 				await ClientApi.logout()
 				currentUser.set(null)

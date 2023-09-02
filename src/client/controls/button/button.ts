@@ -1,11 +1,12 @@
 import {MRBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
 import {defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./button.module.scss"
+import {Icon} from "client/generated/icons"
 
 interface ButtonProps {
 	onClick(): void | Promise<void>
 	text?: MRBox<string | null>
-	iconClass?: MRBox<string | null>
+	icon?: MRBox<Icon | null>
 	class?: MRBox<string | null>
 	variant?: MRBox<"normal" | "small" | "big">
 	moreHPadding?: boolean
@@ -27,7 +28,7 @@ export const Button = defineControl((props: ButtonProps) => {
 
 	return tag({
 		tag: "button",
-		class: [css.button, props.iconClass, props.class, css[constBoxWrap(props.variant ?? "normal").get()], {
+		class: [css.button, props.icon, props.class, css[constBoxWrap(props.variant ?? "normal").get()], {
 			[css.disabled!]: calcBox(
 				[clickIsActive, props.isDisabled ?? false],
 				(isClicking, isDisabled) => isClicking || isDisabled

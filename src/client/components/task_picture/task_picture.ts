@@ -10,6 +10,7 @@ import {loadArguments} from "client/app/load_arguments"
 import {showTaskArgsModal} from "client/components/task_args_modal/task_args_modal"
 import {ThumbnailProvidingContext} from "client/app/thumbnail_provider"
 import notFoundSvg from "../../../../static/not_found.svg"
+import {Icon} from "client/generated/icons"
 
 interface TaskPictureProps {
 	picture: WBox<Picture>
@@ -53,7 +54,7 @@ class TaskPictureContext {
 	}
 
 	makeLinkButton(): HTMLElement {
-		const linkButton = tag({class: ["icon-link-ext", css.iconLink]})
+		const linkButton = tag({class: [Icon.linkExt, css.iconLink]})
 		linkButton.addEventListener("click", e => {
 			e.stopPropagation()
 			const picture = this.picture.get()
@@ -63,7 +64,7 @@ class TaskPictureContext {
 	}
 
 	makeCopyButton(): HTMLElement {
-		const copyButton = tag({class: ["icon-copy-single", css.iconCopy]})
+		const copyButton = tag({class: [Icon.copySingle, css.iconCopy]})
 		copyButton.addEventListener("click", e => {
 			e.stopPropagation()
 			loadArguments(this.getPictureArgs())
@@ -73,7 +74,7 @@ class TaskPictureContext {
 
 	makeCopyTaskButton(): HTMLElement {
 		const copyTaskButton = tag({
-			class: ["icon-copy-task", css.iconCopy],
+			class: [Icon.copyTask, css.iconCopy],
 			style: {
 				display: this.haveTask.map(haveTask => haveTask ? "" : "none")
 			}
@@ -87,7 +88,7 @@ class TaskPictureContext {
 
 	makeShowParamsButton(isTaskOnly: boolean): HTMLElement {
 		const btn = tag({
-			class: [css.iconShowParams, `icon-copy-json-${isTaskOnly ? "task" : "single"}`],
+			class: [css.iconShowParams, isTaskOnly ? Icon.copyJsonTask : Icon.copyJsonSingle],
 			style: {
 				display: isTaskOnly ? this.haveTask.map(haveTask => haveTask ? "" : "none") : ""
 			}
@@ -104,7 +105,7 @@ class TaskPictureContext {
 		const favoriteButton = tag({class: [
 			css.iconFavorite,
 			{[css.deleted!]: this.picture.prop("deleted")},
-			this.favAddTime.map(time => time !== null ? "icon-star" : "icon-star-empty")
+			this.favAddTime.map(time => time !== null ? Icon.star : Icon.starEmpty)
 		]})
 		favoriteButton.addEventListener("click", async e => {
 			e.stopPropagation()
@@ -152,7 +153,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				tag([context.makeCopyTaskButton(), context.makeCopyButton()])
 			]),
 			tag({class: css.middleRow}, [
-				tag({class: [css.iconOpen, "icon-resize-full-alt"]})
+				tag({class: [css.iconOpen, Icon.resizeFullAlt]})
 			]),
 			tag({class: css.bottomRow}, [context.makeFavButton(), context.makeLinkButton()])
 		])

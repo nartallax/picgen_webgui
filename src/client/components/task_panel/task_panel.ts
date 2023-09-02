@@ -11,6 +11,7 @@ import {addDragScroll} from "client/client_common/drag_scroll"
 import {debounce} from "client/client_common/debounce"
 import {loadArguments} from "client/app/load_arguments"
 import {allKnownParamSets, thumbnailProvider} from "client/app/global_values"
+import {Icon} from "client/generated/icons"
 
 interface TaskPanelProps {
 	task: WBox<GenerationTaskWithPictures>
@@ -126,7 +127,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const scrollLeftButton = tag({
 		tag: "button",
-		class: [css.arrow, "icon-left-open-big", {
+		class: [css.arrow, Icon.leftOpenBig, {
 			[css.disabled!]: scroller.isAtStart,
 			[css.hidden!]: haveNotEnoughPictures
 		}],
@@ -135,7 +136,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	})
 	const scrollRightButton = tag({
 		tag: "button",
-		class: [css.arrow, "icon-right-open-big", {
+		class: [css.arrow, Icon.rightOpenBig, {
 			[css.disabled!]: scroller.isAtFinish,
 			[css.hidden!]: haveNotEnoughPictures
 		}],
@@ -159,7 +160,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			tag({class: css.header}, [
 				tag({
 					class: [
-						css.killButton, "icon-cancel", {
+						css.killButton, Icon.cancel, {
 							[css.hidden!]: props.task.map(task => task.status === "completed")
 						}
 					],
@@ -170,7 +171,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				}),
 				tag({
 					class: [
-						css.deleteButton, "icon-trash-empty", {
+						css.deleteButton, Icon.trashEmpty, {
 							[css.hidden!]: props.task.map(task => task.status !== "completed")
 						}
 					],
@@ -194,7 +195,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 						}
 					})
 				]),
-				tag({class: [css.taskExitCodeError, "icon-warning-empty", {
+				tag({class: [css.taskExitCodeError, Icon.warningEmpty, {
 					[css.hidden!]: props.task.prop("exitCode").map(code => code === 0)
 				}]}, [
 					props.task.prop("exitCode").map(code => "Failed! Exit code " + code)
@@ -208,7 +209,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					})
 				]),
 				tag({
-					class: [css.repeatButton, "icon-loop", {[css.hidden!]: props.task.map(task => task.status !== "completed")}],
+					class: [css.repeatButton, Icon.loop, {[css.hidden!]: props.task.map(task => task.status !== "completed")}],
 					attrs: {title: "Repeat"},
 					onClick: limitClickRate(() => {
 						const task = props.task.get()
@@ -250,7 +251,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					return (task.arguments[paramSetOfTask.primaryParameter.jsonName] + "") ?? ""
 				})]),
 				tag({
-					class: [css.useArgumentsButton, "icon-docs"],
+					class: [css.useArgumentsButton, Icon.docs],
 					onClick: limitClickRate(function() {
 						loadArguments(props.task.get())
 						this.classList.add(css.recentlyClicked!)

@@ -6,6 +6,7 @@ import {PolygonsInput} from "client/components/image_mask_input/polygons_input"
 import {Modal, showModalBase} from "client/controls/modal_base/modal_base"
 import {decodePictureMask, encodePictureMask} from "common/picture_mask_encoding"
 import * as css from "./image_mask_input.module.scss"
+import {Icon} from "client/generated/icons"
 
 interface ImageMaskInputProps {
 	imageId: number
@@ -88,17 +89,17 @@ export function ImageMaskInput(props: ImageMaskInputProps & ImageMaskInputModalC
 		tag({class: css.imageMaskInputButtons}, [
 			tag({
 				tag: "button",
-				class: [css.imageMaskInputButton, "icon-ok"], // TODO: rethink icons ffs
+				class: [css.imageMaskInputButton, Icon.ok],
 				onClick: props.onApply
 			}, ["Apply"]),
 			tag({
 				tag: "button",
-				class: [css.imageMaskInputButton, "icon-trash-empty"],
+				class: [css.imageMaskInputButton, Icon.trashEmpty],
 				onClick: clear
 			}, ["Clear"]),
 			tag({
 				tag: "button",
-				class: [css.imageMaskInputButton, "icon-cancel"],
+				class: [css.imageMaskInputButton, Icon.cancel],
 				onClick: props.onCancel
 			}, ["Cancel"])
 		])

@@ -11,6 +11,7 @@ import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {JsonFileListGenParam} from "common/entities/parameter"
 import {calcBox} from "@nartallax/cardboard"
+import {Icon} from "client/generated/icons"
 
 type Props = {
 	def: JsonFileListGenParam
@@ -97,7 +98,7 @@ export const showJsonFileListOrderModal = (props: Props): Modal => {
 					tag([item.prop("name")]),
 					Button({
 						variant: "small",
-						iconClass: "icon-star",
+						icon: Icon.star,
 						onClick: () => update([...listOrderingIds.get(), item.get().id])
 					})
 				]))

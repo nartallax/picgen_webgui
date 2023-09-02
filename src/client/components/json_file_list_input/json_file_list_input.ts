@@ -10,6 +10,7 @@ import {Select} from "client/controls/select/select"
 import {JsonFileListArgument} from "common/entities/json_file_list"
 import {JsonFileListGenParam} from "common/entities/parameter"
 import * as css from "./json_file_list_input.module.scss"
+import {Icon} from "client/generated/icons"
 
 type Props = {
 	def: JsonFileListGenParam
@@ -69,7 +70,7 @@ export const JsonFileListInput = (props: Props) => {
 				})
 			}),
 			Button({
-				iconClass: "icon-cog",
+				icon: Icon.cog,
 				onClick: () => {
 					showJsonFileListOrderModal(props)
 				}

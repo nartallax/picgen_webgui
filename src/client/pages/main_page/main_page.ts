@@ -24,6 +24,7 @@ import {TaskPicture} from "client/components/task_picture/task_picture"
 import {PasteArgumentsButton} from "client/components/paste_arguments_button/paste_arguments_button"
 import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {fixArgumentMap, getAllGenParamDefs} from "client/app/fix_argument_object"
+import {Icon} from "client/generated/icons"
 
 export function MainPage(): HTMLElement {
 
@@ -70,7 +71,7 @@ export function MainPage(): HTMLElement {
 			tag({class: css.generationColumn}, [
 				Row({align: "start", gap: true, padding: "bottom"}, [
 					IconButton({
-						icon: "icon-menu",
+						icon: Icon.menu,
 						onClick: () => isMenuOpen.set(!isMenuOpen.get()),
 						class: css.menuButton
 					}),
@@ -132,7 +133,7 @@ export function MainPage(): HTMLElement {
 				tag({class: css.settingsColumn}, [
 					Row({align: "start"}, [
 						IconButton({
-							icon: "icon-menu",
+							icon: Icon.menu,
 							onClick: () => isMenuOpen.set(!isMenuOpen.get()),
 							class: css.menuButton
 						}),

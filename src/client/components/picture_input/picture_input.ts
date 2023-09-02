@@ -9,6 +9,7 @@ import {Picture, pictureTypeSet} from "common/entities/picture"
 import {PictureGenParam} from "common/entities/parameter"
 import {currentParamSetName} from "client/app/global_values"
 import {PictureArgument} from "common/entities/arguments"
+import {Icon} from "client/generated/icons"
 
 interface PictureInputProps {
 	readonly value: WBox<PictureArgument>
@@ -205,12 +206,12 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		tag({
 			tag: "label",
 			attrs: {for: inputDomId},
-			class: [css.selectFileButton, "icon-upload", {
+			class: [css.selectFileButton, Icon.upload, {
 				[css.hidden!]: props.value.map(x => !!x.id)
 			}]
 		}),
 		!props.param.mask ? null : tag({
-			class: [css.maskButton, "icon-puzzle", {
+			class: [css.maskButton, Icon.puzzle, {
 				[css.hidden!]: props.value.map(x => !x.id)
 			}],
 			attrs: {title: "Draw mask for this picture"},

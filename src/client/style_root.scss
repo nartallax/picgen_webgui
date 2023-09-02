@@ -1,4 +1,3 @@
-@use "../../fontello/fontello-codes";
 @use "./themes/default";
 @use "./themes/dark";
 
@@ -27,17 +26,6 @@ body {
 }
 
 @font-face {
-	font-family: 'fontello';
-	src: url('../../static/font/fontello.eot');
-	src: url('../../static/font/fontello.eot#iefix') format('embedded-opentype'),
-		 url('../../static/font/fontello.woff2') format('woff2'),
-		 url('../../static/font/fontello.woff') format('woff'),
-		 url('../../static/font/fontello.ttf') format('truetype');
-	font-weight: normal;
-	font-style: normal;
-}
-
-@font-face {
 	font-family: 'OpenSans';
 	src: url('../../static/font/opensans_medium.ttf') format('truetype');
 	font-weight: normal;
@@ -49,31 +37,4 @@ body {
 	src: url('../../static/font/opensans_bold.ttf') format('truetype');
 	font-weight: bold;
 	font-style: normal;
-}
-
-[class^="icon-"]:before, [class*=" icon-"]:before {
-	font-family: "fontello";
-	font-style: normal;
-	font-weight: normal;
-  
-	display: inline-block;
-	text-decoration: inherit;
-	width: 1em;
-	margin-right: .2em;
-	text-align: center;
-	
-	/* For safety - reset parent styles, that can break glyph codes*/
-	font-variant: normal;
-	text-transform: none;
-  
-	/* fix buttons height, for twitter bootstrap */
-	line-height: 1em;
-  
-	/* Animation center compensation - margins should be symmetric */
-	/* remove if not needed */
-	margin-left: .2em;
-  
-	/* Font smoothing. That was taken from TWBS */
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
 }

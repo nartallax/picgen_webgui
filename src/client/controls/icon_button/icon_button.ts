@@ -1,8 +1,9 @@
 import {tag} from "@nartallax/cardboard-dom"
 import * as css from "./icon_button.module.scss"
+import {Icon} from "client/generated/icons"
 
 type Props = {
-	icon: string
+	icon: Icon
 	onClick?: () => void
 	class?: string
 }

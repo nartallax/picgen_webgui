@@ -1,6 +1,7 @@
 import {WBox} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./prompt_input.module.scss"
+import {Icon} from "client/generated/icons"
 
 interface PromptInputProps {
 	promptValue: WBox<string>
@@ -41,7 +42,7 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 			tag({class: css.inputWrap}, [input]),
 			tag({
 				tag: "button",
-				class: [css.generateButton, "icon-brush"],
+				class: [css.generateButton, Icon.brush],
 				onClick: onStartGeneration
 			})
 		])

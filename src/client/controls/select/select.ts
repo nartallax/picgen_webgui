@@ -2,6 +2,7 @@ import {MRBox, WBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./select.module.scss"
 import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
+import {Icon} from "client/generated/icons"
 
 interface Props<T> {
 	value: WBox<T>
@@ -135,7 +136,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		class: [css.select, {[css.argumentInput!]: props.isArgumentInput}]
 	}, [
 		input,
-		tag({class: [css.dropdownIcon, "icon-down-open", {
+		tag({class: [css.dropdownIcon, Icon.downOpen, {
 			[css.open!]: isDropdownVisible
 		}]})
 	])

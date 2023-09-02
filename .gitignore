@@ -13,3 +13,4 @@ running_generation_pictures
 _static
 .parcel-cache
 dist
+src/client/generated

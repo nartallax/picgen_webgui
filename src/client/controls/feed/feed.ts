@@ -6,6 +6,7 @@ import {IdentifiedEntity} from "server/dao"
 import {BinaryQueryCondition, SimpleListQueryParams} from "common/infra_entities/query"
 import {SoftValueChanger} from "client/base/soft_value_changer"
 import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
+import {Icon} from "client/generated/icons"
 
 interface FeedProps<T> {
 	values?: WBox<T[]>
@@ -51,7 +52,7 @@ export const Feed = <T>(props: FeedProps<T>) => {
 	if(props.scrollToTopButton){
 		makeOverlayItem({
 			body: tag({
-				class: [css.scrollToTopButton, "icon-up-open"],
+				class: [css.scrollToTopButton, Icon.upOpen],
 				onClick: () => {
 					scroller.set(0)
 				}
