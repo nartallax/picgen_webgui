@@ -70,27 +70,6 @@ export function MainPage(): HTMLElement {
 
 		return [
 			tag({class: css.generationColumn}, [
-				Row({align: "start", gap: true, padding: "bottom"}, [
-					IconButton({
-						icon: Icon.menu,
-						onClick: () => isMenuOpen.set(!isMenuOpen.get()),
-						class: css.menuButton
-					}),
-					selectedParamSet.map(paramSet => PromptInput({
-						isLocked: getLockBox(paramSet, paramSet.primaryParameter.jsonName),
-						promptValue: argumentsByParamSet
-							.prop(paramSet.internalName)
-							.prop(paramSet.primaryParameter.jsonName) as WBox<string>,
-						startGeneration: startGeneration
-					}))
-				]),
-				Tabs({
-					options: [
-						{label: "Tasks", value: "tasks"},
-						{label: "Favorites", value: "favorites"}
-					] as const,
-					value: selectedTab
-				}),
 				SwitchPanel({
 					value: selectedTab,
 					class: css.mainPageSwitchPanel,
@@ -129,7 +108,28 @@ export function MainPage(): HTMLElement {
 							class: css.mainPageFeed
 						})
 					}
-				})
+				}),
+				Tabs({
+					options: [
+						{label: "Tasks", value: "tasks"},
+						{label: "Favorites", value: "favorites"}
+					] as const,
+					value: selectedTab
+				}),
+				Row({align: "start", gap: true, padding: "bottom"}, [
+					IconButton({
+						icon: Icon.menu,
+						onClick: () => isMenuOpen.set(!isMenuOpen.get()),
+						class: css.menuButton
+					}),
+					selectedParamSet.map(paramSet => PromptInput({
+						isLocked: getLockBox(paramSet, paramSet.primaryParameter.jsonName),
+						promptValue: argumentsByParamSet
+							.prop(paramSet.internalName)
+							.prop(paramSet.primaryParameter.jsonName) as WBox<string>,
+						startGeneration: startGeneration
+					}))
+				])
 			]),
 			Sidebar({isOpen: isMenuOpen}, [
 				tag({class: css.settingsColumn}, [

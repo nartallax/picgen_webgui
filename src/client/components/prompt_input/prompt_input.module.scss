@@ -38,7 +38,6 @@
 		overflow-y: hidden;
 		outline: none;
 		transition: max-height 0.25s;
-		z-index: 5;
 		border-radius: 1em;
 		position: absolute;
 		left: 0;
@@ -64,7 +63,6 @@
 		font-size: 1.35rem;
 		width: 2.6em;
 		height: 2.6em;
-		z-index: 10;
 
 		&:before {
 			position: relative;
