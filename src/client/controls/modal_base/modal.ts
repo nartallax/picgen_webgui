@@ -4,10 +4,6 @@ import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
 import {capitalize} from "common/utils/capitalize"
 
-// TODO: think about centralizing all the overlay elements, and removing z-index
-// when you need to show an overlay element (hint, dropdown menu, toaster, modal)
-// it should always be shown on top of everything else you have at the moment
-
 type Size = string | [string | null, string | null, string | null]
 
 function setSize(el: HTMLElement, baseName: "width" | "height", size: Size | undefined): void {

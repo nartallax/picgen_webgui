@@ -147,8 +147,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		body: listWrap,
 		visible: isDropdownVisible,
 		referencePosition: "bottomLeft",
-		overlayPosition: "topLeft",
-		zIndex: 100
+		overlayPosition: "topLeft"
 	})
 
 	function updateValue(): void {

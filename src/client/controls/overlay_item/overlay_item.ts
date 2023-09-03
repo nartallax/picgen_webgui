@@ -13,7 +13,6 @@ type Props = {
 	referencePosition?: Corner
 	canShiftVertically?: boolean
 	canShiftHorisonally?: boolean
-	zIndex?: number
 	parent?: HTMLElement
 }
 
@@ -103,7 +102,6 @@ const showOverlayItem = (props: Props): OverlayItem => {
 		style: {
 			top: (-parentRect.top) + "px",
 			left: (-parentRect.left) + "px",
-			zIndex: props.zIndex,
 			flexDirection: growsDown ? "column" : "column-reverse"
 		}
 	}, [

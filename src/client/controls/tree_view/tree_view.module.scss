@@ -62,7 +62,6 @@
 	background: #000;
 	border: 1px solid var(--color-border);
 	pointer-events: none;
-	z-index: 150;
 }
 
 .branchDropOverlay {
@@ -74,7 +73,6 @@
 	position: absolute;
 	pointer-events: none;
 	opacity: 0.5;
-	z-index: 150;
 }
 
 .insertLineOverlay {
@@ -86,5 +84,4 @@
 	position: absolute;
 	pointer-events: none;
 	opacity: 0.5;
-	z-index: 150;
 }
