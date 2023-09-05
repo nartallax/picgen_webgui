@@ -24,7 +24,7 @@ async function main() {
 	// we can send arbitrary text messages while generating stuff to be displayed to frontend
 	Process.stdout.write(JSON.stringify({message: "Hewwo! I'm starting!", displayFor: 10}) + "\n")
 
-	const willGenerateFilesCount = 50
+	const willGenerateFilesCount = 3
 
 	// let's tell the bot how many pictures to expect
 	// if you don't, or tell incorrect number of pictures - it won't break anything

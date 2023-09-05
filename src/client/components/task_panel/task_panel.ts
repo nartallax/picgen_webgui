@@ -145,7 +145,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		onClick: () => scrollToNextPicture(1)
 	})
 
-	const gradientBox = calcBox([scroller.scrollPosition, scroller.scrollLimit], (pos, lim) => {
+	const gradientBox = calcBox([scroller.scrollPosition, scroller.scrollLimit, scroller.scrollableContentSize], (pos, lim) => {
 		const maxMargin = scrollLeftButton.getBoundingClientRect().width
 		const width = picturesWrap.getBoundingClientRect().width
 		const startBlur = Math.min(pos, maxMargin)
