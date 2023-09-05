@@ -54,13 +54,14 @@ class TaskPictureContext {
 	}
 
 	makeLinkButton(): HTMLElement {
-		const linkButton = tag({class: [Icon.linkExt, css.iconLink]})
-		linkButton.addEventListener("click", e => {
-			e.stopPropagation()
-			const picture = this.picture.get()
-			window.open(ClientApi.getPictureUrl(picture.id, picture.salt), "_blank")
+		return tag({
+			tag: "a",
+			attrs: {
+				target: "_blank",
+				href: this.picture.map(pic => ClientApi.getPictureUrl(pic.id, pic.salt))
+			},
+			class: [Icon.linkExt, css.iconLink]
 		})
-		return linkButton
 	}
 
 	makeCopyButton(): HTMLElement {
