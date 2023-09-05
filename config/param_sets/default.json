@@ -96,7 +96,7 @@
 				{"label": "DHSDSAP 05", "value": 14},
 				{"label": "edge Of Realism", "value": 26},
 				{"label": "cyberrealistic v14", "value": 30},
-				{"label": "chilloutmix", "value": 35},
+				{"label": "chilloutmix", "value": 35, "isDefault": true},
 				{"label": "URPM13", "value": 36},
 				{"label": "amIReal V2", "value": 37},
 				{"label": "fantassified icons v2", "value": 1},

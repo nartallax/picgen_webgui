@@ -92,15 +92,20 @@ export const EnumGenParam = RC.struct(RC.structFields({
 			RC.union([
 				RC.number(),
 				RC.string(),
-				RC.roStruct({
+				RC.struct(RC.structFields({ro: {
 					label: RC.string(),
 					value: RC.union([
 						RC.number(),
 						RC.string()
 					])
-				})
+				}, roOpt: {
+					isDefault: RC.bool()
+				}}))
 			]),
-			{validators: [arr => arr.length > 0]}
+			{validators: [
+				arr => arr.length > 0,
+				arr => arr.filter(x => typeof(x) === "object" && x.isDefault).length < 2
+			]}
 		)
 	},
 	roOpt: {
@@ -167,7 +172,7 @@ export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle)
 		case "picture":
 			return {id: 0, salt: 0}
 		case "enum": {
-			const opt = def.options[0]!
+			const opt = def.options.find(x => typeof(x) === "object" && x.isDefault) ?? def.options[0]!
 			if(typeof(opt) === "object"){
 				return opt.value
 			} else {
