@@ -391,4 +391,19 @@ export namespace ServerApi {
 		}
 	)
 
+	export const deletePicture = RCV.validatedFunction(
+		[RC.struct({pictureId: RC.number()})],
+		async({pictureId}): Promise<void> => {
+			const [picture, user] = await Promise.all([
+				pictureDao.getById(pictureId),
+				userDao.getCurrent()
+			])
+			if(picture.ownerUserId !== user.id){
+				throw new Error(`Picture ${picture.id} does not belong to user ${user.id}.`)
+			}
+
+			await pictureDao.delete(picture)
+		}
+	)
+
 }

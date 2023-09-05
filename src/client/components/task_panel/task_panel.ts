@@ -12,6 +12,7 @@ import {debounce} from "client/client_common/debounce"
 import {loadArguments} from "client/app/load_arguments"
 import {allKnownParamSets, thumbnailProvider} from "client/app/global_values"
 import {Icon} from "client/generated/icons"
+import {makeDeletionTimer} from "client/client_common/deletion_timer"
 
 interface TaskPanelProps {
 	task: WBox<GenerationTaskWithPictures>
@@ -279,48 +280,4 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	})
 
 	return result
-}
-
-interface DeletionTimer {
-	cancel(): void
-	run(): void
-}
-
-function makeDeletionTimer(duration: number, box: WBox<number>, afterEnd: () => void): DeletionTimer {
-	let rafHandle: ReturnType<typeof requestAnimationFrame> | null = null
-	let startTime = 0
-
-	const onFrame = () => {
-		rafHandle = null
-		const passedTime = Date.now() - startTime
-		const passedPercent = passedTime / duration
-		if(passedPercent >= 1){
-			box.set(1)
-			cancel()
-			afterEnd()
-			return
-		}
-
-		box.set(passedPercent)
-		rafHandle = requestAnimationFrame(onFrame)
-	}
-
-	const cancel = () => {
-		box.set(0)
-		if(rafHandle){
-			cancelAnimationFrame(rafHandle)
-			rafHandle = null
-		}
-	}
-
-	const run = () => {
-		if(rafHandle){
-			return
-		}
-
-		startTime = Date.now()
-		onFrame()
-	}
-
-	return {run, cancel}
 }

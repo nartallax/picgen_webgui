@@ -62,7 +62,12 @@ $max-size: 23em;
 
 		.topRow {
 			align-items: flex-start;
-			justify-content: flex-end;
+			justify-content: space-between;
+
+			.topRight {
+				display: flex;
+				flex-direction: row;
+			}
 		}
 
 		.bottomRow {
@@ -83,7 +88,7 @@ $max-size: 23em;
 			flex-direction: row;
 		}
 
-		.iconShowParams, .iconCopy {
+		.iconShowParams, .iconCopy, .iconDelete {
 			padding: 0.5rem;
 			font-size: 2rem;
 		}
@@ -117,7 +122,7 @@ $max-size: 23em;
 	}
 }
 
-.iconShowParams, .iconCopy, .iconFavorite, .iconLink {
+.iconShowParams, .iconCopy, .iconFavorite, .iconLink, .iconDelete {
 	cursor: pointer;
 	color: var(--color-font-on-auxiliary);
 	font-size: 2rem;
@@ -136,6 +141,10 @@ $max-size: 23em;
 
 .iconFavorite {
 	color: var(--color-favorite);
+}
+
+.iconDelete {
+	color: var(--color-cancel);
 }
 
 .viewerButtons {

@@ -1,4 +1,4 @@
-import {MRBox, RBox, WBox, box, calcBox, constBoxWrap, unbox} from "@nartallax/cardboard"
+import {MRBox, RBox, WBox, box, calcBox, constBoxWrap, isArrayItemWBox, unbox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
@@ -11,6 +11,7 @@ import {showTaskArgsModal} from "client/components/task_args_modal/task_args_mod
 import {ThumbnailProvidingContext} from "client/app/thumbnail_provider"
 import notFoundSvg from "../../../../static/not_found.svg"
 import {Icon} from "client/generated/icons"
+import {makeDeletionTimer} from "client/client_common/deletion_timer"
 
 interface TaskPictureProps {
 	picture: WBox<Picture>
@@ -25,6 +26,7 @@ interface TaskPictureProps {
 class TaskPictureContext {
 	readonly favAddTime: WBox<number | null>
 	private readonly haveTask: RBox<boolean>
+	readonly deletionProgress = box(0)
 
 	constructor(
 		readonly picture: WBox<Picture>,
@@ -87,6 +89,46 @@ class TaskPictureContext {
 		return copyTaskButton
 	}
 
+	makeDeleteButton(): HTMLElement {
+		const delNow = async() => {
+			const id = this.picture.get().id
+			await ClientApi.deletePicture(id)
+			if(isArrayItemWBox(this.picture)){
+				this.picture.deleteArrayElement()
+			}
+		}
+
+		const delTimer = makeDeletionTimer(500, this.deletionProgress, delNow)
+
+		const copyTaskButton = tag({
+			class: [Icon.trashEmpty, css.iconDelete],
+			attrs: {title: "Delete (hold shift to delete immediately!)"}
+		})
+
+		function runTimer(e: MouseEvent | TouchEvent) {
+			e.preventDefault()
+			e.stopPropagation()
+			if(e.shiftKey){
+				delNow()
+			} else {
+				delTimer.run()
+			}
+		}
+
+		function cancelTimer(e: Event) {
+			e.preventDefault()
+			e.stopPropagation()
+			delTimer.cancel()
+		}
+
+		copyTaskButton.addEventListener("mousedown", runTimer)
+		copyTaskButton.addEventListener("touchstart", runTimer)
+		copyTaskButton.addEventListener("mouseup", cancelTimer)
+		copyTaskButton.addEventListener("touchend", cancelTimer)
+
+		return copyTaskButton
+	}
+
 	makeShowParamsButton(isTaskOnly: boolean): HTMLElement {
 		const btn = tag({
 			class: [css.iconShowParams, isTaskOnly ? Icon.copyJsonTask : Icon.copyJsonSingle],
@@ -131,7 +173,10 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		class: [css.taskPicture, {
 			[css.disabled!]: props.isDisabled,
 			[css.loaded!]: isLoaded
-		}]
+		}],
+		style: {
+			opacity: context.deletionProgress.map(x => 1 - x)
+		}
 	}, [
 		imgPlaceholder,
 		tag({
@@ -150,8 +195,13 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			}
 		}, [
 			tag({class: css.topRow}, [
-				tag([context.makeShowParamsButton(true), context.makeShowParamsButton(false)]),
-				tag([context.makeCopyTaskButton(), context.makeCopyButton()])
+				tag([
+					context.makeDeleteButton()
+				]),
+				tag({class: css.topRight}, [
+					tag([context.makeShowParamsButton(true), context.makeShowParamsButton(false)]),
+					tag([context.makeCopyTaskButton(), context.makeCopyButton()])
+				])
 			]),
 			tag({class: css.middleRow}, [
 				tag({class: [css.iconOpen, Icon.resizeFullAlt]})

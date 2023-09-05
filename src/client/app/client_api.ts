@@ -92,4 +92,7 @@ export namespace ClientApi {
 	export const getAllJsonFileLists = () =>
 		client.call<readonly JsonFileList[]>("getAllJsonFileLists", {})
 
+	export const deletePicture = (pictureId: number) =>
+		client.call<void>("deletePicture", {pictureId})
+
 }
