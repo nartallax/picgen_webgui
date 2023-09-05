@@ -1,11 +1,16 @@
-import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth, visualTheme} from "client/app/global_values"
+import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth, visualTheme, toastCountLimit, toastDurationOverride} from "client/app/global_values"
 import {BoolInput} from "client/controls/bool_input/bool_input"
+import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
+import {Row} from "client/controls/layout/row_col"
 import {showModal} from "client/controls/modal_base/modal"
 import {Modal} from "client/controls/modal_base/modal_base"
 import {NumberInput} from "client/controls/number_input/number_input"
+import {showToast} from "client/controls/toast/toast"
 
 export const showUserSettingsModal = (): Modal => {
+	let exampleToastCount = 0
+
 	const modal = showModal({
 		title: "User settings",
 		width: "45rem"
@@ -79,7 +84,27 @@ export const showUserSettingsModal = (): Modal => {
 			label: "Dark theme",
 			revertable: visualTheme.map(theme => theme !== "default"),
 			onRevert: () => visualTheme.set("default")
-		})
+		}),
+		FormField({
+			input: NumberInput({value: toastCountLimit}),
+			label: "Toast count limit",
+			revertable: toastCountLimit.map(limit => limit !== -1),
+			onRevert: () => toastCountLimit.set(-1),
+			hint: "Limit on number of toasts that can be shown simultaneously. If toast wants to be shown, and there is already max number of toasts on screen, oldest one will be removed.\n\nLess than zero = no limit"
+		}),
+		FormField({
+			input: NumberInput({value: toastDurationOverride}),
+			label: "Toast duration",
+			revertable: toastDurationOverride.map(limit => limit !== -1),
+			onRevert: () => toastDurationOverride.set(-1),
+			hint: "Override of duration for which each toast is shown, in seconds.\n\nLess than zero = duration of toasts is determined by code that created the toast."
+		}),
+		Row({padding: true}, [
+			Button({
+				text: "Show example toast",
+				onClick: () => showToast({text: "Example #" + (++exampleToastCount), timeoutSeconds: 5, type: "info"})
+			})
+		])
 	])
 
 	return modal
