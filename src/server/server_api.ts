@@ -21,7 +21,10 @@ export namespace ServerApi {
 	export const getGenerationParameterSets = RCV.validatedFunction(
 		[],
 		(): readonly GenerationParameterSet[] => {
-			return config.parameterSets
+			return [...config.parameterSets].map(paramSet => ({
+				...paramSet,
+				commandTemplate: ""
+			}))
 		})
 
 	const Protocol = RC.constUnion(["http", "https"])
