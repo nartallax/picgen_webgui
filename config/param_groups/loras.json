@@ -1,0 +1,5 @@
+{
+	"uiName": "LoRAs",
+	"split": true,
+	"parameters": [{"include": "./config/params/loras.json"}]
+}

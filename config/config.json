@@ -1,0 +1,23 @@
+{
+	"userControl": true,
+	"resultingPictureReceivingStrategy": "move",
+	"pictureStorageDir": "./pictures",
+	"runningGenerationPictureStorageDir": "./running_generation_pictures",
+	"discordClientId": "469771750285115392",
+	"discordClientSecretFile": "./discord_client_secret.txt",
+	"httpPort": 22650,
+	"httpHost": "localhost",
+	"haveHttps": false,	
+	"dbFilePath": "./db.sqlite",
+	"thumbnails": {
+		"directory": "./thumbnails",
+		"height": 276
+	},
+	"pictureCleanup": {
+		"resultPictureLimitPerUser": 500
+	},
+	"parameterSets": [
+		{"include": "./config/param_sets/default.json"},
+		{"include": "./config/param_sets/inpaint.json"}
+	]
+}

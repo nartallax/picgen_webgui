@@ -1,0 +1,17 @@
+{
+	"extends": "./config/param_sets/param_set_base.json",
+	"uiName": "Inpaint",
+	"internalName": "inpaint",
+	"parameterGroups": [{
+		"uiName": "Parameters",
+		"parameters": [{
+			"type": "picture",
+			"sizeStep": 16,
+			"square": true,
+			"allowedTypes": ["jpg", "png"],
+			"jsonName": "inpaint",
+			"uiName": "InPaint",
+			"mask": true
+		}]
+	}, {"include": "./config/param_groups/loras.json"}]
+}

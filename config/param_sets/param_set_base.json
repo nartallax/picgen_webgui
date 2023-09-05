@@ -1,0 +1,9 @@
+{
+	"commandTemplate": "node picture_generator_example.js $INPUT_JSON --param-set-name $PARAM_SET",
+	"primaryParameter": {
+		"type": "string",
+		"jsonName": "prompt",
+		"uiName": "Prompt",
+		"default": ""
+	}
+}
