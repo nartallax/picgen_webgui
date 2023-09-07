@@ -86,4 +86,4 @@ async function mainInternal(): Promise<void> {
 	log(`Server started at ${config.haveHttps ? "https" : "http"}://${config.httpHost || "localhost"}:${config.httpPort}/`)
 }
 
-main()
+void main()

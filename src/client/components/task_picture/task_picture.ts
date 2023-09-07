@@ -109,7 +109,7 @@ class TaskPictureContext {
 			e.preventDefault()
 			e.stopPropagation()
 			if(e.shiftKey){
-				delNow()
+				void delNow()
 			} else {
 				delTimer.run()
 			}
@@ -139,7 +139,7 @@ class TaskPictureContext {
 		btn.addEventListener("click", e => {
 			e.stopPropagation()
 			const args = isTaskOnly ? this.getTask() : this.getPictureArgs()
-			showTaskArgsModal(args)
+			void showTaskArgsModal(args)
 		})
 		return btn
 	}
@@ -208,9 +208,9 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			]),
 			tag({class: css.bottomRow}, [context.makeFavButton(), context.makeLinkButton()])
 		])
-	]);
+	])
 
-	(async() => {
+	void(async() => {
 		const img = await props.thumbContext.getThumbnail(props.picture.get())
 		imgPlaceholder.before(img)
 		imgPlaceholder.remove()
@@ -277,5 +277,5 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 		}
 	}
 
-	showImageViewer(props)
+	void showImageViewer(props)
 }

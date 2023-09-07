@@ -174,7 +174,7 @@ export function MainPage(): HTMLElement {
 		]
 	})])
 
-	loadGlobalData(result, knownTasks).then(() => areGlobalsLoaded.set(true))
+	void loadGlobalData(result, knownTasks).then(() => areGlobalsLoaded.set(true))
 
 	return result
 }
@@ -193,7 +193,7 @@ async function loadGlobalData(page: HTMLElement, knownTasks: WBox<GenerationTask
 
 	const websocket = new WebsocketListener(knownTasks)
 	onMount(page, () => {
-		websocket.start()
+		void websocket.start()
 		return () => websocket.stop()
 	}, {ifInDom: "call"})
 

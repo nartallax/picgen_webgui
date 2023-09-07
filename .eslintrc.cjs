@@ -131,7 +131,7 @@ module.exports = {
 		"@typescript-eslint/space-infix-ops": ["warn"],
 		// I'm not stupid. If something is typed as any - it should be any
 		"@typescript-eslint/no-explicit-any": "off",
-		// "@typescript-eslint/no-floating-promises": "error",
-		// "@typescript-eslint/no-misused-promises": ["error", { "checksVoidReturn": false }]
+		"@typescript-eslint/no-floating-promises": "error",
+		"@typescript-eslint/no-misused-promises": ["error", { "checksVoidReturn": false }]
 	}
 }

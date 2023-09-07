@@ -344,7 +344,7 @@ export namespace ServerApi {
 				throw new Error(`Picture ${picture.id} does not belong to user ${user.id}.`)
 			}
 			picture.favoritesAddTime = isFavorite ? unixtime() : null
-			pictureDao.update(picture)
+			await pictureDao.update(picture)
 			return picture.favoritesAddTime
 		}
 	)

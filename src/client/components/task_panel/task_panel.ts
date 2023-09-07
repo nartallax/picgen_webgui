@@ -170,7 +170,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					],
 					attrs: {title: "Cancel"},
 					onClick: limitClickRate(() => {
-						ClientApi.killOwnTask(props.task.get().id)
+						void ClientApi.killOwnTask(props.task.get().id)
 					})
 				}),
 				tag({
@@ -186,7 +186,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					onTouchend: () => delTimer.cancel(),
 					onClick: limitClickRate(async e => {
 						if(e.shiftKey){
-							delTaskNow()
+							void delTaskNow()
 						}
 					})
 				}),
@@ -217,7 +217,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					attrs: {title: "Repeat"},
 					onClick: limitClickRate(() => {
 						const task = props.task.get()
-						ClientApi.createGenerationTask({
+						void ClientApi.createGenerationTask({
 							arguments: task.arguments,
 							paramSetName: task.paramSetName
 						})

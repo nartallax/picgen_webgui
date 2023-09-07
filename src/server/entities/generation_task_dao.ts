@@ -82,13 +82,13 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 
 	override async create(task: Omit<GenerationTask, "id">): Promise<GenerationTask> {
 		const result = await super.create(task)
-		this.updateFullTextSearch(result, true)
+		await this.updateFullTextSearch(result, true)
 		return result
 	}
 
 	override async update(task: GenerationTask): Promise<void> {
 		const result = await super.update(task)
-		this.updateFullTextSearch(task)
+		await this.updateFullTextSearch(task)
 		return result
 	}
 

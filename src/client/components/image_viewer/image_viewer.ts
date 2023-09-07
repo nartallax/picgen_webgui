@@ -303,7 +303,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				props.updateImg(desc, img)
 			}
 
-			waitLoadAndPaint(img).then(() => {
+			void waitLoadAndPaint(img).then(() => {
 				natSideRatio.set(img.naturalWidth / img.naturalHeight)
 				updateMaxNatHeight()
 				updateBounds()

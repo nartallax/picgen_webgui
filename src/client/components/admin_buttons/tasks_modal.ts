@@ -23,7 +23,7 @@ export async function showTasksModal(): Promise<void> {
 	async function refreshPauseState(): Promise<void> {
 		isQueuePaused.set(await ClientApi.getIsQueuePaused())
 	}
-	refreshPauseState()
+	void refreshPauseState()
 
 	const modal = showModal({title: "Tasks", width: ["25rem", "75vw", "100rem"], height: ["25rem", "75vh", null]}, [
 		Row({justify: "start", padding: "vertical", gap: true}, [
@@ -81,7 +81,7 @@ export async function showTasksModal(): Promise<void> {
 		})
 	])
 
-	onAdminTaskUpdate.subscribeUntil(modal.waitClose(), task => {
+	void onAdminTaskUpdate.subscribeUntil(modal.waitClose(), task => {
 		const tasks = values.get()
 		const taskWithIdIndex = tasks.findIndex(x => x.id === task.id)
 		if(taskWithIdIndex < 0){

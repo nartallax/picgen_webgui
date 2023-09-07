@@ -76,7 +76,7 @@ export const Feed = <T>(props: FeedProps<T>) => {
 		requestAnimationFrame(() => {
 			// for case when loading new values didn't hide the placeholder
 			// in that case isBottomVisible() will stay true without change
-			tryLoadNext()
+			void tryLoadNext()
 		})
 	}
 

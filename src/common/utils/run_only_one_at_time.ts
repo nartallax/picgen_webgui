@@ -53,7 +53,7 @@ export function runOnlyOneAtTime(handler: () => Promise<void>): RunOnlyOneAtTime
 
 		if(isCallScheduled){
 			isCallScheduled = false
-			tryMakeCall()
+			void tryMakeCall()
 			return
 		}
 
@@ -62,7 +62,7 @@ export function runOnlyOneAtTime(handler: () => Promise<void>): RunOnlyOneAtTime
 
 	const result = (() => {
 		const result = new Promise<void>((ok, err) => finishHandlers.push({ok, err}))
-		tryMakeCall()
+		void tryMakeCall()
 		return result
 	}) as RunOnlyOneAtTimeFn
 

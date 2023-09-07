@@ -35,7 +35,7 @@ export class TaskQueueController {
 			}
 		})
 
-		this.tryStartNextGeneration()
+		void this.tryStartNextGeneration()
 	}
 
 	async kill(id: number, userId: number | null): Promise<void> {
@@ -45,7 +45,7 @@ export class TaskQueueController {
 			}
 			log(`Killing running task #${id}.`)
 			this.runningGeneration.gen.kill()
-			this.tryStartNextGeneration()
+			void this.tryStartNextGeneration()
 			return
 		} else {
 			const task = await generationTaskDao.getById(id)
@@ -92,7 +92,7 @@ export class TaskQueueController {
 
 		// just to make queue more uniform
 		context.get().onClosed.push(() => {
-			this.tryStartNextGeneration()
+			void this.tryStartNextGeneration()
 		})
 
 		return result
@@ -182,7 +182,7 @@ export class TaskQueueController {
 
 			await generationTaskDao.cleanupInputData(preparedInputData)
 			await update.waitInvocationsOver()
-			runWithMinimalContext(() => pictureDao.tryCleanupExcessivePicturesOfUser(task.userId))
+			void runWithMinimalContext(() => pictureDao.tryCleanupExcessivePicturesOfUser(task.userId))
 		} finally {
 			this.generationIsStarting = false
 			this.runningGeneration = null
@@ -195,7 +195,7 @@ export class TaskQueueController {
 
 	unpause(): void {
 		this.queueIsMoving = true
-		this.tryStartNextGeneration()
+		void this.tryStartNextGeneration()
 	}
 
 	get isPaused(): boolean {
@@ -216,7 +216,7 @@ export class TaskQueueController {
 		GenRunnerCallbacks
 	] {
 		const update = makeDebounceCollector<(afterUpdateActions: (() => void)[]) => void>(500, updaters => {
-			runInCatchLog(() => runWithMinimalContext(async ctx => {
+			void runInCatchLog(() => runWithMinimalContext(async ctx => {
 				const afterUpdateActions: (() => void)[] = []
 				const taskBeforeUpdate = JSON.stringify(task)
 				for(const updater of updaters){
@@ -231,7 +231,7 @@ export class TaskQueueController {
 				// because otherwise there's a chance that transaction won't be commited before frontend knows about the change
 				// and that's bad, because frontend is then able to query data that is not in db yet
 				for(const action of afterUpdateActions){
-					runInCatchLog(() => action())
+					await runInCatchLog(() => action())
 				}
 			}))
 		})

@@ -174,7 +174,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		try {
 			const body = await(await fetch(url)).blob()
 			const f = new File([body], "image")
-			onFileSelected(f)
+			void onFileSelected(f)
 		} catch(e){
 			if(e instanceof Error){
 				console.error(e)
@@ -194,7 +194,7 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 		onPaste: e => {
 			const file = e.clipboardData?.files?.[0]
 			if(file){
-				onFileSelected(file)
+				void onFileSelected(file)
 				return
 			}
 
