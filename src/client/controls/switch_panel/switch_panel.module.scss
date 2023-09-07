@@ -1,3 +1,24 @@
 .switchPanel {
 	position: relative;
 }
+
+.decayingSwitchElement {
+	animation-name: opacityDecay;
+	animation-duration: 0.25s;
+	position: absolute;
+}
+
+.upcomingSwitchElement {
+	animation-name: opacityUpcome;
+	animation-duration: 0.25s;
+}
+
+@keyframes opacityDecay {
+	from {opacity: 1}
+	to {opacity: 0}
+}
+
+@keyframes opacityUpcome {
+	from {opacity: 0}
+	to {opacity: 1}
+}
