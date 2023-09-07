@@ -27,10 +27,6 @@ body {
 }
 
 .pageRoot[data-hide-some-scrollbars="true"] {
-	.mainPageFeed::-webkit-scrollbar {
-		display: none;
-	}
-
 	.settingsColumnScrollablePart::-webkit-scrollbar {
 		display: none;
 	}
@@ -42,15 +38,6 @@ body {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-}
-
-.favoritesFeed {
-	display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
-	padding-top: 1rem;
 }
 
 @media only screen and (max-width: $mobile-breakpoint) {

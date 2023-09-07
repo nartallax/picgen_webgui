@@ -5,3 +5,18 @@
     min-height: 0px;
     overflow-y: auto;
 }
+
+.favoritesFeed {
+	display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+	padding-top: 1rem;
+}
+
+*[data-hide-some-scrollbars="true"] {
+	.mainPageFeed::-webkit-scrollbar {
+		display: none;
+	}
+}
