@@ -5,6 +5,7 @@ import {GenerationTask, GenerationTaskInputData, GenerationTaskStatus} from "com
 import {GenParameter, GenerationParameterSet, PictureGenParam, getParamDefList} from "common/entities/parameter"
 import {isPictureArgument} from "common/entities/arguments"
 import {config, pictureDao, taskQueue} from "server/server_globals"
+import {FtsTable} from "server/fts_table"
 
 interface DbGenerationTask extends Omit<GenerationTask, "arguments" | "status"> {
 	arguments: string
@@ -27,6 +28,8 @@ export function getServerGenParamDefault(def: GenParameter): ServerGenerationTas
 }
 
 export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
+
+	readonly ftsTable = new FtsTable("tasks_fts")
 
 	protected getTableName(): string {
 		return "generationTasks"
@@ -259,6 +262,16 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 		}
 
 		return await super.delete(task)
+	}
+
+	async search(text: string, pageSize: number, lastKnownId: number | null): Promise<GenerationTask[]> {
+		const ids = await this.ftsTable.search(text, pageSize, lastKnownId)
+		// I do it this way to preserve sorting order of ids
+		// just to keep the logic about sorting order in one place (in fts table)
+		// sure, it'll be faster to just sort the tasks array, but it won't be a big performance hit either
+		const tasks = await this.queryAllFieldIncludes("id", ids)
+		const taskMap = new Map(tasks.map(task => [task.id, task]))
+		return ids.map(id => taskMap.get(id)).filter((x): x is GenerationTask => !!x)
 	}
 
 }
