@@ -406,4 +406,21 @@ export namespace ServerApi {
 		}
 	)
 
+	export const setTaskNote = RCV.validatedFunction(
+		[RC.struct({taskId: RC.number(), note: RC.string()})],
+		async({taskId, note}): Promise<void> => {
+			const [task, user] = await Promise.all([
+				generationTaskDao.getById(taskId),
+				userDao.getCurrent()
+			])
+
+			if(task.userId !== user.id){
+				throw new Error(`Task ${task.id} does not belong to user ${user.id}.`)
+			}
+
+			task.note = note
+			await generationTaskDao.update(task)
+		}
+	)
+
 }

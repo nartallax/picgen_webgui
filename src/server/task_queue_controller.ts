@@ -78,7 +78,8 @@ export class TaskQueueController {
 			generatedPictures: 0,
 			status: "queued",
 			runOrder: -1,
-			exitCode: 0
+			exitCode: 0,
+			note: ""
 		}
 
 		const result = await generationTaskDao.create(genTask)

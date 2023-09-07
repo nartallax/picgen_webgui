@@ -354,6 +354,16 @@ export const migrations: Migration[] = [
 		await db.run(`
 			update "pictures" set "deleted" = false;
 		`)
+	}},
+
+	{name: "00023", handler: async db => {
+		await db.run(`
+			alter table "generationTasks"
+			add "note" text;
+		`)
+		await db.run(`
+			update "generationTasks" set "note" = '';
+		`)
 	}}
 
 ]

@@ -15,7 +15,7 @@
     "release:package": "cd target && zip -r `date +\"picgen_webgui.%Y_%m_%d_%H_%M_%S.zip\"` ./* && echo \"Done; result is\" `ls *.zip` && cd ..",
     "dev": "npm run typecheck && npm run icons:generate && npm run dev:client & npm run dev:server & wait",
     "dev:client": "./node_modules/.bin/parcel serve --target client_dev --no-cache --no-hmr --port 24658",
-    "dev:server": "npm run dev:server:build && ((./node_modules/bin/wait-file-change ./dist/server_dev/server_main.js -t 3 && npm run dev:server:run) & npm run dev:server:watch & wait)",
+    "dev:server": "npm run dev:server:build && ((./node_modules/.bin/wait-file-change ./dist/server_dev/server_main.js -t 3 && npm run dev:server:run) & npm run dev:server:watch & wait)",
     "dev:server:build": "./node_modules/.bin/parcel build --target server_dev --no-cache",
     "dev:server:watch": "./node_modules/.bin/parcel watch --target server_dev --no-cache --no-hmr",
     "dev:server:run": "./node_modules/.bin/nodemon ./dist/server_dev/server_main.js --watch ./dist/server_dev/server_main.js -- --config config/config.json --http-root-url 'http://localhost:24658'",

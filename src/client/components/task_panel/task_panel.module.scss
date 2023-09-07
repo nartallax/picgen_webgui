@@ -94,8 +94,8 @@ $arrowButtonSize: 3rem;
 		margin-top: 1em;
 
 		display: flex;
-		flex-direction: row;
-		align-items: center;
+		flex-direction: column;
+		align-items: stretch;
 
 		background: var(--color-block-accent);
 		border-radius: 1.5em;
@@ -110,7 +110,7 @@ $arrowButtonSize: 3rem;
 			overflow-wrap: anywhere;
 		}
 
-		.useArgumentsButton {
+		.useArgumentsButton, .addNoteButton {
 			font-size: 1.5em;
 			cursor: pointer;
 			border-radius: 0.5em;
@@ -125,6 +125,11 @@ $arrowButtonSize: 3rem;
 				background: var(--color-button);
 			}
 
+			transition: background-color 0.25s linear;
+			background-color: rgba(255, 255, 255, 0.0);
+			&:hover {
+				background-color: rgba(255, 255, 255, 0.5);
+			}
 		}
 
 	}

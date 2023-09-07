@@ -13,6 +13,8 @@ import {loadArguments} from "client/app/load_arguments"
 import {allKnownParamSets, thumbnailProvider} from "client/app/global_values"
 import {Icon} from "client/generated/icons"
 import {makeDeletionTimer} from "client/client_common/deletion_timer"
+import {Row} from "client/controls/layout/row_col"
+import {NoteBlock} from "client/components/note_block/note_block"
 
 interface TaskPanelProps {
 	task: WBox<GenerationTaskWithPictures>
@@ -155,6 +157,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const nowBox = box(Date.now())
 	const paramSetOfTask = allKnownParamSets.get().find(x => x.internalName === props.task.get().paramSetName)
+	const isEditingNote = box(false)
 
 	const result = tag({class: [css.taskPanel]}, [
 		tag({class: css.body}, [
@@ -245,21 +248,34 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				}
 			}, [picturesWrap]),
 			tag({class: css.footer, style: {opacity: taskDeletionOpacity}}, [
-				tag({class: css.prompt}, [props.task.map(task => {
-					if(!paramSetOfTask){
-						return "<param set deleted, prompt parameter name unknown>"
-					}
-					return (task.arguments[paramSetOfTask.primaryParameter.jsonName] + "") ?? ""
-				})]),
-				tag({
-					class: [css.useArgumentsButton, Icon.docs],
-					onClick: limitClickRate(function() {
-						loadArguments(props.task.get())
-						this.classList.add(css.recentlyClicked!)
-						setTimeout(() => {
-							this.classList.remove(css.recentlyClicked!)
-						}, 500)
+				Row([
+					tag({class: css.prompt}, [props.task.map(task => {
+						if(!paramSetOfTask){
+							return "<param set deleted, prompt parameter name unknown>"
+						}
+						return (task.arguments[paramSetOfTask.primaryParameter.jsonName] + "") ?? ""
+					})]),
+					tag({
+						class: [css.useArgumentsButton, Icon.docs],
+						onClick: limitClickRate(function() {
+							loadArguments(props.task.get())
+							this.classList.add(css.recentlyClicked!)
+							setTimeout(() => {
+								this.classList.remove(css.recentlyClicked!)
+							}, 500)
+						})
+					}),
+					tag({
+						class: [css.addNoteButton, Icon.note],
+						onClick: () => {
+							isEditingNote.set(!isEditingNote.get())
+						}
 					})
+				]),
+				NoteBlock({
+					isEditing: isEditingNote,
+					note: props.task.prop("note"),
+					save: note => ClientApi.setTaskNote(props.task.get().id, note)
 				})
 			])
 		]),

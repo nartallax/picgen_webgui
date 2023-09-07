@@ -95,4 +95,7 @@ export namespace ClientApi {
 	export const deletePicture = (pictureId: number) =>
 		client.call<void>("deletePicture", {pictureId})
 
+	export const setTaskNote = (taskId: number, note: string) =>
+		client.call<void>("setTaskNote", {taskId, note})
+
 }
