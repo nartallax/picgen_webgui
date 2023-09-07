@@ -261,9 +261,6 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 		}
 	}
 
-	// getPictureAsTempFile(id: number): string {
-	// }
-
 }
 
 function isFilterField<T extends Record<string, unknown>>(x: FilterValue<T>): x is FilterField<T> {

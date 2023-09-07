@@ -36,7 +36,7 @@ export class WebsocketListener {
 				this.socket = null
 				setTimeout(() => {
 					if(this.shouldBeWorking && !this.socket){
-						this.start()
+						void this.start()
 					}
 				}, 15000)
 			}

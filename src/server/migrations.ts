@@ -2,8 +2,10 @@ import {Migration} from "server/db/db_controller"
 import {log} from "server/log"
 import * as Path from "path"
 import {promises as Fs} from "fs"
-import {config, thumbnails} from "server/server_globals"
+import {config, generationTaskDao, thumbnails} from "server/server_globals"
 import {ServerPicture} from "server/entities/picture_dao"
+import {GenerationTask} from "common/entities/generation_task"
+import {runWithMinimalContextWithDb} from "server/context"
 
 export const migrations: Migration[] = [
 	{name: "00000_users_gentasks_pictures", handler: async db => {
@@ -364,6 +366,33 @@ export const migrations: Migration[] = [
 		await db.run(`
 			update "generationTasks" set "note" = '';
 		`)
+	}},
+
+	{name: "00024", handler: async db => {
+		await db.run(`
+			create virtual table "generationTasksFts" using fts5(id, "userId", text);
+		`)
+		log("Starting to build full-text search index.")
+		let offset = 0
+		const packSize = 100
+		const limit: number = ((await db.query("select id from \"generationTasks\" order by id desc limit 1"))[0] as any)["id"]
+		await runWithMinimalContextWithDb(db, async() => {
+			while(offset < limit){
+				const taskPack = (await db.query(
+					"select * from \"generationTasks\" where id >= ? and id < ?",
+					[offset, offset + packSize]
+				)) as GenerationTask[]
+				offset += packSize
+				offset = Math.min(offset, limit) // just for beautiful output
+				for(const task of taskPack){
+					// ugh.
+					task.arguments = JSON.parse(task.arguments as any)
+					await generationTaskDao.updateFullTextSearch(task, true)
+				}
+				log(`Processed ${offset} out of ${limit}, ${((offset / limit) * 100).toFixed(2)}%...`)
+			}
+		})
+		log("Full-text search index building completed!")
 	}}
 
 ]

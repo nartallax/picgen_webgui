@@ -14,8 +14,12 @@ module.exports = {
 		"**/node_modules/**",
 		"**/generated/**",
 		"build",
-		".eslintrc.js"
+		".eslintrc.cjs"
 	],
+	parserOptions: {
+		parser: "@typescript-eslint/parser",
+		project: "./tsconfig.json",
+	},
 	rules: {
 		// у const есть свои применения, но требовать его вообще везде - значит загрязнять код
 		"prefer-const": "warn",
@@ -126,6 +130,8 @@ module.exports = {
 		"@typescript-eslint/space-before-function-paren": ["warn", "never"],
 		"@typescript-eslint/space-infix-ops": ["warn"],
 		// I'm not stupid. If something is typed as any - it should be any
-		"@typescript-eslint/no-explicit-any": "off"
+		"@typescript-eslint/no-explicit-any": "off",
+		// "@typescript-eslint/no-floating-promises": "error",
+		// "@typescript-eslint/no-misused-promises": ["error", { "checksVoidReturn": false }]
 	}
 }

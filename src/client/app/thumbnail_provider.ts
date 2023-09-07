@@ -87,7 +87,7 @@ export class ThumbnailProvider {
 			getThumbnail: picture => new Promise<HTMLImageElement>((ok, err) => {
 				picturesAndPromises.push({picture, ok, err})
 				if(timer === null){
-					timer = setTimeout(sendIt, debounceTimeMs)
+					timer = setTimeout(() => void sendIt(), debounceTimeMs)
 				}
 			})
 		}

@@ -6,6 +6,7 @@ import {GenParameter, GenerationParameterSet, PictureGenParam, getParamDefList} 
 import {isPictureArgument} from "common/entities/arguments"
 import {config, pictureDao, taskQueue} from "server/server_globals"
 import {FtsTable} from "server/fts_table"
+import {log} from "server/log"
 
 interface DbGenerationTask extends Omit<GenerationTask, "arguments" | "status"> {
 	arguments: string
@@ -29,7 +30,7 @@ export function getServerGenParamDefault(def: GenParameter): ServerGenerationTas
 
 export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 
-	readonly ftsTable = new FtsTable("tasks_fts")
+	readonly ftsTable = new FtsTable("generationTasksFts")
 
 	protected getTableName(): string {
 		return "generationTasks"
@@ -77,6 +78,18 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 
 	queryRunning(): Promise<GenerationTask | null> {
 		return this.queryByFieldValue("status", "running")
+	}
+
+	override async create(task: Omit<GenerationTask, "id">): Promise<GenerationTask> {
+		const result = await super.create(task)
+		this.updateFullTextSearch(result, true)
+		return result
+	}
+
+	override async update(task: GenerationTask): Promise<void> {
+		const result = await super.update(task)
+		this.updateFullTextSearch(task)
+		return result
 	}
 
 	// you can't just pass to generator raw params you got from user
@@ -261,11 +274,36 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 			await pictureDao.delete(picture)
 		}
 
+		await this.ftsTable.delete(task.id)
+
 		return await super.delete(task)
 	}
 
-	async search(text: string, pageSize: number, lastKnownId: number | null): Promise<GenerationTask[]> {
-		const ids = await this.ftsTable.search(text, pageSize, lastKnownId)
+	async updateFullTextSearch(task: GenerationTask, justCreated = false): Promise<void> {
+		let primaryParamName = "prompt"
+
+		const paramSet = config.parameterSets.find(paramSet => paramSet.internalName === task.paramSetName)
+		if(paramSet){
+			primaryParamName = paramSet.primaryParameter.jsonName
+		}
+
+		const prompt = task.arguments[primaryParamName]
+		if(typeof(prompt) !== "string"){
+			log(`Warning: cannot update full-text index for task #${task.id} because argument for primary parameter ${primaryParamName} is not string (is ${typeof(prompt)})`)
+			return
+		}
+
+		const values = [prompt, task.note]
+
+		if(justCreated){
+			await this.ftsTable.add(task.id, task.userId, values)
+		} else {
+			await this.ftsTable.update(task.id, values)
+		}
+	}
+
+	async search(text: string, pageSize: number, userId: number | null, lastKnownId: number | null): Promise<GenerationTask[]> {
+		const ids = await this.ftsTable.search(text, pageSize, userId, lastKnownId)
 		// I do it this way to preserve sorting order of ids
 		// just to keep the logic about sorting order in one place (in fts table)
 		// sure, it'll be faster to just sort the tasks array, but it won't be a big performance hit either

@@ -12,8 +12,8 @@ export interface MinimalContext {
 	readonly hasHttpRequest: false
 	readonly db: DbConnection
 }
-function withMinimalContext<T>(handler: (context: MinimalContext) => T | Promise<T>): Promise<T> {
-	return dbController.inTransaction(async db => {
+function withMinimalContext<T>(db: DbConnection | null, handler: (context: MinimalContext) => T | Promise<T>): Promise<T> {
+	const doWithDb = async(db: DbConnection) => {
 		const onClosed: MinimalContext["onClosed"] = []
 		try {
 			return await handler({
@@ -31,10 +31,20 @@ function withMinimalContext<T>(handler: (context: MinimalContext) => T | Promise
 				}
 			}
 		}
-	})
+	}
+
+	if(db){
+		return doWithDb(db)
+	} else {
+		return dbController.inTransaction(doWithDb)
+	}
+
 }
 export function runWithMinimalContext<T>(runner: (ctx: MinimalContext) => T | Promise<T>): Promise<T> {
-	return withMinimalContext(ctx => context.run(ctx, () => runner(ctx)))
+	return withMinimalContext(null, ctx => context.run(ctx, () => runner(ctx)))
+}
+export function runWithMinimalContextWithDb<T>(db: DbConnection, runner: (ctx: MinimalContext) => T | Promise<T>): Promise<T> {
+	return withMinimalContext(db, ctx => context.run(ctx, () => runner(ctx)))
 }
 
 export interface HttpRequestContext extends Omit<MinimalContext, "hasHttpRequest"> {
@@ -51,7 +61,7 @@ function withHttpRequestContext<T>(req: Http.IncomingMessage, handler: (context:
 		throw new Error("Host header is not present.")
 	}
 	const url = new URL(urlStr, (config.haveHttps ? "https" : "http") + "://" + hostHeader)
-	return withMinimalContext(ctx => handler({
+	return withMinimalContext(null, ctx => handler({
 		...ctx,
 		cookie: new CookieController(req),
 		hasHttpRequest: true,
