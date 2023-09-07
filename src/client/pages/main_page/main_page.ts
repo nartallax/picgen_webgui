@@ -1,31 +1,23 @@
 import {ClientApi} from "client/app/client_api"
 import {WebsocketListener} from "client/app/websocket_listener"
-import {Feed, makeSimpleFeedFetcher} from "client/controls/feed/feed"
-import {LoginBar} from "client/components/login_bar/login_bar"
-import {ArgumentsInputBlock} from "client/components/arguments_input_block/arguments_input_block"
 import {PromptInput} from "client/components/prompt_input/prompt_input"
-import {Select} from "client/controls/select/select"
-import {TaskPanel} from "client/components/task_panel/task_panel"
 import {WBox, box, calcBox} from "@nartallax/cardboard"
 import {onMount, tag} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
-import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
+import {GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenerationParameterSet} from "common/entities/parameter"
-import {currentParamSetName, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, thumbnailProvider, argumentsByParamSet} from "client/app/global_values"
-import {AdminButtons} from "client/components/admin_buttons/admin_buttons"
-import {Sidebar} from "client/controls/sidebar/sidebar"
+import {currentParamSetName, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, argumentsByParamSet} from "client/app/global_values"
 import {Row} from "client/controls/layout/row_col"
-import {IconButton} from "client/controls/icon_button/icon_button"
 import {isPictureArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
 import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
-import {Picture, PictureWithTask} from "common/entities/picture"
-import {TaskPicture} from "client/components/task_picture/task_picture"
-import {PasteArgumentsButton} from "client/components/paste_arguments_button/paste_arguments_button"
 import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {fixArgumentMap, getAllGenParamDefs} from "client/app/fix_argument_object"
-import {Icon} from "client/generated/icons"
-import {LockButton, getLockBox, getSetLockBoxes, makeGroupLockBox} from "client/controls/lock_button/lock_button"
+import {getLockBox} from "client/controls/lock_button/lock_button"
+import {ImageFeed} from "client/components/feeds/image_feed"
+import {TaskFeed} from "client/components/feeds/task_feed"
+import {MainMenu} from "client/components/main_menu/main_menu"
+import {MainMenuButton} from "client/components/main_menu/main_menu_button"
 
 export function MainPage(): HTMLElement {
 
@@ -74,38 +66,15 @@ export function MainPage(): HTMLElement {
 					value: selectedTab,
 					class: css.mainPageSwitchPanel,
 					routes: {
-						favorites: () => {
-							const thumbContext = thumbnailProvider.makeContext()
-							return Feed({
-								scrollToTopButton: true,
-								class: css.mainPageFeed,
-								containerClass: css.favoritesFeed,
-								getId: picture => picture.id,
-								renderElement: picture => TaskPicture({picture, thumbContext}),
-								loadNext: makeSimpleFeedFetcher<Picture, PictureWithTask>({
-									fetch: query => {
-										(query.filters ||= []).push(
-											{a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}}
-										)
-										return ClientApi.listPicturesWithTasks(query)
-									},
-									desc: true,
-									packSize: 50
-								})
-							})
-						},
-						tasks: () => Feed({
-							scrollToTopButton: true,
-							getId: task => task.id,
-							loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
-								fetch: ClientApi.listTasks,
-								desc: true,
-								packSize: 10
-							}),
-							values: knownTasks,
-							renderElement: taskBox => TaskPanel({task: taskBox, tasks: knownTasks}),
-							bottomLoadingPlaceholder: tag(["Loading..."]),
-							class: css.mainPageFeed
+						favorites: () => ImageFeed({
+							fetch: query => {
+								(query.filters ||= []).push({a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}})
+								return ClientApi.listPicturesWithTasks(query)
+							}
+						}),
+						tasks: () => TaskFeed({
+							fetch: ClientApi.listTasks,
+							values: knownTasks
 						})
 					}
 				}),
@@ -117,11 +86,7 @@ export function MainPage(): HTMLElement {
 					value: selectedTab
 				}),
 				Row({align: "start", gap: true, padding: "bottom"}, [
-					IconButton({
-						icon: Icon.menu,
-						onClick: () => isMenuOpen.set(!isMenuOpen.get()),
-						class: css.menuButton
-					}),
+					MainMenuButton({isOpen: isMenuOpen}),
 					selectedParamSet.map(paramSet => PromptInput({
 						isLocked: getLockBox(paramSet, paramSet.primaryParameter.jsonName),
 						promptValue: argumentsByParamSet
@@ -131,46 +96,7 @@ export function MainPage(): HTMLElement {
 					}))
 				])
 			]),
-			Sidebar({isOpen: isMenuOpen}, [
-				tag({class: css.settingsColumn}, [
-					Row({align: "start"}, [
-						IconButton({
-							icon: Icon.menu,
-							onClick: () => isMenuOpen.set(!isMenuOpen.get()),
-							class: css.menuButton
-						}),
-						LoginBar(),
-						PasteArgumentsButton()
-					]),
-					Row({class: css.propSetSelector, align: "stretch", gap: true}, [
-						selectedParamSet.map(paramSet => {
-							const setLocks = getSetLockBoxes(paramSet)
-							const groupLock = makeGroupLockBox(setLocks)
-							return LockButton({
-								isLocked: groupLock,
-								onChange: () => {
-									const shouldBeLocked = !groupLock.get()
-									for(const lock of setLocks){
-										lock.set(shouldBeLocked)
-									}
-								}
-							})
-						}),
-						Select({
-							class: css.paramSetSelect,
-							options: allKnownParamSets.map(sets => sets.map(set => ({
-								label: set.uiName,
-								value: set.internalName
-							}))),
-							value: currentParamSetName
-						})
-					]),
-					tag({class: css.settingsColumnScrollablePart}, [
-						ArgumentsInputBlock({paramSet: selectedParamSet}),
-						AdminButtons()
-					])
-				])
-			])
+			MainMenu({isOpen: isMenuOpen, selectedParamSet})
 		]
 	})])
 

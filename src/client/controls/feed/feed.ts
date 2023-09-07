@@ -1,4 +1,4 @@
-import {WBox, box} from "@nartallax/cardboard"
+import {ArrayItemWBox, WBox, box} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {VisibilityNotifier} from "client/controls/visibility_notifier/visibility_notifier"
 import * as css from "./feed.module.scss"
@@ -12,7 +12,7 @@ interface FeedProps<T> {
 	values?: WBox<T[]>
 	loadNext: (currentValues: T[]) => T[] | Promise<T[]>
 	getId: (value: T) => string | number
-	renderElement: (value: WBox<T>) => HTMLElement
+	renderElement: (value: ArrayItemWBox<T>) => HTMLElement
 	bottomLoadingPlaceholder?: HTMLElement
 	class?: string
 	containerClass?: string
@@ -101,7 +101,7 @@ export const Feed = <T>(props: FeedProps<T>) => {
 }
 
 
-interface SimpleFeedFetcherParams<T extends Record<string, unknown> & IdentifiedEntity, O = T> {
+export interface SimpleFeedFetcherParams<T extends Record<string, unknown> & IdentifiedEntity, O = T> {
 	sortBy?: keyof T & string
 	fetch: (query: SimpleListQueryParams<T>) => Promise<O[]>
 	desc?: boolean

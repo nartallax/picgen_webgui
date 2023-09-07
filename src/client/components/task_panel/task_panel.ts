@@ -2,7 +2,7 @@ import {formatTimeSpan} from "client/client_common/format"
 import {TaskPicture} from "client/components/task_picture/task_picture"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {ClientApi} from "client/app/client_api"
-import {WBox, box, calcBox} from "@nartallax/cardboard"
+import {ArrayItemWBox, WBox, box, calcBox} from "@nartallax/cardboard"
 import {bindBox, onMount, tag} from "@nartallax/cardboard-dom"
 import * as css from "./task_panel.module.scss"
 import {GenerationTaskWithPictures} from "common/entities/generation_task"
@@ -17,8 +17,7 @@ import {Row} from "client/controls/layout/row_col"
 import {NoteBlock} from "client/components/note_block/note_block"
 
 interface TaskPanelProps {
-	task: WBox<GenerationTaskWithPictures>
-	tasks: WBox<GenerationTaskWithPictures[]>
+	task: ArrayItemWBox<GenerationTaskWithPictures>
 }
 
 export function TaskPanel(props: TaskPanelProps): HTMLElement {
@@ -122,7 +121,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 
 	const delTaskNow = async() => {
 		const id = props.task.get().id
-		props.tasks.set(props.tasks.get().filter(task => task.id !== id))
+		props.task.deleteArrayElement()
 		await ClientApi.deleteTask(id)
 	}
 

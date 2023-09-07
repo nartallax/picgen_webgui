@@ -1,0 +1,48 @@
+@use "../../controls/variables.scss" as *;
+
+.mainMenu {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: flex-start;
+	min-height: 0;
+	flex: 1 1 0;
+
+	width: var(--params-column-width);
+	max-width: var(--params-column-max-width);
+	min-width: var(--params-column-min-width);
+
+	.mainMenuScrollablePart {
+		overflow-y: auto;
+		overflow-x: hidden;
+		flex: 1 1 0;
+	}
+}
+
+.propSetSelector {
+	margin-bottom: 1rem;
+}
+
+.paramSetSelect {
+	flex: 1 1 auto;
+}
+
+.mainMenuButton {
+	display: none;
+	margin-right: 1rem;
+}
+
+@media only screen and (max-width: $mobile-breakpoint) {
+
+	.mainMenu {
+		width: 90vw;
+		height: 100vh;
+		background-color: var(--color-block-accent);
+		padding: 1rem;
+	}
+
+	.mainMenuButton {
+		display: block;
+	}
+	
+}
