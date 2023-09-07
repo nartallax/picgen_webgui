@@ -1,12 +1,13 @@
 import {ApiError} from "common/infra_entities/api_error"
 import {DAO} from "server/dao"
 import {PictureInfo, ServerPicture} from "server/entities/picture_dao"
-import {GenerationTask, GenerationTaskInputData, GenerationTaskStatus} from "common/entities/generation_task"
+import {GenerationTask, GenerationTaskInputData, GenerationTaskStatus, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenerationParameterSet, PictureGenParam, getParamDefList} from "common/entities/parameter"
 import {isPictureArgument} from "common/entities/arguments"
 import {config, pictureDao, taskQueue} from "server/server_globals"
 import {FtsTable} from "server/fts_table"
 import {log} from "server/log"
+import {sortByIdArray} from "server/utils/sort_by_id_array"
 
 interface DbGenerationTask extends Omit<GenerationTask, "arguments" | "status"> {
 	arguments: string
@@ -304,12 +305,24 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 
 	async search(text: string, pageSize: number, userId: number | null, lastKnownId: number | null): Promise<GenerationTask[]> {
 		const ids = await this.ftsTable.search(text, pageSize, userId, lastKnownId)
+		const tasks = await this.queryAllFieldIncludes("id", ids)
 		// I do it this way to preserve sorting order of ids
 		// just to keep the logic about sorting order in one place (in fts table)
 		// sure, it'll be faster to just sort the tasks array, but it won't be a big performance hit either
-		const tasks = await this.queryAllFieldIncludes("id", ids)
-		const taskMap = new Map(tasks.map(task => [task.id, task]))
-		return ids.map(id => taskMap.get(id)).filter((x): x is GenerationTask => !!x)
+		return sortByIdArray(ids, tasks)
+	}
+
+	async enrichWithPictures(tasks: GenerationTask[]): Promise<GenerationTaskWithPictures[]> {
+		const ids = tasks.map(x => x.id)
+		const serverPictures = await pictureDao.queryAllFieldIncludes("generationTaskId", ids)
+		const pictures = serverPictures.map(pic => pictureDao.stripServerData(pic))
+		const taskMap = new Map<number, GenerationTaskWithPictures>(tasks.map(task => [task.id, {...task, pictures: []}]))
+		for(const picture of pictures){
+			const task = taskMap.get(picture.generationTaskId!)!
+			task.pictures.push(picture)
+		}
+		const result = [...taskMap.values()]
+		return sortByIdArray(ids, result)
 	}
 
 }

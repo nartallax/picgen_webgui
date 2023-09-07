@@ -105,14 +105,7 @@ export namespace ServerApi {
 				{op: "=", a: {field: "userId"}, b: {value: currentUser.id}}
 			)
 			const tasks = await generationTaskDao.list(query)
-			const serverPictures = await pictureDao.queryAllFieldIncludes("generationTaskId", tasks.map(x => x.id))
-			const pictures = serverPictures.map(pic => pictureDao.stripServerData(pic))
-			const taskMap = new Map<number, GenerationTaskWithPictures>(tasks.map(task => [task.id, {...task, pictures: []}]))
-			for(const picture of pictures){
-				const task = taskMap.get(picture.generationTaskId!)!
-				task.pictures.push(picture)
-			}
-			const result = [...taskMap.values()]
+			const result = await generationTaskDao.enrichWithPictures(tasks)
 			for(const task of result){
 				task.pictures.sort((a, b) => a.id - b.id)
 				taskQueue.tryAddEstimatedDuration(task)
@@ -429,9 +422,11 @@ export namespace ServerApi {
 			maxKnownTaskId: RC.union([RC.constant(null), RC.number()]),
 			pageSize: RC.number()
 		})],
-		async({query, pageSize, maxKnownTaskId}): Promise<GenerationTask[]> => {
+		async({query, pageSize, maxKnownTaskId}): Promise<GenerationTaskWithPictures[]> => {
 			const user = await userDao.getCurrent()
-			return await generationTaskDao.search(query, pageSize, user.id, maxKnownTaskId)
+			const tasks = await generationTaskDao.search(query, pageSize, user.id, maxKnownTaskId)
+			const tasksWithPictures = await generationTaskDao.enrichWithPictures(tasks)
+			return tasksWithPictures
 		}
 	)
 

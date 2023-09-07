@@ -99,6 +99,6 @@ export namespace ClientApi {
 		client.call<void>("setTaskNote", {taskId, note})
 
 	export const searchTasks = (query: string, pageSize: number, maxKnownTaskId: number | null) =>
-		client.call<GenerationTask[]>("searchTasks", {query, pageSize, maxKnownTaskId})
+		client.call<GenerationTaskWithPictures[]>("searchTasks", {query, pageSize, maxKnownTaskId})
 
 }
