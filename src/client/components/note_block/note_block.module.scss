@@ -19,6 +19,7 @@
 .noteText {
 	color: var(--color-font-on-block);
 	padding: calc(1rem + 2px);
+	white-space: pre;
 
 	&.hidden {
 		display: none;
