@@ -217,6 +217,16 @@ export class TaskQueueController {
 	] {
 		const update = makeDebounceCollector<(afterUpdateActions: (() => void)[]) => void>(500, updaters => {
 			void runInCatchLog(() => runWithMinimalContext(async ctx => {
+				// ugh.
+				// we need to update task, because something in DB could change
+				// but at the same time we need to retain same object instance
+				// because outside code relies on it
+				// so, we just update each field separately
+				const dbTask = await generationTaskDao.getById(task.id)
+				for(const key in dbTask){
+					(task as any)[key] = (dbTask as any)[key]
+				}
+
 				const afterUpdateActions: (() => void)[] = []
 				const taskBeforeUpdate = JSON.stringify(task)
 				for(const updater of updaters){
