@@ -1,0 +1,34 @@
+.searchBar {
+	width: 3.33333rem;
+	height: 3.33333rem;
+}
+
+.searchInput {
+	position: absolute;
+	right: 4.5rem;
+	left: calc(100% - 4.5rem);
+	top: 0;
+	bottom: 0.5rem;
+	background-color: var(--color-input-background);
+    color: var(--color-font-on-block);
+	border-radius: 1.5em;
+	outline: 0;
+
+	transition: 0.2s;
+	border: 2px solid var(--color-border);
+
+	font-size: 1.35rem;
+    line-height: 1.5em;
+	padding: 0;
+
+	&.expanded {
+		left: 0;
+		right: 3rem;
+		padding: 0.55em 0.55em 0.55em 1em;
+	}
+}
+
+.searchButton {
+	// just to avoid fiddling with z-index
+	position: absolute;
+}

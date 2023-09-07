@@ -5,8 +5,6 @@
 	align-items: stretch;
 	flex: 1 1 0;
 	min-width: 0;
-	padding: 0 3rem;
-	position: relative;
 
 	.firstLine {
 		flex-grow: 0;
@@ -76,8 +74,7 @@
 	.lockButton {
 		position: absolute;
 		left: 0;
-		top: 0;
-		bottom: 0;
+		top: 0.75rem;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;

@@ -18,6 +18,7 @@ import {ImageFeed} from "client/components/feeds/image_feed"
 import {TaskFeed} from "client/components/feeds/task_feed"
 import {MainMenu} from "client/components/main_menu/main_menu"
 import {MainMenuButton} from "client/components/main_menu/main_menu_button"
+import {SearchBar} from "client/components/search_bar/search_bar"
 
 export function MainPage(): HTMLElement {
 
@@ -49,6 +50,8 @@ export function MainPage(): HTMLElement {
 	const selectedTab = box<"tasks" | "favorites">("tasks")
 
 	const areGlobalsLoaded = box(false)
+	const isSearchActive = box(false)
+	const searchText = box("")
 
 	const result = tag({
 		class: css.pageRoot,
@@ -85,7 +88,7 @@ export function MainPage(): HTMLElement {
 					] as const,
 					value: selectedTab
 				}),
-				Row({align: "start", gap: true, padding: "bottom"}, [
+				Row({align: "start", gap: true, padding: [0, "3rem", "0.5rem", "3rem"], class: css.topInputRow}, [
 					MainMenuButton({isOpen: isMenuOpen}),
 					selectedParamSet.map(paramSet => PromptInput({
 						isLocked: getLockBox(paramSet, paramSet.primaryParameter.jsonName),
@@ -93,7 +96,8 @@ export function MainPage(): HTMLElement {
 							.prop(paramSet.internalName)
 							.prop(paramSet.primaryParameter.jsonName) as WBox<string>,
 						startGeneration: startGeneration
-					}))
+					})),
+					SearchBar({isSearchActive, searchText})
 				])
 			]),
 			MainMenu({isOpen: isMenuOpen, selectedParamSet})

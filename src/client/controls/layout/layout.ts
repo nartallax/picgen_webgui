@@ -1,7 +1,8 @@
 import {MRBox, RBox, isRBox} from "@nartallax/cardboard"
 import {StyleValues} from "@nartallax/cardboard-dom"
 
-export type DefaultableSpacing = "vertical" | "horisontal" | "top" | "bottom" | "left" | "right" | boolean | string
+type SpacingValue = string | number | boolean
+export type DefaultableSpacing = "vertical" | "horisontal" | "top" | "bottom" | "left" | "right" | SpacingValue | readonly [SpacingValue, SpacingValue] | readonly [SpacingValue, SpacingValue, SpacingValue, SpacingValue]
 
 const defaultSpacing = "0.5rem"
 
@@ -14,6 +15,9 @@ export function resolveSpacing(spacing: MRBox<DefaultableSpacing | undefined>): 
 	}
 	if(isRBox(spacing)){
 		return spacing.map(padding => resolveSpacing(padding))
+	}
+	if(Array.isArray(spacing)){
+		return spacing.map(x => x === false ? "0" : x === true ? defaultSpacing : x + "").join(" ")
 	}
 	switch(spacing){
 		case true: return defaultSpacing
