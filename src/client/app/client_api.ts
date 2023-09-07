@@ -98,4 +98,7 @@ export namespace ClientApi {
 	export const setTaskNote = (taskId: number, note: string) =>
 		client.call<void>("setTaskNote", {taskId, note})
 
+	export const searchTasks = (query: string, pageSize: number, maxKnownTaskId: number | null) =>
+		client.call<GenerationTask[]>("searchTasks", {query, pageSize, maxKnownTaskId})
+
 }

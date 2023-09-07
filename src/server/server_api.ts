@@ -423,4 +423,16 @@ export namespace ServerApi {
 		}
 	)
 
+	export const searchTasks = RCV.validatedFunction(
+		[RC.struct({
+			query: RC.string(),
+			maxKnownTaskId: RC.union([RC.constant(null), RC.number()]),
+			pageSize: RC.number()
+		})],
+		async({query, pageSize, maxKnownTaskId}): Promise<GenerationTask[]> => {
+			const user = await userDao.getCurrent()
+			return await generationTaskDao.search(query, pageSize, user.id, maxKnownTaskId)
+		}
+	)
+
 }
