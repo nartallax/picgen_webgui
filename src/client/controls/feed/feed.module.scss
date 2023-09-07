@@ -21,3 +21,11 @@
     background: var(--color-block-secondary);
     box-sizing: border-box;
 }
+
+.bottomLoadingPlaceholder {
+	color: var(--color-font-on-block);
+	padding: 2rem 3rem;
+	text-align: center;
+	font-size: 2rem;
+	opacity: 0.25;
+}

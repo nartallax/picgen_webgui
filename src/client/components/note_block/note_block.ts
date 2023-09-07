@@ -29,7 +29,7 @@ export const NoteBlock = defineControl((props: Props) => {
 					tag: "textarea",
 					class: css.noteInput,
 					onChange: () => props.note.set(input.value),
-					onKeypress: () => props.note.set(input.value)
+					onKeyup: () => props.note.set(input.value)
 				})
 				input.value = props.note.get()
 				requestAnimationFrame(() => {

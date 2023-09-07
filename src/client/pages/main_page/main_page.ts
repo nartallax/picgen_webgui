@@ -19,6 +19,7 @@ import {TaskFeed} from "client/components/feeds/task_feed"
 import {MainMenu} from "client/components/main_menu/main_menu"
 import {MainMenuButton} from "client/components/main_menu/main_menu_button"
 import {SearchBar} from "client/components/search_bar/search_bar"
+import {SearchFeed} from "client/components/feeds/search_feed"
 
 export function MainPage(): HTMLElement {
 
@@ -66,27 +67,36 @@ export function MainPage(): HTMLElement {
 		return [
 			tag({class: css.generationColumn}, [
 				SwitchPanel({
-					value: selectedTab,
 					class: css.mainPageSwitchPanel,
+					value: isSearchActive.map(isActive => isActive ? "search" : "dflt"),
 					routes: {
-						favorites: () => ImageFeed({
-							fetch: query => {
-								(query.filters ||= []).push({a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}})
-								return ClientApi.listPicturesWithTasks(query)
-							}
-						}),
-						tasks: () => TaskFeed({
-							fetch: ClientApi.listTasks,
-							values: knownTasks
-						})
+						search: () => SearchFeed({searchText}),
+						dflt: () => tag({class: css.defaultTabsAndSwitchPanelWrap}, [
+							SwitchPanel({
+								value: selectedTab,
+								class: css.mainPageSwitchPanel,
+								routes: {
+									favorites: () => ImageFeed({
+										fetch: query => {
+											(query.filters ||= []).push({a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}})
+											return ClientApi.listPicturesWithTasks(query)
+										}
+									}),
+									tasks: () => TaskFeed({
+										fetch: ClientApi.listTasks,
+										values: knownTasks
+									})
+								}
+							}),
+							Tabs({
+								options: [
+									{label: "Tasks", value: "tasks"},
+									{label: "Favorites", value: "favorites"}
+								] as const,
+								value: selectedTab
+							})
+						])
 					}
-				}),
-				Tabs({
-					options: [
-						{label: "Tasks", value: "tasks"},
-						{label: "Favorites", value: "favorites"}
-					] as const,
-					value: selectedTab
 				}),
 				Row({align: "start", gap: true, padding: [0, "3rem", "0.5rem", "3rem"], class: css.topInputRow}, [
 					MainMenuButton({isOpen: isMenuOpen}),

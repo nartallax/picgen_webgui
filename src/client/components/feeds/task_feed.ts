@@ -1,5 +1,4 @@
 import {WBox} from "@nartallax/cardboard"
-import {tag} from "@nartallax/cardboard-dom"
 import {TaskPanel} from "client/components/task_panel/task_panel"
 import {Feed, SimpleFeedFetcherParams, makeSimpleFeedFetcher} from "client/controls/feed/feed"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
@@ -21,6 +20,5 @@ export const TaskFeed = (props: Props) => Feed({
 	}),
 	values: props.values,
 	renderElement: taskBox => TaskPanel({task: taskBox}),
-	bottomLoadingPlaceholder: tag(["Loading..."]),
 	class: css.mainPageFeed
 })

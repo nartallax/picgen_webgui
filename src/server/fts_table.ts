@@ -1,19 +1,16 @@
+import {normalizeForFts} from "common/utils/normalize_for_fts"
 import {context} from "server/server_globals"
 
 export class FtsTable {
 	constructor(readonly tableName: string, readonly oldestFirst = false) {}
 
-	private normalize(text: string): string {
-		return text.toLowerCase().replace(/[^a-z\d]/g, " ").replace(/\s{2,}/g, " ")
-	}
-
 	async add(id: number, userId: number, search: string[]): Promise<void> {
-		const text = this.normalize(search.join(" "))
+		const text = normalizeForFts(search.join(" "))
 		await context.get().db.run(`insert into "${this.tableName}"(id, "userId", text) values (?, ?, ?)`, [id, userId, text])
 	}
 
 	async update(id: number, search: string[]): Promise<void> {
-		const text = this.normalize(search.join(" "))
+		const text = normalizeForFts(search.join(" "))
 		await context.get().db.run(`update "${this.tableName}" set text = ? where id = ?`, [text, id])
 	}
 
@@ -22,7 +19,7 @@ export class FtsTable {
 	}
 
 	async search(text: string, pageSize: number, userId: number | null, lastKnownId: number | null): Promise<number[]> {
-		text = this.normalize(text)
+		text = normalizeForFts(text)
 		let query = `select id from "${this.tableName}" where text match ?`
 		const args: unknown[] = [text]
 		if(lastKnownId !== null){

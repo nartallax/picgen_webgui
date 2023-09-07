@@ -419,12 +419,12 @@ export namespace ServerApi {
 	export const searchTasks = RCV.validatedFunction(
 		[RC.struct({
 			query: RC.string(),
-			maxKnownTaskId: RC.union([RC.constant(null), RC.number()]),
+			minKnownTaskId: RC.union([RC.constant(null), RC.number()]),
 			pageSize: RC.number()
 		})],
-		async({query, pageSize, maxKnownTaskId}): Promise<GenerationTaskWithPictures[]> => {
+		async({query, pageSize, minKnownTaskId}): Promise<GenerationTaskWithPictures[]> => {
 			const user = await userDao.getCurrent()
-			const tasks = await generationTaskDao.search(query, pageSize, user.id, maxKnownTaskId)
+			const tasks = await generationTaskDao.search(query, pageSize, user.id, minKnownTaskId)
 			const tasksWithPictures = await generationTaskDao.enrichWithPictures(tasks)
 			return tasksWithPictures
 		}

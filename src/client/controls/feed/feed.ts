@@ -17,6 +17,7 @@ interface FeedProps<T> {
 	class?: string
 	containerClass?: string
 	scrollToTopButton?: boolean
+	repeatedSearchDelay?: number
 }
 
 export const Feed = <T>(props: FeedProps<T>) => {
@@ -24,7 +25,7 @@ export const Feed = <T>(props: FeedProps<T>) => {
 	const isBottomVisible = box(false)
 	const reachedEndOfFeed = box(false)
 	let isLoadingNow = false
-	const bottomPlaceholder = props.bottomLoadingPlaceholder ?? tag(["Loading..."])
+	const bottomPlaceholder = props.bottomLoadingPlaceholder ?? tag({class: css.bottomLoadingPlaceholder}, ["Loading..."])
 
 	const scrollToTopVisible = box(false)
 
@@ -73,9 +74,10 @@ export const Feed = <T>(props: FeedProps<T>) => {
 		// 	console.log("Reached end of feed.")
 		// }
 
-		requestAnimationFrame(() => {
+		requestAnimationFrame(async() => {
 			// for case when loading new values didn't hide the placeholder
 			// in that case isBottomVisible() will stay true without change
+			await new Promise(ok => setTimeout(ok, props.repeatedSearchDelay ?? 500))
 			void tryLoadNext()
 		})
 	}

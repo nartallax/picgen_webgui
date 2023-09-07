@@ -3,7 +3,7 @@ type DebouncedFn<T> = T & {
 	waitForScheduledRun: () => Promise<void>
 }
 
-export function debounce<A extends any[]>(timeMs: number, fn: (...args: A) => void): DebouncedFn<(...args: A) => void> {
+export function debounce<A extends any[]>(timeMs: number, fn: (...args: A) => void, params?: {resetTimerOnEachCall: boolean}): DebouncedFn<(...args: A) => void> {
 	let timer: ReturnType<typeof setTimeout> | null = null
 	let lastArgs: A | null = null
 
@@ -11,7 +11,10 @@ export function debounce<A extends any[]>(timeMs: number, fn: (...args: A) => vo
 
 	const result = (...args: A) => {
 		lastArgs = args
-		if(timer === null){
+		if(timer === null || params?.resetTimerOnEachCall){
+			if(timer !== null){
+				clearTimeout(timer)
+			}
 			debouncedResult.isRunScheduled = true
 			timer = setTimeout(() => {
 				timer = null
