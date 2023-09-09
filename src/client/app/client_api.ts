@@ -48,7 +48,7 @@ export namespace ClientApi {
 		client.call<Picture & PictureInfo>("getPictureInfoById", {id, salt})
 
 	export const uploadPictureAsArgument = (paramSetName: string, paramName: string, fileName: string, data: ArrayBuffer) =>
-		client.callPut<Picture>("uploadPictureAsArgument", data, {paramSetName, paramName, fileName})
+		client.callPut<Picture & PictureInfo>("uploadPictureAsArgument", data, {paramSetName, paramName, fileName})
 
 	export const deleteTask = (taskId: number) =>
 		client.call<void>("deleteTask", {taskId})

@@ -220,14 +220,14 @@ export namespace ServerApi {
 
 	export const uploadPictureAsArgument = RCV.validatedFunction(
 		[RC.struct({paramSetName: RC.string(), paramName: RC.string(), fileName: RC.string(), data: RC.binary()})],
-		async({paramSetName, paramName, fileName, data}): Promise<Picture> => {
+		async({paramSetName, paramName, fileName, data}): Promise<Picture & PictureInfo> => {
 			if(!(data instanceof Buffer)){
 				throw new Error("Data is not buffer!")
 			}
 
 
-			const pic = await pictureDao.uploadPictureAsArgumentAndValidate(paramSetName, paramName, fileName, data)
-			return pictureDao.stripServerData(pic)
+			const {picture, info} = await pictureDao.uploadPictureAsArgumentAndValidate(paramSetName, paramName, fileName, data)
+			return {...pictureDao.stripServerData(picture), ...info}
 		})
 
 	export const deleteTask = RCV.validatedFunction(

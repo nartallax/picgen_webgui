@@ -94,7 +94,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 		}
 	}
 
-	async uploadPictureAsArgumentAndValidate(paramSetName: string, paramName: string, fileName: string, data: Buffer): Promise<ServerPicture> {
+	async uploadPictureAsArgumentAndValidate(paramSetName: string, paramName: string, fileName: string, data: Buffer): Promise<{picture: ServerPicture, info: PictureInfo}> {
 		const paramSet = config.parameterSets.find(set => set.internalName === paramSetName)
 		if(!paramSet){
 			throw new ApiError("validation_not_passed", "Unknown parameter set name: " + paramSetName)
@@ -111,7 +111,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 		const pictureInfo = await generationTaskDao.validateInputPicture(data, paramDef)
 		const user = await userDao.getCurrent()
 		const serverPic = await pictureDao.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
-		return serverPic
+		return {picture: serverPic, info: pictureInfo}
 	}
 
 	protected makeFullPicturePath(fileName: string): string {
