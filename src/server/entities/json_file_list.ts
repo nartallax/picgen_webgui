@@ -8,6 +8,7 @@ import {log} from "server/log"
 import {JsonFileListGenParam} from "common/entities/parameter"
 import {md5} from "common/utils/md5"
 import {config, websocketServer} from "server/server_globals"
+import {debounce} from "client/client_common/debounce"
 
 const jsonListItemFileValidator = RCV.getValidatorBuilder().build(JsonFileListItemDescriptionFile)
 
@@ -92,10 +93,9 @@ export class JSONFileListController {
 		}
 		list.watcher = watch(
 			list.directory,
-			{filter: /.json$/i, recursive: false, delay: 100, persistent: false},
-			async(evt, path) => {
-				log("File watcher event: " + evt + " in " + path)
-
+			{filter: /.json$/i, recursive: false, delay: 1000, persistent: false},
+			// it should be debounced on its own, but for some reason is not
+			debounce(1000, async() => {
 				const callCount = list.reload.callCount
 				await list.reload()
 				if(list.reload.callCount !== callCount + 1){
@@ -109,7 +109,7 @@ export class JSONFileListController {
 					directory: list.directory,
 					items: list.values
 				})
-			}
+			})
 		)
 	}
 
