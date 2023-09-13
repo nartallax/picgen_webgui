@@ -60,11 +60,6 @@
 		}
 
 		&.withDeleteButton {
-			> :not(.deleteButton):not(.favoriteButton) {
-				width: auto;
-				right: 2rem;
-			}
-
 			.deleteButton {
 				display: block;
 			}
