@@ -112,7 +112,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 
 		const pictureInfo = await generationTaskDao.validateInputPicture(data, paramDef)
 		const user = await userDao.getCurrent()
-		const serverPic = await pictureDao.storeExternalPicture(data, user.id, fileName, pictureInfo.ext, {isUsedAsArgument: true})
+		const serverPic = await pictureDao.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
 		return {picture: serverPic, info: pictureInfo}
 	}
 
@@ -292,16 +292,22 @@ export class PictureDAO extends DAO<ServerPicture> {
 		const favTimeField: keyof Picture = "favoritesAddTime"
 		const ownerField: keyof Picture = "ownerUserId"
 		const delField: keyof Picture = "deleted"
+		const isUsedAsArgField: keyof Picture = "isUsedAsArgument"
 		const tasksWithPicCount = await context.get().db.query<Pick<Picture, "generationTaskId"> & {taskPicCount: number}>(`
 			select "${taskIdField}", count("${idField}") as "taskPicCount"
 				from "pictures"
-				where not "isUsedIsArgument"
+				where "${taskIdField}" is not null
+					and not "${isUsedAsArgField}"
 					and "${favTimeField}" is null
 					and not "${delField}"
 					and "${ownerField}" = ?
 				group by "${taskIdField}"
 				order by "${taskIdField}" desc
 		`, [userId])
+		// we technically could delete even not task-related pictures
+		// because isUsedAsArgument is quite reliable
+		// but this will introduce other problems, like ordering
+		// I'll do it later maybe, I don't want to rewrite this function right now
 		let sumCount = tasksWithPicCount.map(task => task.taskPicCount).reduce((a, b) => a + b, 0)
 		while(sumCount > config.pictureCleanup.resultPictureLimitPerUser){
 			const lastTask = tasksWithPicCount.pop()

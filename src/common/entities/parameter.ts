@@ -80,7 +80,8 @@ export const PictureGenParam = RC.struct(RC.structFields({
 		minHeight: RC.int(),
 		sizeStep: RC.int(),
 		square: RC.bool(),
-		mask: RC.bool()
+		mask: RC.bool(),
+		isDefaultRedraw: RC.bool()
 	}
 }), {}, BaseGenParam)
 

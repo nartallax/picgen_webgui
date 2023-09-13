@@ -24,7 +24,18 @@ const ConfigFile = RC.struct(RC.structFields({
 			"refer"
 		]),
 		dbFilePath: RC.string(),
-		parameterSets: RC.roArray(GenerationParameterSet),
+		parameterSets: RC.roArray(GenerationParameterSet, {validators: [
+			sets => {
+				const defaultRedrawParams = sets
+					.flatMap(set => set.parameterGroups)
+					.flatMap(group => group.parameters)
+					.filter(param => param.type === "picture" && param.isDefaultRedraw)
+				if(defaultRedrawParams.length > 1){
+					throw new Error("It is not allowed to have more than one isDefaultRedraw parameter in the whole config.")
+				}
+				return true
+			}
+		]}),
 		thumbnails: RC.roStruct({
 			directory: RC.string(),
 			height: RC.int()

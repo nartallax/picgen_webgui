@@ -23,11 +23,11 @@ export const Picture = RC.struct(RC.structFields({
 		name: RC.union([RC.constant(null), RC.string()]),
 		salt: RC.int(),
 		modifiedArguments: RC.union([RC.constant(null), GenerationTaskArgsObject]),
-		deleted: RC.bool(),
-		isUsedAsArgument: RC.bool()
+		deleted: RC.bool()
 	},
 	normal: {
-		favoritesAddTime: RC.union([RC.constant(null), RC.int()])
+		favoritesAddTime: RC.union([RC.constant(null), RC.int()]),
+		isUsedAsArgument: RC.bool()
 	}
 }))
 

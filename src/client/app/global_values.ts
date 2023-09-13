@@ -1,4 +1,4 @@
-import {box} from "@nartallax/cardboard"
+import {RBox, box} from "@nartallax/cardboard"
 import {localStorageBox} from "@nartallax/cardboard-dom"
 import {ThumbnailProvider} from "client/app/thumbnail_provider"
 import {globalCssVariableLocalStorageBox} from "client/base/css_variable_box"
@@ -8,7 +8,7 @@ import {MainPage} from "client/pages/main_page/main_page"
 import {NotAllowedPage} from "client/pages/not_allowed_page/not_allowed_page"
 import {GenerationTaskArgument} from "common/entities/arguments"
 import {JsonFileListItemDescription} from "common/entities/json_file_list"
-import {GenerationParameterSet} from "common/entities/parameter"
+import {GenerationParameterSet, PictureGenParam} from "common/entities/parameter"
 import {User} from "common/entities/user"
 
 
@@ -31,10 +31,21 @@ export const toastDurationOverride = localStorageBox(document.body, "userSetting
 export const argumentsByParamSet = localStorageBox<Record<string, Record<string, GenerationTaskArgument>>>(document.body, "genArguments", {})
 export const lockedParameters = localStorageBox<Record<string, boolean>>(document.body, "lockedParameters", {})
 export const currentParamSetName = localStorageBox(document.body, "fixedGenArgument.selectedParamSetName", "")
-export const currentParamSetArgs = box(argumentsByParamSet.get()[currentParamSetName.get()] ?? {})
 
 export const allKnownParamSets = box<GenerationParameterSet[]>([])
 export const allKnownJsonFileLists = box<{readonly [name: string]: readonly JsonFileListItemDescription[]}>({})
+export const defaultRedrawParameter: RBox<[GenerationParameterSet, PictureGenParam] | null> = allKnownParamSets.map(sets => {
+	for(const set of sets){
+		for(const group of set.parameterGroups){
+			for(const param of group.parameters){
+				if(param.type === "picture" && param.isDefaultRedraw){
+					return [set, param]
+				}
+			}
+		}
+	}
+	return null
+})
 
 // export const currentArguments = calcBox([argumentsByParamSet, currentParamSetName, allKnownParamSets],
 // 	(allArgs, name, allParamSets) => {

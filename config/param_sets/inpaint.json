@@ -8,10 +8,11 @@
 			"type": "picture",
 			"sizeStep": 16,
 			"square": true,
-			"allowedTypes": ["jpg", "png"],
+			"allowedTypes": ["jpg", "png", "webp"],
 			"jsonName": "inpaint",
 			"uiName": "InPaint",
-			"mask": true
+			"mask": true,
+			"isDefaultRedraw": true
 		}]
 	}, {"include": "./config/param_groups/loras.json"}]
 }

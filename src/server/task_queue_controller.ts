@@ -65,7 +65,14 @@ export class TaskQueueController {
 	}
 
 	async addToQueue(inputData: GenerationTaskInputData): Promise<GenerationTask> {
-		await generationTaskDao.validateInputData(inputData)
+		const inputPictures = await generationTaskDao.validateInputData(inputData)
+
+		for(const picture of inputPictures){
+			if(!picture.isUsedAsArgument){
+				picture.isUsedAsArgument = true
+				await pictureDao.update(picture)
+			}
+		}
 
 		const user = await userDao.getCurrent()
 		const genTask: Omit<GenerationTask, "id"> = {

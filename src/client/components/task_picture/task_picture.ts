@@ -12,6 +12,7 @@ import {ThumbnailProvidingContext} from "client/app/thumbnail_provider"
 import notFoundSvg from "../../../../static/not_found.svg"
 import {Icon} from "client/generated/icons"
 import {makeDeletionTimer} from "client/client_common/deletion_timer"
+import {argumentsByParamSet, currentParamSetName, defaultRedrawParameter} from "client/app/global_values"
 
 interface TaskPictureProps {
 	picture: WBox<Picture>
@@ -158,6 +159,42 @@ class TaskPictureContext {
 		})
 		return favoriteButton
 	}
+
+	makeRedrawButton(): HTMLElement {
+		const redrawButton = tag({
+			class: [Icon.repaint, css.iconRepaint],
+			style: {
+				display: defaultRedrawParameter.map(x => x ? "" : "none")
+			}
+		})
+
+		redrawButton.addEventListener("click", e => {
+			const picParam = defaultRedrawParameter.get()
+			if(!picParam){
+				return
+			}
+			const [paramSet, param] = picParam
+			const allArgs = argumentsByParamSet.get()
+			const paramSetArgs = allArgs[paramSet.internalName]
+			if(!paramSetArgs){
+				return
+			}
+			e.stopPropagation()
+
+			const pic = this.picture.get()
+			argumentsByParamSet.set({
+				...allArgs,
+				[paramSet.internalName]: {
+					...paramSetArgs,
+					[param.jsonName]: {id: pic.id, salt: pic.salt}
+				}
+			})
+			currentParamSetName.set(paramSet.internalName)
+		})
+
+
+		return redrawButton
+	}
 }
 
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
@@ -204,7 +241,9 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 				])
 			]),
 			tag({class: css.middleRow}, [
-				tag({class: [css.iconOpen, Icon.resizeFullAlt]})
+				tag({class: css.sideColumn}),
+				tag({class: [css.iconOpen, Icon.resizeFullAlt]}),
+				tag({class: css.sideColumn}, [context.makeRedrawButton()])
 			]),
 			tag({class: css.bottomRow}, [context.makeFavButton(), context.makeLinkButton()])
 		])
@@ -253,7 +292,8 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 					cont.makeCopyButton(),
 					cont.makeCopyTaskButton(),
 					cont.makeShowParamsButton(false),
-					cont.makeShowParamsButton(true)
+					cont.makeShowParamsButton(true),
+					cont.makeRedrawButton()
 				])
 			]
 		}

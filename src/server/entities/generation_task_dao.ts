@@ -166,7 +166,10 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 		return getParamDefList(this.getParamSet(name))
 	}
 
-	async validateInputData(inputData: GenerationTaskInputData): Promise<void> {
+	// returns list of pictures used in this generation task as inputs.
+	// those pictures should then be marked as inputs, to avoid deletion
+	async validateInputData(inputData: GenerationTaskInputData): Promise<ServerPicture[]> {
+		const result: ServerPicture[] = []
 		const paramDefs = this.getParams(inputData.paramSetName)
 		for(const def of paramDefs){
 			const argument = inputData.arguments[def.jsonName]
@@ -219,10 +222,15 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be a description of picture; it is ${argument} now.`)
 					}
 					const picture = await pictureDao.getById(argument.id)
+					if(picture.salt !== argument.salt){
+						throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} has incorrect salt.`)
+					}
 					await this.validateInputPicture(picture, def)
+					result.push(picture)
 				} break
 			}
 		}
+		return result
 	}
 
 	async validateInputPicture(picture: ServerPicture | Buffer, def: PictureGenParam): Promise<PictureInfo> {
