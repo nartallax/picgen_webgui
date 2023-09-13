@@ -4,11 +4,11 @@ import {TaskPicture} from "client/components/task_picture/task_picture"
 import {thumbnailProvider} from "client/app/global_values"
 import {Picture, PictureWithTask} from "common/entities/picture"
 
-interface Props {
+interface Props extends Partial<SimpleFeedFetcherParams<Picture, PictureWithTask>> {
 	fetch: SimpleFeedFetcherParams<Picture, PictureWithTask>["fetch"]
 }
 
-export const ImageFeed = (props: Props) => {
+export const PictureFeed = (props: Props) => {
 	const thumbContext = thumbnailProvider.makeContext()
 	return Feed({
 		scrollToTopButton: true,
@@ -17,9 +17,9 @@ export const ImageFeed = (props: Props) => {
 		getId: picture => picture.id,
 		renderElement: picture => TaskPicture({picture, thumbContext}),
 		loadNext: makeSimpleFeedFetcher<Picture, PictureWithTask>({
-			fetch: props.fetch,
 			desc: true,
-			packSize: 50
+			packSize: 50,
+			...props
 		})
 	})
 }

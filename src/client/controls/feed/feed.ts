@@ -111,7 +111,7 @@ export interface SimpleFeedFetcherParams<T extends Record<string, unknown> & Ide
 }
 
 export function makeSimpleFeedFetcher<T extends Record<string, unknown> & IdentifiedEntity, O extends Record<string, unknown> & IdentifiedEntity = T>(params: SimpleFeedFetcherParams<T, O>): (loadedValues: O[]) => Promise<O[]> {
-	const sortBy = params.sortBy ?? "id"
+	const sortBy: keyof T & string = params.sortBy ?? "id"
 	return loadedValues => {
 		const lastEntry = loadedValues[loadedValues.length - 1]
 		const filters: BinaryQueryCondition<T>[] = []
@@ -119,7 +119,8 @@ export function makeSimpleFeedFetcher<T extends Record<string, unknown> & Identi
 			filters.push({
 				a: {field: sortBy},
 				op: "<",
-				b: {value: lastEntry.id}
+				// that's not entirely correct, but I'm not sure how to type it better
+				b: {value: lastEntry[sortBy] as string}
 			})
 		}
 		return params.fetch({

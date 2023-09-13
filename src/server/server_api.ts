@@ -7,7 +7,6 @@ import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} fro
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
-import {unixtime} from "server/utils/unixtime"
 import {JsonFileList} from "common/entities/json_file_list"
 import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, thumbnails, userDao} from "server/server_globals"
 import {getHttpContext} from "server/context"
@@ -336,7 +335,7 @@ export namespace ServerApi {
 			if(picture.ownerUserId !== user.id){
 				throw new Error(`Picture ${picture.id} does not belong to user ${user.id}.`)
 			}
-			picture.favoritesAddTime = isFavorite ? unixtime() : null
+			picture.favoritesAddTime = isFavorite ? Date.now() : null
 			await pictureDao.update(picture)
 			return picture.favoritesAddTime
 		}

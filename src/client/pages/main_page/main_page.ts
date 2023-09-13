@@ -14,7 +14,7 @@ import {SwitchPanel} from "client/controls/switch_panel/switch_panel"
 import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {fixArgumentMap, getAllGenParamDefs} from "client/app/fix_argument_object"
 import {getLockBox} from "client/controls/lock_button/lock_button"
-import {ImageFeed} from "client/components/feeds/image_feed"
+import {PictureFeed} from "client/components/feeds/picture_feed"
 import {TaskFeed} from "client/components/feeds/task_feed"
 import {MainMenu} from "client/components/main_menu/main_menu"
 import {MainMenuButton} from "client/components/main_menu/main_menu_button"
@@ -76,11 +76,12 @@ export function MainPage(): HTMLElement {
 								value: selectedTab,
 								class: css.mainPageSwitchPanel,
 								routes: {
-									favorites: () => ImageFeed({
+									favorites: () => PictureFeed({
 										fetch: query => {
 											(query.filters ||= []).push({a: {field: "favoritesAddTime"}, op: "!=", b: {value: null}})
 											return ClientApi.listPicturesWithTasks(query)
-										}
+										},
+										sortBy: "favoritesAddTime"
 									}),
 									tasks: () => TaskFeed({
 										fetch: ClientApi.listTasks,

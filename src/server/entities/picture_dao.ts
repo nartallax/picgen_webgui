@@ -316,7 +316,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 				return
 			}
 			const pics = (await this.queryAllByFieldValue("generationTaskId", lastTask.generationTaskId))
-				.filter(x => !x.deleted && !x.favoritesAddTime)
+				.filter(x => !x.deleted && !x.favoritesAddTime && !x.isUsedAsArgument)
 			sumCount -= pics.length
 			await Promise.all([
 				...pics.map(pic => this.update({...pic, deleted: true})),

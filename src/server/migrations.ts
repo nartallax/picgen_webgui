@@ -406,6 +406,18 @@ export const migrations: Migration[] = [
 		await db.run(`
 			update "pictures" set "isUsedAsArgument" = "generationTaskId" is null;
 		`)
+	}},
+
+	{name: "00027", handler: async db => {
+		await db.run(`
+			update "pictures" set "favoritesAddTime" = "favoritesAddTime" * 1000 where "favoritesAddTime" is not null;
+		`)
+	}},
+
+	{name: "00028", handler: async db => {
+		await db.run(`
+			update "pictures" set "favoritesAddTime" = "favoritesAddTime" + abs(random() % 1000) where "favoritesAddTime" is not null;
+		`)
 	}}
 
 ]
