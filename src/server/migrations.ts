@@ -393,6 +393,19 @@ export const migrations: Migration[] = [
 			}
 		})
 		log("Full-text search index building completed!")
+	}},
+
+	{name: "00025", handler: async db => {
+		await db.run(`
+			alter table "pictures"
+			add "isUsedAsArgument" bool;
+		`)
+	}},
+
+	{name: "00026", handler: async db => {
+		await db.run(`
+			update "pictures" set "isUsedAsArgument" = "generationTaskId" is null;
+		`)
 	}}
 
 ]

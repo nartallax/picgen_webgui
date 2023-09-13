@@ -65,6 +65,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 
 	protected override fieldFromDb<K extends keyof ServerPicture & string>(field: K, value: ServerPicture[K]): unknown {
 		switch(field){
+			case "isUsedAsArgument":
 			case "deleted":
 				return !!value
 			case "modifiedArguments": return value === null ? null : JSON.parse(value as string)
@@ -90,7 +91,8 @@ export class PictureDAO extends DAO<ServerPicture> {
 			salt: pic.salt,
 			modifiedArguments: pic.modifiedArguments,
 			favoritesAddTime: pic.favoritesAddTime,
-			deleted: pic.deleted
+			deleted: pic.deleted,
+			isUsedAsArgument: pic.isUsedAsArgument
 		}
 	}
 
@@ -110,7 +112,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 
 		const pictureInfo = await generationTaskDao.validateInputPicture(data, paramDef)
 		const user = await userDao.getCurrent()
-		const serverPic = await pictureDao.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
+		const serverPic = await pictureDao.storeExternalPicture(data, user.id, fileName, pictureInfo.ext, {isUsedAsArgument: true})
 		return {picture: serverPic, info: pictureInfo}
 	}
 
@@ -122,7 +124,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 		return Math.floor(Math.random() * 0xffffffff)
 	}
 
-	async storeGeneratedPictureByContent(data: Buffer, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"]): Promise<ServerPicture> {
+	async storeGeneratedPictureByContent(data: Buffer, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"], otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
 		return await this.storePicture(data, {
 			generationTaskId: genTask.id,
 			ownerUserId: genTask.userId,
@@ -131,11 +133,13 @@ export class PictureDAO extends DAO<ServerPicture> {
 			salt: this.getSalt(),
 			modifiedArguments,
 			favoritesAddTime: null,
-			deleted: false
+			deleted: false,
+			isUsedAsArgument: false,
+			...(otherFields || {})
 		})
 	}
 
-	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"]): Promise<ServerPicture> {
+	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"], otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
 		const relPath = Path.relative(config.pictureStorageDir, path)
 		const result = await this.create({
 			creationTime: unixtime(),
@@ -148,13 +152,15 @@ export class PictureDAO extends DAO<ServerPicture> {
 			salt: this.getSalt(),
 			modifiedArguments,
 			favoritesAddTime: null,
-			deleted: false
+			deleted: false,
+			isUsedAsArgument: false,
+			...(otherFields || {})
 		})
 		await thumbnails.makeThumbnail(result)
 		return result
 	}
 
-	async storeExternalPicture(data: Buffer, userId: number, name: string, ext: PictureType): Promise<ServerPicture> {
+	async storeExternalPicture(data: Buffer, userId: number, name: string, ext: PictureType, otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
 		return await this.storePicture(data, {
 			generationTaskId: null,
 			ownerUserId: userId,
@@ -163,7 +169,9 @@ export class PictureDAO extends DAO<ServerPicture> {
 			salt: this.getSalt(),
 			modifiedArguments: null,
 			favoritesAddTime: null,
-			deleted: false
+			deleted: false,
+			isUsedAsArgument: false,
+			...(otherFields || {})
 		})
 	}
 
@@ -287,7 +295,7 @@ export class PictureDAO extends DAO<ServerPicture> {
 		const tasksWithPicCount = await context.get().db.query<Pick<Picture, "generationTaskId"> & {taskPicCount: number}>(`
 			select "${taskIdField}", count("${idField}") as "taskPicCount"
 				from "pictures"
-				where "${taskIdField}" is not null
+				where not "isUsedIsArgument"
 					and "${favTimeField}" is null
 					and not "${delField}"
 					and "${ownerField}" = ?
