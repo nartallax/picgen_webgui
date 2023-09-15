@@ -182,7 +182,7 @@ export class HttpServer {
 
 	private async processApiRequest(url: URL, req: Http.IncomingMessage, res: Http.ServerResponse): Promise<void> {
 		const methodName = url.pathname.substring(this.opts.apiRoot.length)
-		const apiMethod = this.opts.apiMethods[methodName]
+		const apiMethod = Object.hasOwn(this.opts.apiMethods, methodName) ? this.opts.apiMethods[methodName] : null
 		if(!apiMethod){
 			return await endRequest(res, 404, "Your Api Call Sucks")
 		}
