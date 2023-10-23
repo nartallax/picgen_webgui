@@ -7,7 +7,7 @@ interface CookieUpdate {
 
 const forceExpireCookieAttr = "expires=Thu, 01 Jan 1970 00:00:00 GMT"
 // could also add `secure` here, but this app won't be always hosted over https. oh well.
-const defaultCookieAttr = "path=/; httponly"
+const defaultCookieAttr = "path=/; httponly; SameSite=Strict"
 
 export class CookieController {
 

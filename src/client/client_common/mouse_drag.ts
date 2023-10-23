@@ -216,7 +216,8 @@ function setDragTargetState(el: HTMLElement, isDragTarget: boolean): void {
 }
 
 function isMultiTouchEvent(e: MouseEvent | TouchEvent): boolean {
-	return (e instanceof TouchEvent) && e.touches.length > 1
+	// check for absent TouchEvent for firefox, where it is not defined at all
+	return typeof(TouchEvent) !== "undefined" && (e instanceof TouchEvent) && e.touches.length > 1
 }
 
 function findDragTarget(e: Event): HTMLElement | Window {
