@@ -26,7 +26,7 @@ export const paramsColumnMinWidth = globalCssVariableLocalStorageBox("--params-c
 export const formLabelWidth = globalCssVariableLocalStorageBox("--form-label-width", "50%")
 export const visualTheme = localStorageBox<"default" | "dark">(document.body, "userSettings.visualTheme", "default")
 export const toastCountLimit = localStorageBox(document.body, "userSettings.toastCountLimit", -1)
-export const toastDurationOverride = localStorageBox(document.body, "userSettings.toastCountLimit", -1)
+export const toastDurationOverride = localStorageBox(document.body, "userSettings.toastDurationOverride", -1)
 
 export const argumentsByParamSet = localStorageBox<Record<string, Record<string, GenerationTaskArgument>>>(document.body, "genArguments", {})
 export const lockedParameters = localStorageBox<Record<string, boolean>>(document.body, "lockedParameters", {})
