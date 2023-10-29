@@ -139,6 +139,10 @@ $arrowButtonSize: 3rem;
 		font-weight: bold;
 		padding: 0.25rem;
 
+		&:before {
+			margin-right: 0.25rem;
+		}
+
 		&.hidden {
 			display: none;
 		}

@@ -58,7 +58,8 @@ export class TaskQueueController {
 			sendTaskUpdate(task, {
 				type: "task_finished",
 				taskId: task.id,
-				finishTime: task.finishTime
+				finishTime: task.finishTime,
+				exitCode: task.exitCode
 			})
 			await generationTaskDao.update(task)
 		}
@@ -184,7 +185,8 @@ export class TaskQueueController {
 			sendTaskNotification({
 				type: "task_finished",
 				taskId: task.id,
-				finishTime: finishTime
+				finishTime: finishTime,
+				exitCode: exitResult.code
 			})
 
 			await generationTaskDao.cleanupInputData(preparedInputData)

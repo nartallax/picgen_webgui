@@ -71,7 +71,12 @@ export class WebsocketListener {
 			case "task_finished":
 				this.updateTaskById(
 					notification.taskId,
-					task => ({...task, status: "completed", finishTime: notification.finishTime})
+					task => ({
+						...task,
+						status: "completed",
+						finishTime: notification.finishTime,
+						exitCode: notification.exitCode
+					})
 				)
 				break
 			case "task_generated_picture":

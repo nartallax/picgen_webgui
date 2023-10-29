@@ -54,6 +54,7 @@ export interface TaskFinishedNotification {
 	type: "task_finished"
 	taskId: number
 	finishTime: number
+	exitCode: number
 }
 
 export interface TaskStartedNotification {
