@@ -29,7 +29,8 @@ export const NoteBlock = defineControl((props: Props) => {
 					tag: "textarea",
 					class: css.noteInput,
 					onChange: () => props.note.set(input.value),
-					onKeyup: () => props.note.set(input.value)
+					onKeyup: () => props.note.set(input.value),
+					onBlur: () => props.isEditing.set(false)
 				})
 				input.value = props.note.get()
 				requestAnimationFrame(() => {
@@ -50,7 +51,8 @@ export const NoteBlock = defineControl((props: Props) => {
 
 	let isSaveOngoing = false
 	let lastSavedNote = props.note.get()
-	const saveDebounced = debounce(500, async() => {
+
+	const save = async() => {
 		const note = props.note.get()
 		if(note === lastSavedNote){
 			return
@@ -66,9 +68,16 @@ export const NoteBlock = defineControl((props: Props) => {
 		} finally {
 			isSaveOngoing = false
 		}
-	})
+	}
+
+	const saveDebounced = debounce(500, save)
 
 	bindBox(result, props.note, saveDebounced)
+	bindBox(result, props.isEditing, isEditing => {
+		if(!isEditing){
+			void save()
+		}
+	})
 
 	return result
 })

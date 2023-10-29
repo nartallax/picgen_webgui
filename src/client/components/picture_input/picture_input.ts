@@ -100,7 +100,12 @@ export function PictureInput(props: PictureInputProps): HTMLElement {
 			type: "file",
 			accept: pictureTypesArr.map(x => "." + x).join(",")
 		},
-		onChange: () => onFileSelected(input.files?.[0])
+		onChange: () => onFileSelected(input.files?.[0]),
+		onKeydown: e => {
+			if(e.key === "Escape"){
+				input.blur()
+			}
+		}
 	})
 
 	bindBox(input, props.value, async({id, salt}) => {

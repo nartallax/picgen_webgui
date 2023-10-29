@@ -20,7 +20,12 @@ export async function showTaskArgsModal(args?: GenerationTaskInputData): Promise
 	const textArea = tag({
 		tag: "textarea",
 		attrs: {readonly: !!args, rows: 4},
-		style: {resize: "none", padding: "0.25rem", width: "100%"}
+		style: {resize: "none", padding: "0.25rem", width: "100%"},
+		onKeydown: e => {
+			if(e.key === "Escape"){
+				textArea.blur()
+			}
+		}
 	})
 
 	const modal = showModal({

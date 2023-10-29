@@ -16,7 +16,12 @@ export const SearchBar = (props: Props) => {
 			[css.expanded!]: props.isSearchActive
 		}],
 		onChange: () => props.searchText.set(input.value),
-		onKeyup: () => props.searchText.set(input.value)
+		onKeyup: () => props.searchText.set(input.value),
+		onKeydown: e => {
+			if(e.key === "Escape"){
+				input.blur()
+			}
+		}
 	})
 
 	return tag({class: css.searchBar}, [

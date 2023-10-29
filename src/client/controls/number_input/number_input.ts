@@ -72,7 +72,13 @@ export const NumberInput = defineControl((props: NumberInputProps) => {
 	const input = tag({
 		tag: "input",
 		class: css.numberInput,
-		onKeydown: tryUpdateValueWithoutFixing,
+		onKeydown: e => {
+			if(e.key === "Escape"){
+				input.blur()
+			} else {
+				tryUpdateValueWithoutFixing()
+			}
+		},
 		onKeyup: tryUpdateValueWithoutFixing,
 		onInput: tryUpdateValueWithoutFixing,
 		onChange: tryUpdateValueWithoutFixing

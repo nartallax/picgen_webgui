@@ -20,6 +20,11 @@ export const TextInput = defineControl((props: TextInputProps) => {
 	const input: HTMLInputElement | HTMLTextAreaElement = tag({
 		tag: isTextarea ? "input" : "textarea",
 		class: css.textInput,
+		onKeydown: e => {
+			if(e.key === "Escape"){
+				input.blur()
+			}
+		},
 		onBlur: () => props.value.set(input.value),
 		attrs: {
 			disabled: props.disabled,

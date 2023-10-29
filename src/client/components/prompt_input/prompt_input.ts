@@ -19,7 +19,12 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 			placeholder: "...Enter a description of the desired result",
 			rows: 100
 		},
-		onInput: () => props.promptValue.set(input.value)
+		onInput: () => props.promptValue.set(input.value),
+		onKeydown: e => {
+			if(e.key === "Escape"){
+				input.blur()
+			}
+		}
 	})
 
 	input.addEventListener("keydown", e => {
