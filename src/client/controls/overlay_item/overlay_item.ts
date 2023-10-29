@@ -13,7 +13,6 @@ type Props = {
 	referencePosition?: Corner
 	canShiftVertically?: boolean
 	canShiftHorisonally?: boolean
-	parent?: HTMLElement
 }
 
 type OverlayItem = {
@@ -53,24 +52,8 @@ export const makeOverlayItem = (props: Props): void => {
 
 
 const showOverlayItem = (props: Props): OverlayItem => {
-	let nearestRelParent: HTMLElement = document.body
-	if(props.parent){
-		let el = props.parent
-		while(true){
-			const pos = window.getComputedStyle(el).position
-			if(pos === "relative" || pos === "absolute" || pos === "fixed" || pos === "sticky"){
-				nearestRelParent = el
-				break
-			}
-			if(!(el.parentElement instanceof HTMLElement) || el.parentElement === document.body){
-				break
-			}
-			el = el.parentElement
-		}
-	}
-
 	const rect = props.referenceElement.getBoundingClientRect()
-	const parentRect = nearestRelParent.getBoundingClientRect()
+	const parentRect = document.body.getBoundingClientRect()
 
 	const tooltipPosition = parseCorner(props.overlayPosition ?? "topLeft")
 	const referencePosition = parseCorner(props.referencePosition ?? "topRight")
@@ -116,9 +99,9 @@ const showOverlayItem = (props: Props): OverlayItem => {
 			hPadding,
 			tag({class: css.overlayContentWrap}, [props.body])
 		])
-	]);
+	])
 
-	(props.parent ?? document.body).appendChild(result)
+	document.body.appendChild(result)
 	requestAnimationFrame(() => {
 		if(result.parentElement && !result.style.opacity){
 			result.style.opacity = "1"

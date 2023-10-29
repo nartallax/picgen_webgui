@@ -6,8 +6,9 @@ import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {addTouchZoom} from "client/client_common/touch_zoom"
 import {debounce} from "client/client_common/debounce"
-import {preventGalleryImageInteractions, shiftWheelForZoom} from "client/app/global_values"
+import {preventGalleryImageInteractions, shiftWheelForZoom, shiftWheelHint} from "client/app/global_values"
 import {SmoothValueChanger} from "client/base/smooth_value_changer"
+import {TopToast, showTopToast} from "client/controls/toast/top_toast"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
@@ -499,4 +500,17 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		getZoom: () => zoom.get(),
 		setZoom: (zoomValue, centerCoords) => setZoomByCoords(centerCoords, zoomValue, true)
 	})
+
+	let toast: TopToast | null = null
+	if(shiftWheelForZoom.get() && shiftWheelHint.get()){
+		toast = showTopToast({
+			text: "Shift+wheel for zoom, wheel for scroll.\nAdjustable in settings.",
+			timeMs: 2000
+		})
+	}
+
+	await modal.waitClose()
+	if(toast){
+		toast.remove()
+	}
 }

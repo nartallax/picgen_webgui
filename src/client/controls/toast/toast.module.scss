@@ -36,3 +36,29 @@
 	}
 
 }
+
+.topToastWrap {
+	width: 100vw;
+	padding: 2rem;
+	pointer-events: none;
+
+	display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.topToast {
+	pointer-events: none;
+	text-align: center;
+	overflow-y: auto;
+
+	background: var(--color-block-accent);
+	border: 2px solid var(--color-font-on-block);
+	color: var(--color-font-on-block);
+	border-radius: 1rem;
+	padding: 0.75rem;
+	font-size: 1rem;
+	max-width: 35rem;
+	width: max-content;
+	white-space: pre-wrap;
+}

@@ -1,4 +1,4 @@
-import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth, visualTheme, toastCountLimit, toastDurationOverride, shiftWheelForZoom} from "client/app/global_values"
+import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth, visualTheme, toastCountLimit, toastDurationOverride, shiftWheelForZoom, shiftWheelHint} from "client/app/global_values"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
@@ -91,6 +91,13 @@ export const showUserSettingsModal = (): Modal => {
 			hint: "If enabled, wheel scrolling in image viewer will lead to horisontal pan, and shift+wheel to zoom.\nIf disabled - this behaviour is inverted.",
 			revertable: shiftWheelForZoom.map(enabled => !enabled),
 			onRevert: () => shiftWheelForZoom.set(true)
+		}),
+		FormField({
+			input: BoolInput({value: shiftWheelHint}),
+			label: "Shift+wheel hint",
+			hint: "If enabled, and shift+wheel for zoom is enabled, a hint will be shown each time user opens image viewer.",
+			revertable: shiftWheelHint.map(enabled => !enabled),
+			onRevert: () => shiftWheelHint.set(true)
 		}),
 		FormField({
 			input: NumberInput({value: toastCountLimit}),
