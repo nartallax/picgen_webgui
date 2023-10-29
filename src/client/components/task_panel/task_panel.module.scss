@@ -146,7 +146,7 @@ $arrowButtonSize: 3rem;
 
 }
 
-@media (hover: hover) {
+@media (any-hover: hover) {
     .arrow:hover {
 		background-color: var(--color-block-auxiliary);
 	}

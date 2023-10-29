@@ -83,7 +83,7 @@
 
 }
 
-@media (hover: hover) {
+@media (any-hover: hover) {
     .generateButton:hover {
 		background: var(--color-button-active);
 	}

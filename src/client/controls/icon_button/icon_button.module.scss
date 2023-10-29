@@ -20,7 +20,7 @@
 
 }
 
-@media (hover: hover) {
+@media (any-hover: hover) {
     .iconButton:hover {
 		background: var(--color-button-active);
 	}

@@ -171,7 +171,7 @@ $max-size: 23em;
 	justify-content: flex-end;
 }
 
-@media (hover: hover) {
+@media (any-hover: hover) {
     .overlay:hover {
 		opacity: 1;
 	}
