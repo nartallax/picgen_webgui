@@ -4,9 +4,9 @@ import {VisibilityNotifier} from "client/controls/visibility_notifier/visibility
 import * as css from "./feed.module.scss"
 import {IdentifiedEntity} from "server/dao"
 import {BinaryQueryCondition, SimpleListQueryParams} from "common/infra_entities/query"
-import {SoftValueChanger} from "client/base/soft_value_changer"
 import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
 import {Icon} from "client/generated/icons"
+import {SmoothValueChanger} from "client/base/smooth_value_changer"
 
 interface FeedProps<T> {
 	values?: WBox<T[]>
@@ -44,11 +44,10 @@ export const Feed = <T>(props: FeedProps<T>) => {
 		}, [bottomPlaceholder])
 	])
 
-	const scroller = new SoftValueChanger({
-		timeMs: 250,
-		getValue: () => result.scrollTop,
-		setValue: v => result.scrollTop = v
-	})
+	const scroller = new SmoothValueChanger({
+		get: () => result.scrollTop,
+		set: v => result.scrollTop = v
+	}, 250, {int: true})
 
 	if(props.scrollToTopButton){
 		makeOverlayItem({

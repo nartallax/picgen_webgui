@@ -4,10 +4,10 @@ import * as css from "./image_viewer.module.scss"
 import {RBox, box, calcBox} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
-import {SoftValueChanger} from "client/base/soft_value_changer"
 import {addTouchZoom} from "client/client_common/touch_zoom"
 import {debounce} from "client/client_common/debounce"
-import {preventGalleryImageInteractions} from "client/app/global_values"
+import {preventGalleryImageInteractions, shiftWheelForZoom} from "client/app/global_values"
+import {SmoothValueChanger} from "client/base/smooth_value_changer"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
@@ -182,11 +182,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	let defaultZoom = 1
 	const zoom = box(defaultZoom)
-	const zoomChanger = new SoftValueChanger({
-		getValue: () => zoom.get(),
-		setValue: value => zoom.set(value),
-		timeMs: 50
-	})
+	const smoothZoomChanger = new SmoothValueChanger(zoom, 150, {curvePower: 3})
 
 	let lastScrollActionCoords: {
 		abs: {x: number, y: number}
@@ -199,7 +195,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		if(targetIndex >= imgArr.length || targetIndex < 0){
 			return
 		}
-		centerOn(imgArr[targetIndex]!)
+		centerOn(imgArr[targetIndex]!, true, true)
 	}
 
 	function getCentralImageIndex(): number {
@@ -215,20 +211,23 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return imgArr.length - 1
 	}
 
-	function centerOn(img: HTMLImageElement): void {
-		const natHeight = props.equalizeByHeight ? maxNatHeight.get() : img.naturalHeight
-		const natWidth = props.equalizeByHeight ? (img.naturalWidth / img.naturalHeight) * maxNatHeight.get() : img.naturalWidth
-		const hRatio = window.innerHeight / natHeight
-		const wRatio = window.innerWidth / natWidth
-		defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * defaultOffsetZoomMult)
-		zoom.set(defaultZoom)
-		zoomChanger.reset()
+	const smoothXChanger = new SmoothValueChanger(xPos, 150, {curvePower: 3})
+	const smoothYChanger = new SmoothValueChanger(yPos, 150, {curvePower: 3})
+	function centerOn(img: HTMLImageElement, smooth?: boolean, preserveZoom?: boolean): void {
+		if(!preserveZoom){
+			const natHeight = props.equalizeByHeight ? maxNatHeight.get() : img.naturalHeight
+			const natWidth = props.equalizeByHeight ? (img.naturalWidth / img.naturalHeight) * maxNatHeight.get() : img.naturalWidth
+			const hRatio = window.innerHeight / natHeight
+			const wRatio = window.innerWidth / natWidth
+			defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * defaultOffsetZoomMult)
+			smoothZoomChanger.set(defaultZoom)
+		}
 
 		const imgRect = img.getBoundingClientRect()
 		const imgLeft = imgRect.left - (window.innerWidth / 2)
 
-		yPos.set(0)
-		xPos.set(xPos.get() + imgLeft + (imgRect.width / 2))
+		;(smooth ? smoothYChanger : yPos).set(0)
+		;(smooth ? smoothXChanger : xPos).set(xPos.get() + imgLeft + (imgRect.width / 2))
 
 		updatePanX()
 		updatePanY()
@@ -259,7 +258,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			zoom.set(value)
 			scrollCoordsToPoint(lastScrollActionCoords.abs, lastScrollActionCoords.rel)
 		} else {
-			zoomChanger.set(value)
+			smoothZoomChanger.set(value)
 		}
 	}
 
@@ -436,7 +435,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 	function getNextZoomValue(direction: -1 | 1, currentImageZoomness: number, speed: number): number {
 
-		const nowZoom = zoomChanger.currentTargetValue
+		const nowZoom = smoothZoomChanger.get()
 		let nextZoom = nowZoom * (direction === 1 ? (1 + speed) : (1 / (1 + speed)))
 
 		function willHitZoomBreakpoint(breakpoint: number): boolean {
@@ -461,8 +460,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return nextZoom
 	}
 
-	modal.overlay.addEventListener("wheel", e => {
-		e.preventDefault()
+	const stepZoom = (e: WheelEvent) => {
 		const centralIndex = getCentralImageIndex()
 		const centralImage = imgs.get()[centralIndex]!
 		setZoom(e, getNextZoomValue(
@@ -470,6 +468,20 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			calcZoomnessRate(centralImage),
 			props.zoomSpeed ?? 0.2
 		))
+	}
+
+	const stepShift = (e: WheelEvent) => {
+		const direction = e.deltaY > 0 ? 1 : -1
+		scrollToNextImage(direction)
+	}
+
+	modal.overlay.addEventListener("wheel", e => {
+		e.preventDefault()
+		if(e.shiftKey === shiftWheelForZoom.get()){
+			stepZoom(e)
+		} else {
+			stepShift(e)
+		}
 	})
 
 	addDragScroll({

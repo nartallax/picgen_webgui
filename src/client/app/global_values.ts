@@ -27,6 +27,7 @@ export const formLabelWidth = globalCssVariableLocalStorageBox("--form-label-wid
 export const visualTheme = localStorageBox<"default" | "dark">(document.body, "userSettings.visualTheme", "default")
 export const toastCountLimit = localStorageBox(document.body, "userSettings.toastCountLimit", -1)
 export const toastDurationOverride = localStorageBox(document.body, "userSettings.toastDurationOverride", -1)
+export const shiftWheelForZoom = localStorageBox(document.body, "userSettings.shiftWheelForZoom", true)
 
 export const argumentsByParamSet = localStorageBox<Record<string, Record<string, GenerationTaskArgument>>>(document.body, "genArguments", {})
 export const lockedParameters = localStorageBox<Record<string, boolean>>(document.body, "lockedParameters", {})
