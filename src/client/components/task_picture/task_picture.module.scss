@@ -176,3 +176,9 @@ $max-size: 23em;
 		opacity: 1;
 	}
 }
+
+@media (any-hover: none) {
+	.taskPicture .overlay {
+		display: none;
+	}
+}

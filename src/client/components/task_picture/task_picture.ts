@@ -206,6 +206,14 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 
 	const isLoaded = box(props.loadAnimation ? false : true)
 
+	const openViewerForThisPicture = () => {
+		requestAnimationFrame(() => {
+			// raf is here to prevent opening and then immediately closing the viewer
+			// it's some weird interference in events and closing-modal-by-background-click
+			openViewer(props.picture, props.generationTask, props.onScroll)
+		})
+	}
+
 	const result: HTMLElement = tag({
 		class: [css.taskPicture, {
 			[css.disabled!]: props.isDisabled,
@@ -218,13 +226,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		imgPlaceholder,
 		tag({
 			class: css.overlay,
-			onClick: () => {
-				requestAnimationFrame(() => {
-					// raf is here to prevent opening and then immediately closing the viewer
-					// it's some weird interference in events and closing-modal-by-background-click
-					openViewer(props.picture, props.generationTask, props.onScroll)
-				})
-			},
+			onClick: openViewerForThisPicture,
 			onMousedown: e => {
 				if(e.button === 1){
 					window.open(url.get(), "_blank")
@@ -251,6 +253,8 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 
 	void(async() => {
 		const img = await props.thumbContext.getThumbnail(props.picture.get())
+		// this is for mobile devices, on which overlay is disabled and non-clickable
+		img.addEventListener("click", openViewerForThisPicture)
 		imgPlaceholder.before(img)
 		imgPlaceholder.remove()
 		if(!props.loadAnimation){
