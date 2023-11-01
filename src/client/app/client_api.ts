@@ -74,6 +74,9 @@ export namespace ClientApi {
 	export const adminKillAllQueuedAndRunningTasks = () =>
 		client.call<void>("adminKillAllQueuedAndRunningTasks", {})
 
+	export const adminKillCurrentAndPauseQueue = () =>
+		client.call<void>("adminKillCurrentAndPauseQueue", {})
+
 	export const adminPauseQueue = () =>
 		client.call<void>("adminPauseQueue", {})
 

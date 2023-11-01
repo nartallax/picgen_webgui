@@ -38,6 +38,10 @@ export class TaskQueueController {
 		void this.tryStartNextGeneration()
 	}
 
+	getRunningTaskId(): number | null {
+		return this.runningGeneration?.gen.task.id ?? null
+	}
+
 	async kill(id: number, userId: number | null): Promise<void> {
 		if(this.runningGeneration && this.runningGeneration.gen.task.id === id){
 			if(userId !== null && this.runningGeneration.gen.task.userId !== userId){

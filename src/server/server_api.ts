@@ -301,6 +301,18 @@ export namespace ServerApi {
 		}
 	)
 
+	export const adminKillCurrentAndPauseQueue = RCV.validatedFunction(
+		[],
+		async(): Promise<void> => {
+			await checkIsAdmin()
+			taskQueue.pause()
+			const runningTask = taskQueue.getRunningTaskId()
+			if(runningTask !== null){
+				await taskQueue.kill(runningTask, null)
+			}
+		}
+	)
+
 	export const adminPauseQueue = RCV.validatedFunction(
 		[],
 		async(): Promise<void> => {

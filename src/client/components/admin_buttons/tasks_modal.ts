@@ -70,6 +70,13 @@ export async function showTasksModal(): Promise<void> {
 			Button({
 				text: "Kill queued and running",
 				onClick: () => ClientApi.adminKillAllQueuedAndRunningTasks()
+			}),
+			Button({
+				text: "Kill current and pause",
+				onClick: async() => {
+					await ClientApi.adminKillCurrentAndPauseQueue()
+					await refreshPauseState()
+				}
 			})
 		]),
 		Table<GenerationTask>({
