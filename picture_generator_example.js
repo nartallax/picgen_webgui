@@ -25,13 +25,14 @@ async function main() {
 	Process.stdout.write(JSON.stringify({message: "Hewwo! I'm starting!", displayFor: 10}) + "\n")
 
 	const willGenerateFilesCount = 3
+	const totalGenerationTime = 3000
 
 	// let's tell the bot how many pictures to expect
 	// if you don't, or tell incorrect number of pictures - it won't break anything
 	// it just allows for more beautiful inputs
 	Process.stdout.write(JSON.stringify({willGenerateCount: willGenerateFilesCount}) + "\n")
 
-	const timePerPicture = 10000 / willGenerateFilesCount
+	const timePerPicture = totalGenerationTime / willGenerateFilesCount
 	// we also can notify server on how long it will take to generate all the stuff we want to generate
 	// we can do it at any time through generation run
 	// timeLeft is in seconds

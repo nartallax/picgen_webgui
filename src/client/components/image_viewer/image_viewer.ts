@@ -215,20 +215,23 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	const smoothXChanger = new SmoothValueChanger(xPos, 150, {curvePower: 3})
 	const smoothYChanger = new SmoothValueChanger(yPos, 150, {curvePower: 3})
 	function centerOn(img: HTMLImageElement, smooth?: boolean, preserveZoom?: boolean): void {
+		let upcomingZoomChange = 1
 		if(!preserveZoom){
 			const natHeight = props.equalizeByHeight ? maxNatHeight.get() : img.naturalHeight
 			const natWidth = props.equalizeByHeight ? (img.naturalWidth / img.naturalHeight) * maxNatHeight.get() : img.naturalWidth
 			const hRatio = window.innerHeight / natHeight
 			const wRatio = window.innerWidth / natWidth
 			defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * defaultOffsetZoomMult)
+			upcomingZoomChange = defaultZoom / smoothZoomChanger.get()
 			smoothZoomChanger.set(defaultZoom)
 		}
 
 		const imgRect = img.getBoundingClientRect()
+
 		const imgLeft = imgRect.left - (window.innerWidth / 2)
 
 		;(smooth ? smoothYChanger : yPos).set(0)
-		;(smooth ? smoothXChanger : xPos).set(xPos.get() + imgLeft + (imgRect.width / 2))
+		;(smooth ? smoothXChanger : xPos).set(xPos.get() + imgLeft + (imgRect.width * upcomingZoomChange / 2))
 
 		updatePanX()
 		updatePanY()
