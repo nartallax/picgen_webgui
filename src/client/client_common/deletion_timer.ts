@@ -15,7 +15,7 @@ export function makeDeletionTimer(duration: number, box: WBox<number>, afterEnd:
 		const passedPercent = passedTime / duration
 		if(passedPercent >= 1){
 			box.set(1)
-			cancel()
+			cancel(true)
 			afterEnd()
 			return
 		}
@@ -24,8 +24,10 @@ export function makeDeletionTimer(duration: number, box: WBox<number>, afterEnd:
 		rafHandle = requestAnimationFrame(onFrame)
 	}
 
-	const cancel = () => {
-		box.set(0)
+	const cancel = (keepProgress?: boolean) => {
+		if(!keepProgress){
+			box.set(0)
+		}
 		if(rafHandle){
 			cancelAnimationFrame(rafHandle)
 			rafHandle = null

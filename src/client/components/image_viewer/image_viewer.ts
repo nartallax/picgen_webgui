@@ -1,7 +1,7 @@
 import {bindBox, onMount, tag} from "@nartallax/cardboard-dom"
 import {showModalBase} from "client/controls/modal_base/modal_base"
 import * as css from "./image_viewer.module.scss"
-import {RBox, box, calcBox} from "@nartallax/cardboard"
+import {MRBox, RBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {addTouchZoom} from "client/client_common/touch_zoom"
@@ -97,7 +97,8 @@ export type ShowImageViewerProps<T> = {
 	/** A fraction of picture that will be used as offset.
 	 * 0.1 means that there will be borders of 10% of picture height. */
 	readonly defaultOffset?: number
-	readonly getAdditionalControls?: (picture: T) => HTMLElement[]
+	readonly getAdditionalControls?: (picture: RBox<T>) => HTMLElement[]
+	readonly getPictureOpacity?: (picture: RBox<T>) => MRBox<number>
 	readonly onScroll?: (args: {x: number, y: number, zoom: number, bounds: RectBounds}) => void
 }
 
@@ -278,8 +279,9 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return height / img.naturalHeight
 	}
 
-	const imgsWithLabels = props.imageDescriptions.mapArrayElements(
-		desc => {
+	const imgsWithLabels = props.imageDescriptions.mapArray(
+		desc => props.makeUrl(desc),
+		descBox => {
 			const natSideRatio = box(1)
 			const loaded = box(false)
 			const widthByHeight = calcBox([natSideRatio, maxNatHeight], (ratio, height) => ratio * height)
@@ -296,14 +298,14 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				},
 				onMousedown: e => {
 					if(e.button === 1){
-						window.open(props.makeUrl(desc), "_blank")
+						window.open(props.makeUrl(descBox.get()), "_blank")
 					}
 				}
 			})
 			const img: HTMLImageElement = _img
-			img.setAttribute("src", props.makeUrl(desc))
+			img.setAttribute("src", props.makeUrl(descBox.get()))
 			if(props.updateImg){
-				props.updateImg(desc, img)
+				props.updateImg(descBox.get(), img)
 			}
 
 			void waitLoadAndPaint(img).then(() => {
@@ -338,7 +340,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 							return (w * zoom) + "px"
 						})
 					}
-				}, props.getAdditionalControls!(desc))
+				}, props.getAdditionalControls(descBox))
 			}
 
 			// this exists to prevent native browser behaviour about image dragging
@@ -348,7 +350,16 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				display: preventGalleryImageInteractions.map(prevent => prevent ? "" : "none")
 			}})
 
-			return tag({class: css.imgWrap}, [img, label, additionalControls, imgOverlay])
+			const imgWrap = tag({class: css.imgWrap}, [img, label, additionalControls, imgOverlay])
+
+			if(props.getPictureOpacity){
+				const opacity = constBoxWrap(props.getPictureOpacity(descBox))
+				bindBox(imgWrap, opacity, opacity => {
+					imgWrap.style.opacity = opacity + ""
+				})
+			}
+
+			return imgWrap
 		}
 	)
 

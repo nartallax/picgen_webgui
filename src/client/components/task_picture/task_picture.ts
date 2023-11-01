@@ -1,4 +1,4 @@
-import {MRBox, RBox, WBox, box, calcBox, constBoxWrap, isArrayItemWBox, unbox} from "@nartallax/cardboard"
+import {MRBox, RBox, WBox, box, calcBox, constBoxWrap, isArrayItemWBox, isWBox, unbox} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
 import * as css from "./task_picture.module.scss"
@@ -25,15 +25,15 @@ interface TaskPictureProps {
 }
 
 class TaskPictureContext {
-	readonly favAddTime: WBox<number | null>
+	readonly favAddTime: WBox<number | null> | null
 	private readonly haveTask: RBox<boolean>
 	readonly deletionProgress = box(0)
 
 	constructor(
-		readonly picture: WBox<Picture>,
+		readonly picture: RBox<Picture>,
 		readonly generationTask?: MRBox<GenerationTaskWithPictures>
 	) {
-		this.favAddTime = picture.prop("favoritesAddTime")
+		this.favAddTime = isWBox(picture) ? picture.prop("favoritesAddTime") : null
 		this.haveTask = calcBox(
 			[this.picture, constBoxWrap(this.generationTask)],
 			(pic, task) => pictureHasAttachedTask(pic) || !!task
@@ -90,13 +90,17 @@ class TaskPictureContext {
 		return copyTaskButton
 	}
 
-	makeDeleteButton(): HTMLElement {
+	makeDeleteButton(): HTMLElement | null {
+		const arrayItemPicture = this.picture
+		if(!isArrayItemWBox(arrayItemPicture)){
+			return null
+		}
+
 		const delNow = async() => {
 			const id = this.picture.get().id
 			await ClientApi.deletePicture(id)
-			if(isArrayItemWBox(this.picture)){
-				this.picture.deleteArrayElement()
-			}
+			arrayItemPicture.deleteArrayElement()
+			this.deletionProgress.set(1)
 		}
 
 		const delTimer = makeDeletionTimer(500, this.deletionProgress, delNow)
@@ -145,16 +149,22 @@ class TaskPictureContext {
 		return btn
 	}
 
-	makeFavButton(): HTMLElement {
+	makeFavButton(): HTMLElement | null {
+		const favBox = this.favAddTime
+		if(!favBox){
+			return null
+		}
+
 		const favoriteButton = tag({class: [
 			css.iconFavorite,
 			{[css.deleted!]: this.picture.prop("deleted")},
-			this.favAddTime.map(time => time !== null ? Icon.star : Icon.starEmpty)
+			favBox.map(time => time !== null ? Icon.star : Icon.starEmpty)
 		]})
+
 		favoriteButton.addEventListener("click", async e => {
 			e.stopPropagation()
-			const isFavoriteNow = this.favAddTime.get() !== null
-			this.favAddTime.set(isFavoriteNow ? null : 1)
+			const isFavoriteNow = favBox.get() !== null
+			favBox.set(isFavoriteNow ? null : 1)
 			await ClientApi.setPictureFavorite(this.picture.get().id, !isFavoriteNow)
 		})
 		return favoriteButton
@@ -276,6 +286,16 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 
 function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPictures>, onScroll?: ShowImageViewerProps<unknown>["onScroll"]): void {
 	let props: ShowImageViewerProps<Picture>
+	const contexts = new WeakMap<RBox<Picture>, TaskPictureContext>()
+	const getContext = (pic: RBox<Picture>) => {
+		let context = contexts.get(pic)
+		if(!context){
+			context = new TaskPictureContext(pic, task)
+			contexts.set(pic, context)
+		}
+		return context
+	}
+
 	const commonProps = {
 		makeUrl: (picture: Picture) => ClientApi.getPictureUrl(picture.id, picture.salt),
 		panBounds: {x: "centerInPicture", y: "borderToBorder"},
@@ -288,7 +308,7 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 		},
 		onScroll,
 		getAdditionalControls: pic => {
-			const cont = new TaskPictureContext(box(pic), task)
+			const cont = getContext(pic)
 			return [
 				tag({class: css.viewerButtons}, [
 					cont.makeFavButton(),
@@ -297,13 +317,20 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 					cont.makeCopyTaskButton(),
 					cont.makeShowParamsButton(false),
 					cont.makeShowParamsButton(true),
-					cont.makeRedrawButton()
+					cont.makeRedrawButton(),
+					cont.makeDeleteButton()
 				])
 			]
+		},
+		getPictureOpacity: pic => {
+			const cont = getContext(pic)
+			return cont.deletionProgress.map(x => 1 - x)
 		}
 	} satisfies Partial<ShowImageViewerProps<Picture>>
 	if(task){
-		const pictures = constBoxWrap(task).prop("pictures").map(x => [...x].reverse())
+		const srcOrderPics = constBoxWrap(task).prop("pictures")
+		const rev = <T>(x: readonly T[]): T[] => [...x].reverse()
+		const pictures = isWBox(srcOrderPics) ? srcOrderPics.map(rev, rev) : srcOrderPics.map(rev)
 		const pictureIndex = pictures.get().indexOf(unbox(picture))
 		props = {
 			...commonProps,
