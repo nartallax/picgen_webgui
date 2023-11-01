@@ -11,7 +11,10 @@ import {TextBlock} from "client/controls/text_block/text_block"
 import {GenerationTask} from "common/entities/generation_task"
 
 export async function showTasksModal(): Promise<void> {
-	const values = box([] as GenerationTask[])
+	const tasks = box([] as GenerationTask[])
+	const activeTask = tasks.map(tasks => tasks.filter(task => task.status === "running")[0] ?? null)
+	const tasksInQueueCount = tasks.map(tasks => tasks.filter(task => task.status === "queued").length)
+
 	const getUser = fetchToBoxMap(async(id: number) => {
 		const users = await ClientApi.adminListUsers({
 			filters: [{a: {field: "id"}, op: "=", b: {value: id}}]
@@ -26,8 +29,24 @@ export async function showTasksModal(): Promise<void> {
 	void refreshPauseState()
 
 	const modal = showModal({title: "Tasks", width: ["25rem", "75vw", "100rem"], height: ["25rem", "75vh", null]}, [
-		Row({justify: "start", padding: "vertical", gap: true}, [
-			TextBlock({text: isQueuePaused.map(isPaused => `Queue is ${isPaused ? "paused" : "running"}`)}),
+		Row({justify: "start", padding: "bottom"}, [
+			TextBlock({text: isQueuePaused.map(isPaused => `Queue is ${isPaused ? "paused" : "running"}`)})
+		]),
+		Row({justify: "start", padding: "bottom"}, [
+			activeTask.map(task => {
+				if(!task){
+					return TextBlock({text: "Active task: none"})
+				}
+				const user = getUser(task.userId)
+				return TextBlock({text: user.map(user =>
+					`Active task: #${task.id} by ${!user ? "#" + task.userId : user.displayName}`
+				)})
+			})
+		]),
+		Row({justify: "start", padding: "bottom"}, [
+			TextBlock({text: tasksInQueueCount.map(count => `Tasks in queue: ${count}`)})
+		]),
+		Row({justify: "start", padding: "bottom", gap: true}, [
 			Button({
 				text: "Pause",
 				isDisabled: isQueuePaused,
@@ -54,7 +73,7 @@ export async function showTasksModal(): Promise<void> {
 			})
 		]),
 		Table<GenerationTask>({
-			values,
+			values: tasks,
 			headers: [{
 				label: "ID",
 				render: task => task.prop("id"),
@@ -82,13 +101,13 @@ export async function showTasksModal(): Promise<void> {
 	])
 
 	void onAdminTaskUpdate.subscribeUntil(modal.waitClose(), task => {
-		const tasks = values.get()
-		const taskWithIdIndex = tasks.findIndex(x => x.id === task.id)
+		const taskArray = tasks.get()
+		const taskWithIdIndex = taskArray.findIndex(x => x.id === task.id)
 		if(taskWithIdIndex < 0){
 			return
 		}
 
-		values.setElementAtIndex(taskWithIdIndex, task)
+		tasks.setElementAtIndex(taskWithIdIndex, task)
 	})
 
 }
