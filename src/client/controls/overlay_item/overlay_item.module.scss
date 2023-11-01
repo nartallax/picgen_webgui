@@ -5,6 +5,7 @@
 	overflow: hidden;
 	width: 100vw;
 	height: 100vh;
+	flex-direction: column;
 }
 
 .overlayItemHorisontalWrap {
@@ -12,6 +13,7 @@
     flex-shrink: 1;
     flex-basis: 0;
 	max-width: 100%;
+	flex-direction: row;
 }
 
 .overlayItemVerticalWrap, 

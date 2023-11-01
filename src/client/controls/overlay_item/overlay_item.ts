@@ -55,19 +55,15 @@ const showOverlayItem = (props: Props): OverlayItem => {
 	const rect = props.referenceElement.getBoundingClientRect()
 	const parentRect = document.body.getBoundingClientRect()
 
-	const tooltipPosition = parseCorner(props.overlayPosition ?? "topLeft")
+	const overlayPosition = parseCorner(props.overlayPosition ?? "topLeft")
 	const referencePosition = parseCorner(props.referencePosition ?? "topRight")
-	const growsLeft = tooltipPosition.isRight
-	const growsDown = tooltipPosition.isTop
-	const addRefWidth = growsLeft !== referencePosition.isRight
-	const addRefHeight = growsDown === referencePosition.isBottom
 
 	const vPadding = tag({
 		class: css.padding,
 		style: {
 			minHeight: props.canShiftVertically ? "0" : undefined,
 			flexShrink: props.canShiftVertically ? "1" : "0",
-			height: (rect.top + (addRefHeight ? rect.height : 0)) + "px"
+			height: (referencePosition.isTop ? rect.top : rect.bottom) + "px"
 		}
 	})
 
@@ -76,7 +72,7 @@ const showOverlayItem = (props: Props): OverlayItem => {
 		style: {
 			minWidth: props.canShiftHorisonally ? "0" : undefined,
 			flexShrink: props.canShiftHorisonally ? "1" : "0",
-			width: (rect.left + (addRefWidth ? rect.width : 0)) + "px"
+			width: (referencePosition.isLeft ? rect.left : rect.right) + "px"
 		}
 	})
 
@@ -84,20 +80,23 @@ const showOverlayItem = (props: Props): OverlayItem => {
 		class: css.overlayItemVerticalWrap,
 		style: {
 			top: (-parentRect.top) + "px",
-			left: (-parentRect.left) + "px",
-			flexDirection: growsDown ? "column" : "column-reverse"
+			left: (-parentRect.left) + "px"
 		}
 	}, [
 		vPadding,
 		tag({
 			class: css.overlayItemHorisontalWrap,
 			style: {
-				flexDirection: growsLeft ? "row-reverse" : "row",
 				minHeight: props.canShiftVertically ? undefined : "0"
 			}
 		}, [
 			hPadding,
-			tag({class: css.overlayContentWrap}, [props.body])
+			tag({
+				class: css.overlayContentWrap,
+				style: {
+					transform: `translate(${overlayPosition.isRight ? "-100%" : "0"}, ${overlayPosition.isBottom ? "-100%" : "0"})`
+				}
+			}, [props.body])
 		])
 	])
 
