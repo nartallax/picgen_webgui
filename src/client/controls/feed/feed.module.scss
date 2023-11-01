@@ -6,10 +6,6 @@
 }
 
 .scrollToTopButton {
-	position: absolute;
-    bottom: 1rem;
-    right: 1rem;
-
 	cursor: pointer;
 	font-size: 2rem;
     border: 3px solid var(--color-border);
@@ -20,6 +16,7 @@
     text-align: center;
     background: var(--color-block-secondary);
     box-sizing: border-box;
+	margin: 1rem;
 }
 
 .bottomLoadingPlaceholder {

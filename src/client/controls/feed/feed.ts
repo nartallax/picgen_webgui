@@ -59,8 +59,8 @@ export const Feed = <T>(props: FeedProps<T>) => {
 			}),
 			referenceElement: result,
 			visible: scrollToTopVisible,
-			overlayPosition: "bottomRight",
-			referencePosition: "bottomRight"
+			overlayPosition: "topRight",
+			referencePosition: "topRight"
 		})
 	}
 

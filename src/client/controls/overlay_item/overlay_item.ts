@@ -11,8 +11,6 @@ type Props = {
 	/** Point of overlay item that will be matched with referencePosition */
 	overlayPosition?: Corner
 	referencePosition?: Corner
-	canShiftVertically?: boolean
-	canShiftHorisonally?: boolean
 }
 
 type OverlayItem = {
@@ -52,55 +50,40 @@ export const makeOverlayItem = (props: Props): void => {
 
 
 const showOverlayItem = (props: Props): OverlayItem => {
-	const rect = props.referenceElement.getBoundingClientRect()
-	const parentRect = document.body.getBoundingClientRect()
-
 	const overlayPosition = parseCorner(props.overlayPosition ?? "topLeft")
 	const referencePosition = parseCorner(props.referencePosition ?? "topRight")
 
-	const vPadding = tag({
-		class: css.padding,
-		style: {
-			minHeight: props.canShiftVertically ? "0" : undefined,
-			flexShrink: props.canShiftVertically ? "1" : "0",
-			height: (referencePosition.isTop ? rect.top : rect.bottom) + "px"
-		}
-	})
+	const vPadding = tag({class: css.padding})
+	const hPadding = tag({class: css.padding})
 
-	const hPadding = tag({
-		class: css.padding,
-		style: {
-			minWidth: props.canShiftHorisonally ? "0" : undefined,
-			flexShrink: props.canShiftHorisonally ? "1" : "0",
-			width: (referencePosition.isLeft ? rect.left : rect.right) + "px"
-		}
-	})
+	function updatePaddings(): void {
+		const overlayRect = props.body.getBoundingClientRect()
+		const refRect = props.referenceElement.getBoundingClientRect()
 
-	const result = tag({
-		class: css.overlayItemVerticalWrap,
-		style: {
-			top: (-parentRect.top) + "px",
-			left: (-parentRect.left) + "px"
+		let y = referencePosition.isTop ? refRect.top : refRect.bottom
+		if(overlayPosition.isBottom){
+			y -= overlayRect.height
 		}
-	}, [
+
+		let x = referencePosition.isLeft ? refRect.left : refRect.right
+		if(overlayPosition.isRight){
+			x -= overlayRect.width
+		}
+
+		vPadding.style.height = y + "px"
+		hPadding.style.width = x + "px"
+	}
+
+	const result = tag({class: css.overlayItemVerticalWrap}, [
 		vPadding,
-		tag({
-			class: css.overlayItemHorisontalWrap,
-			style: {
-				minHeight: props.canShiftVertically ? undefined : "0"
-			}
-		}, [
+		tag({class: css.overlayItemHorisontalWrap}, [
 			hPadding,
-			tag({
-				class: css.overlayContentWrap,
-				style: {
-					transform: `translate(${overlayPosition.isRight ? "-100%" : "0"}, ${overlayPosition.isBottom ? "-100%" : "0"})`
-				}
-			}, [props.body])
+			tag({class: css.overlayContentWrap}, [props.body])
 		])
 	])
 
 	document.body.appendChild(result)
+	updatePaddings()
 	requestAnimationFrame(() => {
 		if(result.parentElement && !result.style.opacity){
 			result.style.opacity = "1"

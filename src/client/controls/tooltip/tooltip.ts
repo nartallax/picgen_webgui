@@ -25,9 +25,7 @@ export const TooltipIcon = defineControl((props: TooltipIconProps) => {
 		body: tag({class: css.content}, [props.tooltip]),
 		visible: overlayItemVisible,
 		referencePosition: "bottomRight",
-		overlayPosition: "topLeft",
-		canShiftVertically: true
-		// parent: tooltipIcon
+		overlayPosition: "topLeft"
 	})
 
 	return tooltipIcon
