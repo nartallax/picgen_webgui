@@ -3,7 +3,9 @@ import {ApiError} from "common/infra_entities/api_error"
 import {getHttpContext} from "server/context"
 import {DAO} from "server/dao"
 import {DiscordApiAccessTokenResponse, DiscordApiUser} from "server/discord_api_client"
+import {log} from "server/log"
 import {config, context, discordApi} from "server/server_globals"
+import {errToString} from "server/utils/err_to_string"
 import {unixtime} from "server/utils/unixtime"
 
 export interface ServerUser extends User {
@@ -115,12 +117,20 @@ export class UserDAO extends DAO<ServerUser> {
 
 	async maybeUpdateDiscordTokenProps(user: ServerUser): Promise<void> {
 		if(!user.discordRefreshToken || !user.discordTokenExpiresAt){
+			log("Login: no known refresh/expire for user.")
 			return
 		}
 		if(user.discordTokenExpiresAt - timeMarginBeforeRenewal > unixtime()){
+			log("Login: token not expired yet, nothing to do.")
 			return
 		}
-		const token = await discordApi.getTokenByRefreshToken(user.discordRefreshToken)
+		let token: DiscordApiAccessTokenResponse
+		try {
+			token = await discordApi.getTokenByRefreshToken(user.discordRefreshToken)
+		} catch(e){
+			log("Login: error receiving token: " + errToString(e))
+			throw e
+		}
 		this.setDiscordTokenProps(user, token)
 	}
 

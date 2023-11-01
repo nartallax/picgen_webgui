@@ -98,21 +98,25 @@ export class DiscordApiClient {
 		return value as T
 	}
 
-	getTokenByCode(code: string, redirectUri: string): Promise<DiscordApiAccessTokenResponse> {
-		return this.postUrlencodedForJson("/oauth2/token", {
+	async getTokenByCode(code: string, redirectUri: string): Promise<DiscordApiAccessTokenResponse> {
+		const token = await this.postUrlencodedForJson<DiscordApiAccessTokenResponse>("/oauth2/token", {
 			...this.getParamsBase(),
 			grant_type: "authorization_code",
 			code: code,
 			redirect_uri: redirectUri
 		})
+		logToken(token)
+		return token
 	}
 
-	getTokenByRefreshToken(refreshToken: string): Promise<DiscordApiAccessTokenResponse> {
-		return this.postUrlencodedForJson("/oauth2/token", {
+	async getTokenByRefreshToken(refreshToken: string): Promise<DiscordApiAccessTokenResponse> {
+		const token = await this.postUrlencodedForJson<DiscordApiAccessTokenResponse>("/oauth2/token", {
 			...this.getParamsBase(),
 			grant_type: "refresh_token",
 			refresh_token: refreshToken
 		})
+		logToken(token)
+		return token
 	}
 
 	async getCurrentUser(accessToken: string): Promise<DiscordApiUser> {
@@ -133,4 +137,8 @@ export class DiscordApiClient {
 		}
 	}
 
+}
+
+function logToken(token: DiscordApiAccessTokenResponse): void {
+	log("Login: new token received: " + token.access_token.length + " (access), " + token.refresh_token.length + " (refresh), " + token.expires_in + " (expiration)")
 }
