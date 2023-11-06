@@ -2,7 +2,7 @@ import {ClientApi} from "client/app/client_api"
 import {WebsocketListener} from "client/app/websocket_listener"
 import {PromptInput} from "client/components/prompt_input/prompt_input"
 import {WBox, box, calcBox} from "@nartallax/cardboard"
-import {onMount, tag} from "@nartallax/cardboard-dom"
+import {bindBox, onMount, tag} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
 import {GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenerationParameterSet} from "common/entities/parameter"
@@ -114,6 +114,21 @@ export function MainPage(): HTMLElement {
 			MainMenu({isOpen: isMenuOpen, selectedParamSet})
 		]
 	})])
+
+	onMount(result, () => {
+		const handler = (e: KeyboardEvent) => {
+			if(e.key !== "Enter" || !e.ctrlKey){
+				return
+			}
+
+			e.stopPropagation()
+			e.preventDefault()
+			void startGeneration()
+		}
+
+		window.addEventListener("keydown", handler, {capture: true})
+		return () => window.removeEventListener("keydown", handler)
+	})
 
 	void loadGlobalData(result, knownTasks).then(() => areGlobalsLoaded.set(true))
 

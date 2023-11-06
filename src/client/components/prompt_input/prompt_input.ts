@@ -27,13 +27,6 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 		}
 	})
 
-	input.addEventListener("keydown", e => {
-		if(e.key === "Enter" && e.ctrlKey){
-			e.preventDefault()
-			props.startGeneration()
-		}
-	})
-
 	let lastClickTime = 0
 	const onStartGeneration = () => {
 		const now = Date.now()

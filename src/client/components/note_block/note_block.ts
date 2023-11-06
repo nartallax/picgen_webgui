@@ -18,9 +18,6 @@ export const NoteBlock = defineControl((props: Props) => {
 			if(e.key === "Escape"){
 				props.isEditing.set(false)
 			}
-			if(e.key === "Enter" && e.ctrlKey){
-				props.isEditing.set(false)
-			}
 		}
 	}, [
 		props.isEditing.map(isEditing => {
