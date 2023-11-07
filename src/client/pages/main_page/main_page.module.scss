@@ -30,6 +30,10 @@ body {
 	.settingsColumnScrollablePart::-webkit-scrollbar {
 		display: none;
 	}
+
+	.settingsColumnScrollablePart {
+		scrollbar-width: none;
+	}
 }
 
 .mainPageSwitchPanel {
