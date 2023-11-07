@@ -30,6 +30,7 @@ export const toastDurationOverride = localStorageBox(document.body, "userSetting
 export const shiftWheelForZoom = localStorageBox(document.body, "userSettings.shiftWheelForZoom", true)
 export const shiftWheelHint = localStorageBox(document.body, "userSettings.shiftWheelHint", true)
 export const tabOverride = localStorageBox(document.body, "userSettings.tabOverride", false)
+export const limitThumbnailWidth = localStorageBox(document.body, "userSettings.limitThumbnailWidth", true)
 
 export const argumentsByParamSet = localStorageBox<Record<string, Record<string, GenerationTaskArgument>>>(document.body, "genArguments", {})
 export const lockedParameters = localStorageBox<Record<string, boolean>>(document.body, "lockedParameters", {})

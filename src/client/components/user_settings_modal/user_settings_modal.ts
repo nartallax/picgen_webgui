@@ -1,4 +1,4 @@
-import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth, visualTheme, toastCountLimit, toastDurationOverride, shiftWheelForZoom, shiftWheelHint, tabOverride} from "client/app/global_values"
+import {hideSomeScrollbars, preventGalleryImageInteractions, paramsColumnWidth, uiScale, paramsColumnMaxWidth, paramsColumnMinWidth, formLabelWidth, visualTheme, toastCountLimit, toastDurationOverride, shiftWheelForZoom, shiftWheelHint, tabOverride, limitThumbnailWidth} from "client/app/global_values"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
@@ -105,6 +105,13 @@ export const showUserSettingsModal = (): Modal => {
 			hint: "If enabled, pressing Tab key will always focus prompt input field.\nIf not enabled, pressing Tab will move focus to next field (default behaviour).",
 			revertable: tabOverride,
 			onRevert: () => tabOverride.set(false)
+		}),
+		FormField({
+			input: BoolInput({value: limitThumbnailWidth}),
+			label: "Limit thumbnail width",
+			hint: "If enabled, width of thumbnail preview won't ever exceed its height.\nIf disabled, thumbnails will always be proportional to original picture.",
+			revertable: limitThumbnailWidth.map(x => !x),
+			onRevert: () => limitThumbnailWidth.set(true)
 		}),
 		FormField({
 			input: NumberInput({value: toastCountLimit}),

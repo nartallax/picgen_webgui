@@ -6,7 +6,7 @@ import {onMount, tag} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
 import {GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenerationParameterSet} from "common/entities/parameter"
-import {currentParamSetName, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, argumentsByParamSet} from "client/app/global_values"
+import {currentParamSetName, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, argumentsByParamSet, limitThumbnailWidth} from "client/app/global_values"
 import {Row} from "client/controls/layout/row_col"
 import {isPictureArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
@@ -57,7 +57,8 @@ export function MainPage(): HTMLElement {
 	const result = tag({
 		class: css.pageRoot,
 		attrs: {
-			"data-hide-some-scrollbars": hideSomeScrollbars.map(hide => hide ? "true" : "false")
+			"data-hide-some-scrollbars": hideSomeScrollbars.map(hide => hide ? "true" : "false"),
+			"data-limit-thumbnail-width": limitThumbnailWidth.map(limit => limit ? "true" : "false")
 		}
 	}, [areGlobalsLoaded.map(areGlobalsLoaded => {
 		if(!areGlobalsLoaded){

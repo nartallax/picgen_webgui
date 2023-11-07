@@ -1,5 +1,9 @@
 $max-size: 23em;
 
+[data-limit-thumbnail-width="true"] .taskPicture.loaded {
+	max-width: $max-size;
+}
+
 .taskPicture {
 	flex-shrink: 0;
 	height: $max-size;
@@ -17,7 +21,7 @@ $max-size: 23em;
 	transition: max-width 0.2s;
 
 	&.loaded {
-		max-width: $max-size;
+		max-width: none;
 	}
 
 	> img {
