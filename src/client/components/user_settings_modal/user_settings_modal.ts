@@ -103,8 +103,8 @@ export const showUserSettingsModal = (): Modal => {
 			input: BoolInput({value: tabOverride}),
 			label: "Tab override",
 			hint: "If enabled, pressing Tab key will always focus prompt input field.\nIf not enabled, pressing Tab will move focus to next field (default behaviour).",
-			revertable: shiftWheelHint.map(enabled => !enabled),
-			onRevert: () => shiftWheelHint.set(true)
+			revertable: tabOverride,
+			onRevert: () => tabOverride.set(false)
 		}),
 		FormField({
 			input: NumberInput({value: toastCountLimit}),
