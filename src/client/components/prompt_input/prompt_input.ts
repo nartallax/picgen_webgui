@@ -62,9 +62,13 @@ export function PromptInput(props: PromptInputProps): HTMLElement {
 
 			e.preventDefault()
 			e.stopPropagation()
-			input.focus()
-			input.selectionStart = 0
-			input.selectionEnd = input.value.length
+
+			if(document.activeElement === input){
+				input.selectionStart = 0
+				input.selectionEnd = input.value.length
+			} else {
+				input.focus()
+			}
 		}
 
 		window.addEventListener("keydown", handler, {capture: true})
