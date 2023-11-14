@@ -16,7 +16,8 @@ export const TaskFeed = (props: Props) => Feed({
 	loadNext: makeSimpleFeedFetcher<GenerationTask, GenerationTaskWithPictures>({
 		fetch: props.fetch,
 		desc: true,
-		packSize: 10
+		packSize: 10,
+		sortBy: "runOrder"
 	}),
 	values: props.values,
 	renderElement: taskBox => TaskPanel({task: taskBox}),
