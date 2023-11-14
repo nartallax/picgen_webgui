@@ -117,12 +117,14 @@ export class TaskQueueController {
 		}
 		try {
 			const res = await runWithMinimalContext(async() => {
-				const nextTask = await generationTaskDao.getNextInQueue()
-				if(!nextTask){
-					return null
-				} else {
-					return nextTask
-				}
+				return await generationTaskDao.locks.withGlobalLock(async() => {
+					const nextTask = await generationTaskDao.getNextInQueue()
+					if(!nextTask){
+						return null
+					} else {
+						return nextTask
+					}
+				})
 			})
 			if(!res){
 				log("Task queue is empty.")
@@ -230,32 +232,34 @@ export class TaskQueueController {
 	] {
 		const update = makeDebounceCollector<(afterUpdateActions: (() => void)[]) => void>(500, updaters => {
 			void runInCatchLog(() => runWithMinimalContext(async ctx => {
-				// ugh.
-				// we need to update task, because something in DB could change
-				// but at the same time we need to retain same object instance
-				// because outside code relies on it
-				// so, we just update each field separately
-				const dbTask = await generationTaskDao.getById(task.id)
-				for(const key in dbTask){
-					(task as any)[key] = (dbTask as any)[key]
-				}
+				await generationTaskDao.locks.withLock(task.id, async() => {
+					// ugh.
+					// we need to update task, because something in DB could change
+					// but at the same time we need to retain same object instance
+					// because outside code relies on it
+					// so, we just update each field separately
+					const dbTask = await generationTaskDao.getById(task.id)
+					for(const key in dbTask){
+						(task as any)[key] = (dbTask as any)[key]
+					}
 
-				const afterUpdateActions: (() => void)[] = []
-				const taskBeforeUpdate = JSON.stringify(task)
-				for(const updater of updaters){
-					await runInCatchLog(() => updater(afterUpdateActions))
-				}
-				if(JSON.stringify(task) !== taskBeforeUpdate){
-					await generationTaskDao.update(task)
-					await ctx.db.flushTransaction()
-				}
-				// afterUpdateActions is mainly intended for notifications sending
-				// and we flush transaction before notifications are sent
-				// because otherwise there's a chance that transaction won't be commited before frontend knows about the change
-				// and that's bad, because frontend is then able to query data that is not in db yet
-				for(const action of afterUpdateActions){
-					await runInCatchLog(() => action())
-				}
+					const afterUpdateActions: (() => void)[] = []
+					const taskBeforeUpdate = JSON.stringify(task)
+					for(const updater of updaters){
+						await runInCatchLog(() => updater(afterUpdateActions))
+					}
+					if(JSON.stringify(task) !== taskBeforeUpdate){
+						await generationTaskDao.update(task)
+						await ctx.db.flushTransaction()
+					}
+					// afterUpdateActions is mainly intended for notifications sending
+					// and we flush transaction before notifications are sent
+					// because otherwise there's a chance that transaction won't be commited before frontend knows about the change
+					// and that's bad, because frontend is then able to query data that is not in db yet
+					for(const action of afterUpdateActions){
+						await runInCatchLog(() => action())
+					}
+				})
 			}))
 		})
 

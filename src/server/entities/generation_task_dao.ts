@@ -8,6 +8,7 @@ import {config, pictureDao, taskQueue} from "server/server_globals"
 import {FtsTable} from "server/fts_table"
 import {log} from "server/log"
 import {sortByIdArray} from "server/utils/sort_by_id_array"
+import {LockSet} from "server/utils/lock_set"
 
 interface DbGenerationTask extends Omit<GenerationTask, "arguments" | "status"> {
 	arguments: string
@@ -30,6 +31,8 @@ export function getServerGenParamDefault(def: GenParameter): ServerGenerationTas
 }
 
 export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
+
+	readonly locks = new LockSet<number>()
 
 	readonly ftsTable = new FtsTable("generationTasksFts")
 

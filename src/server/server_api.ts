@@ -212,9 +212,10 @@ export namespace ServerApi {
 	export const killOwnTask = RCV.validatedFunction(
 		[RC.struct({id: RC.int()})],
 		async({id}): Promise<void> => {
-
 			const user = await userDao.getCurrent()
-			await taskQueue.kill(id, user.id)
+			await generationTaskDao.locks.withLock(id, async() => {
+				await taskQueue.kill(id, user.id)
+			})
 		})
 
 	export const uploadPictureAsArgument = RCV.validatedFunction(
@@ -232,15 +233,16 @@ export namespace ServerApi {
 	export const deleteTask = RCV.validatedFunction(
 		[RC.struct({taskId: RC.int()})],
 		async({taskId}): Promise<void> => {
-
-			const [user, task] = await Promise.all([
-				userDao.getCurrent(),
-				generationTaskDao.getById(taskId)
-			])
-			if(task.userId !== user.id){
-				throw new ApiError("validation_not_passed", `Task ${task.id} does not belong to user ${user.id}.`)
-			}
-			await generationTaskDao.delete(task)
+			await generationTaskDao.locks.withLock(taskId, async() => {
+				const [user, task] = await Promise.all([
+					userDao.getCurrent(),
+					generationTaskDao.getById(taskId)
+				])
+				if(task.userId !== user.id){
+					throw new ApiError("validation_not_passed", `Task ${task.id} does not belong to user ${user.id}.`)
+				}
+				await generationTaskDao.delete(task)
+			})
 		}
 	)
 
@@ -281,7 +283,9 @@ export namespace ServerApi {
 		[RC.struct({taskId: RC.int()})],
 		async({taskId}): Promise<void> => {
 			await checkIsAdmin()
-			await taskQueue.kill(taskId, null)
+			await generationTaskDao.locks.withLock(taskId, async() => {
+				await taskQueue.kill(taskId, null)
+			})
 		}
 	)
 
@@ -289,7 +293,9 @@ export namespace ServerApi {
 		[],
 		async(): Promise<void> => {
 			await checkIsAdmin()
-			await generationTaskDao.killAllQueued(null)
+			await generationTaskDao.locks.withGlobalLock(async() => {
+				await generationTaskDao.killAllQueued(null)
+			})
 		}
 	)
 
@@ -297,7 +303,9 @@ export namespace ServerApi {
 		[],
 		async(): Promise<void> => {
 			await checkIsAdmin()
-			await generationTaskDao.killAllQueuedAndRunning(null)
+			await generationTaskDao.locks.withGlobalLock(async() => {
+				await generationTaskDao.killAllQueuedAndRunning(null)
+			})
 		}
 	)
 
@@ -306,10 +314,12 @@ export namespace ServerApi {
 		async(): Promise<void> => {
 			await checkIsAdmin()
 			taskQueue.pause()
-			const runningTask = taskQueue.getRunningTaskId()
-			if(runningTask !== null){
-				await taskQueue.kill(runningTask, null)
-			}
+			await generationTaskDao.locks.withGlobalLock(async() => {
+				const runningTask = taskQueue.getRunningTaskId()
+				if(runningTask !== null){
+					await taskQueue.kill(runningTask, null)
+				}
+			})
 		}
 	)
 
@@ -413,17 +423,19 @@ export namespace ServerApi {
 	export const setTaskNote = RCV.validatedFunction(
 		[RC.struct({taskId: RC.number(), note: RC.string()})],
 		async({taskId, note}): Promise<void> => {
-			const [task, user] = await Promise.all([
-				generationTaskDao.getById(taskId),
-				userDao.getCurrent()
-			])
+			await generationTaskDao.locks.withLock(taskId, async() => {
+				const [task, user] = await Promise.all([
+					generationTaskDao.getById(taskId),
+					userDao.getCurrent()
+				])
 
-			if(task.userId !== user.id){
-				throw new Error(`Task ${task.id} does not belong to user ${user.id}.`)
-			}
+				if(task.userId !== user.id){
+					throw new Error(`Task ${task.id} does not belong to user ${user.id}.`)
+				}
 
-			task.note = note
-			await generationTaskDao.update(task)
+				task.note = note
+				await generationTaskDao.update(task)
+			})
 		}
 	)
 
