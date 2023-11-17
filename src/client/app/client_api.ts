@@ -83,6 +83,9 @@ export namespace ClientApi {
 	export const adminUnpauseQueue = () =>
 		client.call<void>("adminUnpauseQueue", {})
 
+	export const adminReorderQueuedTasks = (taskIds: number[]) =>
+		client.call<{id: number, runOrder: number}[]>("adminReorderQueuedTasks", {taskIds})
+
 	export const getIsQueuePaused = () =>
 		client.call<boolean>("getIsQueuePaused", {})
 

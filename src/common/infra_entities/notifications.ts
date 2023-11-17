@@ -17,10 +17,16 @@ export type ApiNotification = TaskMessageNotification
 | TaskAdminNotification
 | TaskEstimatedDurationKnownNotification
 | JsonFileListUpdateNotification
+| TaskReorderingNotification
 
 export interface TaskAdminNotification {
 	type: "task_admin_notification"
 	task: GenerationTask
+}
+
+export interface TaskReorderingNotification {
+	type: "task_reordering"
+	orderPairs: {id: number, runOrder: number}[]
 }
 
 export interface TaskMessageNotification {

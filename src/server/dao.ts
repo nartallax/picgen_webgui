@@ -100,7 +100,25 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 			update "${this.getTableName()}"
 			set ${fieldSetters}
 			where "id" = ?`, [...fieldValues, convertedItem.id])
+	}
 
+	async updateMultipleFieldByCase<K extends keyof S & keyof T & string>(fieldName: K, pairs: readonly (readonly [id: number, value: T[K]])[]): Promise<void> {
+		this.validateFieldNames([fieldName])
+
+		const args: unknown[] = []
+		let cases = ""
+		for(const [id, value] of pairs){
+			cases += "when \"id\" = ? then ?\n"
+			args.push(this.fieldToDb("id", id), this.fieldToDb(fieldName, value))
+		}
+
+		const idPlaceholders = pairs.map(() => "?").join(", ")
+		args.push(...pairs.map(x => this.fieldToDb("id", x[0])))
+
+		await context.get().db.query(`
+			update "${this.getTableName()}"
+			set "${fieldName}" = (case ${cases} end)
+			where "id" in (${idPlaceholders})`, args)
 	}
 
 	async delete(item: T): Promise<void> {

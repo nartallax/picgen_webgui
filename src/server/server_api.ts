@@ -8,7 +8,7 @@ import {SimpleListQueryParams} from "common/infra_entities/query"
 import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import {JsonFileList} from "common/entities/json_file_list"
-import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, thumbnails, userDao} from "server/server_globals"
+import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, thumbnails, userDao, websocketServer} from "server/server_globals"
 import {getHttpContext} from "server/context"
 
 async function checkIsAdmin(): Promise<void> {
@@ -336,6 +336,42 @@ export namespace ServerApi {
 		async(): Promise<void> => {
 			await checkIsAdmin()
 			taskQueue.unpause()
+		}
+	)
+
+	export const adminReorderQueuedTasks = RCV.validatedFunction(
+		[RC.struct({taskIds: RC.array(RC.number())})],
+		async({taskIds}): Promise<{id: number, runOrder: number}[]> => {
+			await checkIsAdmin()
+			return await generationTaskDao.locks.withGlobalLock(async() => {
+				// we need to check if the tasks that client thinks are queued are actually queued
+				// this will help to avoid cases when already executing task is pushed back in queue
+				// which doesn't make any sense
+				let tasks = await generationTaskDao.getByIds(taskIds)
+				tasks = tasks.filter(task => task.status === "queued")
+
+				// higher value goes first, so lowest pops first
+				const availableRunOrders = tasks.map(task => task.runOrder).sort((a, b) => b - a)
+				const idSet = new Set(tasks.map(task => task.id))
+				const pairs: [number, number][] = []
+				for(const id of taskIds){
+					if(!idSet.has(id)){
+						continue // task is not queued
+					}
+					pairs.push([id, availableRunOrders.pop()!])
+				}
+
+				await generationTaskDao.updateMultipleFieldByCase("runOrder", pairs)
+
+				const objPairs = pairs.map(([id, runOrder]) => ({id, runOrder}))
+
+				// maybe some users shouldn't know about other users tasks here...?
+				// but they still kinda know because run order is sequental
+				// so, whatever
+				websocketServer.sendToAll({type: "task_reordering", orderPairs: objPairs})
+
+				return objPairs
+			})
 		}
 	)
 

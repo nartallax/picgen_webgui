@@ -103,7 +103,10 @@ export async function showTasksModal(): Promise<void> {
 				]),
 				width: "10rem"
 			}],
-			fetch: ClientApi.adminListTasks
+			fetch: params => {
+				params.sortBy = "runOrder"
+				return ClientApi.adminListTasks(params)
+			}
 		})
 	])
 
