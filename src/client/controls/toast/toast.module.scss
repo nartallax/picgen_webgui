@@ -21,8 +21,9 @@
 	}
 
 	&.info {
-		background-color: lightblue;
-		border-color: blue;
+		background: var(--color-block-accent);
+		border: 2px solid var(--color-font-on-block);
+		color: var(--color-font-on-block);
 	}
 
 	&.error {

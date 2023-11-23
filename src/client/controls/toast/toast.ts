@@ -52,11 +52,26 @@ function dropExcessToasts(): void {
 	}
 }
 
+function removeAll(): void {
+	for(const toast of activeToasts){
+		toast.remove()
+	}
+	activeToasts.length = 0
+}
+
 function makeToast(params: ToastParams): Toast {
 	const el = tag({
-		class: [css.toast, css[params.type || "info"]],
-		onClick: () => remove()
+		class: [css.toast, css[params.type || "info"]]
 	}, [params.text])
+
+	el.addEventListener("click", e => {
+		if(e.shiftKey){
+			e.preventDefault()
+			removeAll()
+		} else {
+			remove()
+		}
+	})
 
 	let timeoutSeconds = toastDurationOverride.get()
 	if(timeoutSeconds < 0){
