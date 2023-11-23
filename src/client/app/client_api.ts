@@ -44,6 +44,16 @@ export namespace ClientApi {
 		})
 	}
 
+	export function getUserStaticPictureUrl(name: string): string {
+		return `${apiPrefix}getUserStaticPicture?name=${encodeURIComponent(name)}`
+	}
+
+	export const getUserStaticNames = () => client.call<string[]>("getUserStaticNames", {})
+
+	export function getUserStaticThumbnails(): Promise<ArrayBuffer> {
+		return client.callGetForBinary("getUserStaticThumbnails", {})
+	}
+
 	export const getPictureInfoById = (id: number, salt: number) =>
 		client.call<Picture & PictureInfo>("getPictureInfoById", {id, salt})
 

@@ -1,5 +1,6 @@
 {
 	"name": "Lora A",
 	"triggerWords": ["loreal", "alorel"],
+	"images": ["cat_a.jpeg", "cat_b.jpeg"],
 	"description": "This is lora, uwu!"
 }

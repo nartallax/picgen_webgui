@@ -20,6 +20,7 @@ import {MainMenu} from "client/components/main_menu/main_menu"
 import {MainMenuButton} from "client/components/main_menu/main_menu_button"
 import {SearchBar} from "client/components/search_bar/search_bar"
 import {SearchFeed} from "client/components/feeds/search_feed"
+import {userStaticThumbnailProvider} from "client/pages/main_page/user_static_thumbnail_provider"
 
 export function MainPage(): HTMLElement {
 
@@ -137,6 +138,8 @@ export function MainPage(): HTMLElement {
 }
 
 async function loadGlobalData(page: HTMLElement, knownTasks: WBox<GenerationTaskWithPictures[]>): Promise<void> {
+	void userStaticThumbnailProvider.loadUserStaticThumbnails()
+
 	const [paramSets, jsonFileLists] = await Promise.all([
 		ClientApi.getGenerationParameterSets(),
 		ClientApi.getAllJsonFileLists()

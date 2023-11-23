@@ -14,3 +14,4 @@ _static
 .parcel-cache
 dist
 src/client/generated
+user_static_thumbnails

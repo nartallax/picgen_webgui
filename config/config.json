@@ -13,6 +13,13 @@
 		"directory": "./thumbnails",
 		"height": 276
 	},
+	"userStatic": {
+		"directory": "./user_static",
+		"thumbnails": {
+			"directory": "./user_static_thumbnails",
+			"height": 100
+		}
+	},
 	"pictureCleanup": {
 		"resultPictureLimitPerUser": 500
 	},

@@ -2,13 +2,12 @@ import {JsonFileList, JsonFileListItemDescription, JsonFileListItemDescriptionFi
 import {promises as Fs} from "fs"
 import * as Path from "path"
 import {RCV} from "@nartallax/ribcage-validation"
-import watch from "node-watch"
 import {RunOnlyOneAtTimeFn, runOnlyOneAtTime} from "common/utils/run_only_one_at_time"
 import {log} from "server/log"
 import {JsonFileListGenParam} from "common/entities/parameter"
 import {md5} from "common/utils/md5"
 import {config, websocketServer} from "server/server_globals"
-import {debounce} from "client/client_common/debounce"
+import {watchDirectory} from "server/dir_watcher"
 
 const jsonListItemFileValidator = RCV.getValidatorBuilder().build(JsonFileListItemDescriptionFile)
 
@@ -21,7 +20,7 @@ type ListDescription = {
 }
 
 type List = ListDescription & {
-	watcher: ReturnType<typeof watch> | null
+	watcher: ReturnType<typeof watchDirectory> | null
 	values: readonly JsonFileListItemDescription[]
 	reload: RunOnlyOneAtTimeFn
 }
@@ -91,11 +90,10 @@ export class JSONFileListController {
 		if(list.watcher){
 			return
 		}
-		list.watcher = watch(
+		list.watcher = watchDirectory(
 			list.directory,
-			{filter: /.json$/i, recursive: false, delay: 1000, persistent: false},
-			// it should be debounced on its own, but for some reason is not
-			debounce(1000, async() => {
+			/.json$/i,
+			async() => {
 				const callCount = list.reload.callCount
 				await list.reload()
 				if(list.reload.callCount !== callCount + 1){
@@ -109,7 +107,7 @@ export class JSONFileListController {
 					directory: list.directory,
 					items: list.values
 				})
-			})
+			}
 		)
 	}
 

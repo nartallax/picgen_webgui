@@ -16,6 +16,7 @@ export const JsonFileListItemDescriptionFile = RC.struct(RC.structFields({
 	},
 	roOpt: {
 		triggerWords: RC.roArray(RC.string()),
+		images: RC.roArray(RC.string()),
 		description: RC.string()
 	}
 }))

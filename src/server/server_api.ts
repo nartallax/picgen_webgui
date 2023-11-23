@@ -7,8 +7,9 @@ import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} fro
 import {SimpleListQueryParams} from "common/infra_entities/query"
 import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
+import * as Path from "path"
 import {JsonFileList} from "common/entities/json_file_list"
-import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, thumbnails, userDao, websocketServer} from "server/server_globals"
+import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, thumbnails, userDao, userStatic, websocketServer} from "server/server_globals"
 import {getHttpContext} from "server/context"
 
 async function checkIsAdmin(): Promise<void> {
@@ -167,22 +168,7 @@ export namespace ServerApi {
 				}
 			}
 
-			const thumbsBytes = await Promise.all(pictures.map(pic => thumbnails.getThumbnail(pic)))
-			const result = Buffer.alloc(thumbsBytes.map(bytes => bytes.length + 4).reduce((a, b) => a + b, 0))
-
-			let offset = 0
-			for(let i = 0; i < thumbsBytes.length; i++){
-				let len = thumbsBytes[i]!.length
-				for(let j = 0; j < 4; j++){
-					result[offset++] = len & 0xff
-					len >>= 8
-				}
-			}
-
-			for(const bytes of thumbsBytes){
-				bytes.copy(result, offset)
-				offset += bytes.length
-			}
+			const result = await thumbnails.getThumbnailPack(pictures)
 
 			// it probably won't be as efficient as in single picture, but anyway
 			const ctx = getHttpContext()
@@ -190,6 +176,34 @@ export namespace ServerApi {
 			ctx.responseHeaders["Cache-Control"] = "public,max-age=31536000,immutable"
 
 			return result
+		}
+	)
+
+	export const getUserStaticPicture = RCV.validatedFunction(
+		[RC.struct({name: RC.string()})],
+		async({name}): Promise<Buffer> => {
+			const picBytes = await userStatic.getFullPicture(name)
+
+			const ctx = getHttpContext()
+			ctx.responseHeaders["Content-Type"] = MimeTypes.contentType("img." + Path.extname(name)) || "image/jpeg"
+			// we have no way to make clientside clear cache, so caches are disabled
+			ctx.responseHeaders["Cache-Control"] = "max-age=0, no-store"
+
+			return picBytes
+		}
+	)
+
+	export const getUserStaticNames = RCV.validatedFunction(
+		[],
+		async(): Promise<string[]> => {
+			return await userStatic.getNames()
+		}
+	)
+
+	export const getUserStaticThumbnails = RCV.validatedFunction(
+		[],
+		async(): Promise<Buffer> => {
+			return await userStatic.getThumbnails()
 		}
 	)
 

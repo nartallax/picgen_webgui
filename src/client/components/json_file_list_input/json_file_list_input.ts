@@ -1,4 +1,4 @@
-import {WBox, box, calcBox} from "@nartallax/cardboard"
+import {RBox, WBox, box, calcBox} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
 import {allKnownJsonFileLists, jsonFileListOrdering} from "client/app/global_values"
 import {showJsonFileListOrderModal} from "client/components/json_file_list_input/json_file_list_ordering"
@@ -7,11 +7,14 @@ import {FormField} from "client/controls/form/form"
 import {Row} from "client/controls/layout/row_col"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {Select} from "client/controls/select/select"
-import {JsonFileListArgument} from "common/entities/json_file_list"
+import {JsonFileListArgument, JsonFileListItemDescription} from "common/entities/json_file_list"
 import {JsonFileListGenParam} from "common/entities/parameter"
 import * as css from "./json_file_list_input.module.scss"
 import {Icon} from "client/generated/icons"
 import {LockButton} from "client/controls/lock_button/lock_button"
+import {userStaticThumbnailProvider} from "client/pages/main_page/user_static_thumbnail_provider"
+import {showImageViewer} from "client/components/image_viewer/image_viewer"
+import {ClientApi} from "client/app/client_api"
 
 type Props = {
 	def: JsonFileListGenParam
@@ -87,19 +90,32 @@ export const JsonFileListInput = (props: Props) => {
 					id: id,
 					name: id
 				})
+				const def = itemDef.get()
 				return FormField({
 					label: itemDef.prop("name"),
 					input: NumberInput({
 						precision: 2,
 						value: selectedItem.prop("weight")
 					}),
-					hint: (itemDef.get().triggerWords ?? []).length < 1 && !itemDef.get().description ? undefined : tag([
-						tag({class: [css.hintDescription, {
-							[css.hidden!]: itemDef.prop("description").map(desc => !desc),
-							[css.bottomMargin!]: itemDef.prop("triggerWords").map(triggers => triggers && triggers.length > 0)
-						}]}, [itemDef.prop("description")]),
+					hint: (def.triggerWords ?? []).length < 1 && !def.description && (def.images ?? []).length < 1 ? undefined : tag({
+						class: css.hint
+					}, [
+						tag({class: {
+							[css.hidden!]: itemDef.prop("description").map(desc => !desc)
+						}}, [itemDef.prop("description")]),
+
+						tag({class: [css.hintImages, {
+							[css.hidden!]: itemDef.prop("images").map(imgs => !imgs || imgs.length < 1)
+						}]}, [
+							itemDef.prop("images").map(imgs =>
+								(imgs ?? []).map(img => makeThumbnail(img, itemDef))
+							)
+						]),
+
 						tag(
-							{class: [css.hintTriggerList]},
+							{class: [css.hintTriggerList, {
+								[css.hidden!]: itemDef.prop("triggerWords").map(words => !words || words.length < 1)
+							}]},
 							[itemDef.prop("triggerWords").map(triggers => triggers ?? []).mapArray(
 								word => word,
 								word => tag({
@@ -139,4 +155,22 @@ export const JsonFileListInput = (props: Props) => {
 	})
 
 	return result
+}
+
+function makeThumbnail(path: string, def: RBox<JsonFileListItemDescription>): HTMLImageElement | null {
+	const img = userStaticThumbnailProvider.getThumbnailNow(path)
+	if(!img){
+		return null
+	}
+
+	img.addEventListener("click", () => openJsonListItemImageViewer(def))
+
+	return img
+}
+
+function openJsonListItemImageViewer(def: RBox<JsonFileListItemDescription>): void {
+	void showImageViewer({
+		imageDescriptions: def.prop("images").map(imgs => imgs ?? []),
+		makeUrl: img => ClientApi.getUserStaticPictureUrl(img)
+	})
 }

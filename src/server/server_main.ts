@@ -18,6 +18,7 @@ import {Context, runWithHttpRequestContext} from "server/context"
 import {GenerationTaskDAO} from "server/entities/generation_task_dao"
 import {PictureDAO} from "server/entities/picture_dao"
 import {ThumbnailController} from "server/thumbnail_controller"
+import {UserStaticController} from "server/user_static_controller"
 
 export async function main() {
 	try {
@@ -78,7 +79,8 @@ async function mainInternal(): Promise<void> {
 			}), notification => ({notification})),
 		new TaskQueueController(),
 		new JSONFileListController(),
-		new ThumbnailController(config.thumbnails)
+		new ThumbnailController(config.thumbnails),
+		new UserStaticController(config.userStatic)
 	])
 
 	await startGlobals()

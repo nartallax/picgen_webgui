@@ -25,14 +25,12 @@
 	margin: 0.25rem;
 }
 
-.hintDescription {
-	&.hidden {
-		display: none;
-	}
-
-	&.bottomMargin {
-		margin-bottom: 1.5rem;
-	}
+.hint {
+	display: flex;
+	flex-direction: column;
+	align-items: start;
+	justify-content: start;
+	gap: 1.5rem;
 }
 
 .hintTriggerList {
@@ -49,4 +47,19 @@
 			content: ","
 		}
 	}
+}
+
+.hintImages {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 1rem;
+
+	> * {
+		cursor: pointer;
+	}
+}
+
+.hidden {
+	display: none;
 }
