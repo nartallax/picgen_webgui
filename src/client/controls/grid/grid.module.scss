@@ -1,0 +1,14 @@
+.rowSequence {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	overflow: auto;
+	position: relative;
+}
+
+.loadTrigger {
+	.hidden {
+		display: none;
+	}
+}
+
