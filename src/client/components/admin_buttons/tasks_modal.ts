@@ -12,7 +12,7 @@ import {GenerationTask} from "common/entities/generation_task"
 
 export async function showTasksModal(): Promise<void> {
 	const tasks = box([] as GenerationTask[])
-	const activeTask = tasks.map(tasks => tasks.filter(task => task.status === "running")[0] ?? null)
+	const activeTask = tasks.map(tasks => tasks.filter(task => task.status === "running" || task.status === "warmingUp")[0] ?? null)
 	const tasksInQueueCount = tasks.map(tasks => tasks.filter(task => task.status === "queued").length)
 
 	const getUser = fetchToBoxMap(async(id: number) => {
@@ -124,7 +124,7 @@ export async function showTasksModal(): Promise<void> {
 
 function getTaskAdminActions(task: GenerationTask): [string, () => void][] {
 	const actions: [string, () => void][] = []
-	if(task.status === "queued" || task.status === "running"){
+	if(task.status === "queued" || task.status === "running" || task.status === "warmingUp"){
 		actions.push(["Kill", () => ClientApi.adminKillTask(task.id)])
 	}
 	return actions

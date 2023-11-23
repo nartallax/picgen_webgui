@@ -157,6 +157,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const nowBox = box(Date.now())
 	const paramSetOfTask = allKnownParamSets.get().find(x => x.internalName === props.task.get().paramSetName)
 	const isEditingNote = box(false)
+	const statusBox = props.task.prop("status")
 
 	const result = tag({class: [css.taskPanel]}, [
 		tag({class: css.body}, [
@@ -190,11 +191,12 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					})
 				}),
 				tag({class: css.status}, [
-					props.task.map(task => {
-						switch(task.status){
+					statusBox.map(status => {
+						switch(status){
 							case "completed": return "Done"
 							case "running": return "Running"
 							case "queued": return "Queued"
+							case "warmingUp": return "Warming up"
 						}
 					})
 				]),
@@ -224,6 +226,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				}),
 				tag({class: css.timer}, [calcBox([props.task, nowBox], (task, now) => {
 					switch(task.status){
+						case "warmingUp":
 						case "queued": return ""
 						case "completed": {
 							if(!task.startTime){
@@ -285,7 +288,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	onMount(result, () => {
 		nowBox.set(Date.now())
 		const interval = setInterval(() => {
-			if(props.task.get().status === "running"){
+			const status = statusBox.get()
+			if(status === "running" || status === "warmingUp"){
 				nowBox.set(Date.now())
 			} else if(props.task.get().status === "completed"){
 				clearInterval(interval)

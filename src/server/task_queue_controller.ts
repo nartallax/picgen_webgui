@@ -168,15 +168,10 @@ export class TaskQueueController {
 			const gen = new GenRunner(config, callbacks, preparedInputData, task)
 			this.runningGeneration = {gen, input: preparedInputData, estimatedDuration: null}
 
-			const startTime = unixtime()
-			update(() => {
-				task.status = "running"
-				task.startTime = startTime
-			})
+			update(() => task.status = "warmingUp")
 			sendTaskNotification({
-				type: "task_started",
-				taskId: task.id,
-				startTime: startTime
+				type: "task_warming_up",
+				taskId: task.id
 			})
 
 			const exitResult = await gen.waitCompletion()
@@ -299,6 +294,20 @@ export class TaskQueueController {
 					type: "task_expected_picture_count_known",
 					taskId: task.id,
 					expectedPictureCount: count
+				})
+			},
+
+
+			onWarmupFinished: () => {
+				const startTime = unixtime()
+				update(() => {
+					task.status = "running"
+					task.startTime = startTime
+				})
+				sendTaskNotification({
+					type: "task_warmup_finished",
+					taskId: task.id,
+					startTime
 				})
 			},
 

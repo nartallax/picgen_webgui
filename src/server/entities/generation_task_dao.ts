@@ -81,7 +81,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 	}
 
 	queryRunning(): Promise<GenerationTask | null> {
-		return this.queryByFieldValue("status", "running")
+		return this.queryByFieldValueIn("status", ["running", "warmingUp"])
 	}
 
 	override async create(task: Omit<GenerationTask, "id">): Promise<GenerationTask> {

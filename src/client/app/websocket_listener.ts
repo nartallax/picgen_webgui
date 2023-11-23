@@ -56,10 +56,10 @@ export class WebsocketListener {
 			case "task_created":
 				this.tasks.prependElement({...notification.task, pictures: []})
 				break
-			case "task_started":
+			case "task_warming_up":
 				this.updateTaskById(
 					notification.taskId,
-					task => ({...task, status: "running", startTime: notification.startTime})
+					task => ({...task, status: "warmingUp"})
 				)
 				break
 			case "task_expected_picture_count_known":
@@ -103,6 +103,16 @@ export class WebsocketListener {
 				break
 			case "task_admin_notification":
 				onAdminTaskUpdate.fire(notification.task)
+				break
+			case "task_warmup_finished":
+				this.updateTaskById(
+					notification.taskId,
+					task => ({
+						...task,
+						status: "running",
+						startTime: notification.startTime
+					})
+				)
 				break
 			case "task_message":
 				showToast({

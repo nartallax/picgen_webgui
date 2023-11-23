@@ -5,7 +5,8 @@ import type {Picture} from "common/entities/picture"
 export enum GenerationTaskStatus {
 	queued = 1,
 	running = 2,
-	completed = 3
+	completed = 3,
+	warmingUp = 4
 }
 
 export type GenerationTaskWithPictures = GenerationTask & {pictures: Picture[]}

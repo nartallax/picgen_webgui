@@ -24,6 +24,10 @@ async function main() {
 	// we can send arbitrary text messages while generating stuff to be displayed to frontend
 	Process.stdout.write(JSON.stringify({message: "Hewwo! I'm starting!", displayFor: 10}) + "\n")
 
+	// warming up for 1.5s
+	await new Promise(ok => setTimeout(ok, 1500))
+	Process.stdout.write(JSON.stringify({warmupFinished: true}) + "\n")
+
 	const willGenerateFilesCount = 3
 	const totalGenerationTime = 3000
 

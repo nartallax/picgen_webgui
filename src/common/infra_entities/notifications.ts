@@ -12,7 +12,8 @@ export type ApiNotification = TaskMessageNotification
 | TaskArgumentUpdatedNotification
 | TaskGeneratedPictureNotification
 | TaskFinishedNotification
-| TaskStartedNotification
+| TaskWarmupFinishedNotification
+| TaskWarmingUpNotification
 | TaskCreatedNotification
 | TaskAdminNotification
 | TaskEstimatedDurationKnownNotification
@@ -63,10 +64,15 @@ export interface TaskFinishedNotification {
 	exitCode: number
 }
 
-export interface TaskStartedNotification {
-	type: "task_started"
+export interface TaskWarmupFinishedNotification {
+	type: "task_warmup_finished"
 	taskId: number
 	startTime: number
+}
+
+export interface TaskWarmingUpNotification {
+	type: "task_warming_up"
+	taskId: number
 }
 
 export interface TaskCreatedNotification {

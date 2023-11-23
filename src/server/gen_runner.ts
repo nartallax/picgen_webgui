@@ -10,7 +10,7 @@ import {GenerationTask} from "common/entities/generation_task"
 import {Picture} from "common/entities/picture"
 import {GenerationTaskArgument} from "common/entities/arguments"
 
-type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | ModifyTaskArguments | TimeLeftLine
+type OutputLine = GeneratedFileLine | ErrorLine | ExpectedPicturesLine | MessageLine | ModifyTaskArguments | TimeLeftLine | WarmupFinished
 
 interface GeneratedFileLine {
 	generatedPicture: string
@@ -50,6 +50,13 @@ function isModifyTaskArgumentsLine(line: OutputLine): line is ModifyTaskArgument
 	return typeof((line as ModifyTaskArguments).modifyTaskArguments) === "object"
 }
 
+interface WarmupFinished {
+	warmupFinished: true
+}
+function isWarmupFinishedLine(line: OutputLine): line is WarmupFinished {
+	return (line as WarmupFinished).warmupFinished === true
+}
+
 interface TimeLeftLine {
 	timeLeft: number
 }
@@ -64,6 +71,7 @@ export interface GenRunnerCallbacks {
 	onMessage(message: string, displayFor: number | null): void
 	onErrorMessage(message: string, displayFor: number | null): void
 	onTimeLeftKnown(timeLeft: number): void
+	onWarmupFinished(): void
 }
 
 export interface GenRunExitResult {
@@ -137,6 +145,8 @@ export class GenRunner {
 					this.callbacks.onTaskArgumentsModified(line.modifyTaskArguments)
 				} else if(isTimeLeftLine(line)){
 					this.callbacks.onTimeLeftKnown(line.timeLeft)
+				} else if(isWarmupFinishedLine(line)){
+					this.callbacks.onWarmupFinished()
 				} else {
 					console.error("Unknown action in line " + lineStr + ". Skipping it.")
 				}
