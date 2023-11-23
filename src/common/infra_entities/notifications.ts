@@ -19,6 +19,7 @@ export type ApiNotification = TaskMessageNotification
 | TaskEstimatedDurationKnownNotification
 | JsonFileListUpdateNotification
 | TaskReorderingNotification
+| QueueStatusChangeNotification
 
 export interface TaskAdminNotification {
 	type: "task_admin_notification"
@@ -90,4 +91,9 @@ export interface JsonFileListUpdateNotification {
 	type: "json_file_list_update"
 	directory: string
 	items: readonly JsonFileListItemDescription[]
+}
+
+export interface QueueStatusChangeNotification {
+	type: "queue_status_change"
+	newStatus: "paused" | "running"
 }

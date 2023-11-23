@@ -10,7 +10,7 @@ import {SoftScroller} from "client/base/soft_scroller"
 import {addDragScroll} from "client/client_common/drag_scroll"
 import {debounce} from "client/client_common/debounce"
 import {loadArguments} from "client/app/load_arguments"
-import {allKnownParamSets, thumbnailProvider} from "client/app/global_values"
+import {allKnownParamSets, queueStatus, thumbnailProvider} from "client/app/global_values"
 import {Icon} from "client/generated/icons"
 import {makeDeletionTimer} from "client/client_common/deletion_timer"
 import {Row} from "client/controls/layout/row_col"
@@ -191,11 +191,11 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					})
 				}),
 				tag({class: css.status}, [
-					statusBox.map(status => {
-						switch(status){
+					calcBox([statusBox, queueStatus], (taskStatus, queueStatus) => {
+						switch(taskStatus){
 							case "completed": return "Done"
 							case "running": return "Running"
-							case "queued": return "Queued"
+							case "queued": return "Queued" + (queueStatus === "paused" ? " [GLOBAL PAUSE]" : "")
 							case "warmingUp": return "Warming up"
 						}
 					})

@@ -1,6 +1,7 @@
 import {box} from "@nartallax/cardboard"
 import {tag} from "@nartallax/cardboard-dom"
 import {ClientApi} from "client/app/client_api"
+import {queueStatus} from "client/app/global_values"
 import {onAdminTaskUpdate} from "client/app/websocket_listener"
 import {fetchToBoxMap} from "client/client_common/fetch_to_box_map"
 import {Button} from "client/controls/button/button"
@@ -22,15 +23,11 @@ export async function showTasksModal(): Promise<void> {
 		return users[0]!
 	})
 
-	const isQueuePaused = box(false)
-	async function refreshPauseState(): Promise<void> {
-		isQueuePaused.set(await ClientApi.getIsQueuePaused())
-	}
-	void refreshPauseState()
+	const isQueuePaused = queueStatus.map(status => status === "paused")
 
 	const modal = showModal({title: "Tasks", width: ["25rem", "75vw", "100rem"], height: ["25rem", "75vh", null]}, [
 		Row({justify: "start", padding: "bottom"}, [
-			TextBlock({text: isQueuePaused.map(isPaused => `Queue is ${isPaused ? "paused" : "running"}`)})
+			TextBlock({text: queueStatus.map(status => `Queue is ${status}`)})
 		]),
 		Row({justify: "start", padding: "bottom"}, [
 			activeTask.map(task => {
@@ -52,7 +49,6 @@ export async function showTasksModal(): Promise<void> {
 				isDisabled: isQueuePaused,
 				onClick: async() => {
 					await ClientApi.adminPauseQueue()
-					await refreshPauseState()
 				}
 			}),
 			Button({
@@ -60,7 +56,6 @@ export async function showTasksModal(): Promise<void> {
 				isDisabled: isQueuePaused.map(x => !x),
 				onClick: async() => {
 					await ClientApi.adminUnpauseQueue()
-					await refreshPauseState()
 				}
 			}),
 			Button({
@@ -75,7 +70,6 @@ export async function showTasksModal(): Promise<void> {
 				text: "Kill current and pause",
 				onClick: async() => {
 					await ClientApi.adminKillCurrentAndPauseQueue()
-					await refreshPauseState()
 				}
 			})
 		]),

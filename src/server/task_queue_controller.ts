@@ -201,10 +201,12 @@ export class TaskQueueController {
 
 	pause(): void {
 		this.queueIsMoving = false
+		websocketServer.sendToAll({type: "queue_status_change", newStatus: "paused"})
 	}
 
 	unpause(): void {
 		this.queueIsMoving = true
+		websocketServer.sendToAll({type: "queue_status_change", newStatus: "running"})
 		void this.tryStartNextGeneration()
 	}
 

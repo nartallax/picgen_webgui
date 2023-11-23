@@ -36,6 +36,7 @@ export const argumentsByParamSet = localStorageBox<Record<string, Record<string,
 export const lockedParameters = localStorageBox<Record<string, boolean>>(document.body, "lockedParameters", {})
 export const currentParamSetName = localStorageBox(document.body, "fixedGenArgument.selectedParamSetName", "")
 
+export const queueStatus = box<"paused" | "running">("running")
 export const allKnownParamSets = box<GenerationParameterSet[]>([])
 export const allKnownJsonFileLists = box<{readonly [name: string]: readonly JsonFileListItemDescription[]}>({})
 export const defaultRedrawParameter: RBox<[GenerationParameterSet, PictureGenParam] | null> = allKnownParamSets.map(sets => {

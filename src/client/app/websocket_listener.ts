@@ -1,5 +1,5 @@
 import {WBox} from "@nartallax/cardboard"
-import {allKnownJsonFileLists} from "client/app/global_values"
+import {allKnownJsonFileLists, queueStatus} from "client/app/global_values"
 import {Event} from "client/base/event"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
@@ -131,6 +131,10 @@ export class WebsocketListener {
 				const newMap = {...allKnownJsonFileLists.get()}
 				newMap[notification.directory] = notification.items
 				allKnownJsonFileLists.set(newMap)
+				break
+			}
+			case "queue_status_change": {
+				queueStatus.set(notification.newStatus)
 				break
 			}
 			default:
