@@ -1,5 +1,5 @@
 import {bindBox, onMount, tag} from "@nartallax/cardboard-dom"
-import {showModalBase} from "client/controls/modal_base/modal_base"
+import {Modal, showModalBase} from "client/controls/modal_base/modal_base"
 import * as css from "./image_viewer.module.scss"
 import {MRBox, RBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
 import {pointerEventsToClientCoords} from "client/client_common/mouse_drag"
@@ -9,6 +9,7 @@ import {debounce} from "client/client_common/debounce"
 import {preventGalleryImageInteractions, shiftWheelForZoom, shiftWheelHint} from "client/app/global_values"
 import {SmoothValueChanger} from "client/base/smooth_value_changer"
 import {TopToast, showTopToast} from "client/controls/toast/top_toast"
+import {DeletionTimer} from "client/client_common/deletion_timer"
 
 function waitLoadEvent(img: HTMLImageElement): Promise<void> {
 	return new Promise(ok => {
@@ -100,6 +101,7 @@ export type ShowImageViewerProps<T> = {
 	readonly getAdditionalControls?: (picture: RBox<T>) => HTMLElement[]
 	readonly getPictureOpacity?: (picture: RBox<T>) => MRBox<number>
 	readonly onScroll?: (args: {x: number, y: number, zoom: number, bounds: RectBounds}) => void
+	readonly getDeletionTimer?: (picture: RBox<T>) => DeletionTimer | null
 }
 
 export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promise<void> {
@@ -279,7 +281,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return height / img.naturalHeight
 	}
 
-	const imgsWithLabels = props.imageDescriptions.mapArray(
+	const imgsWithLabelsAndBoxes = props.imageDescriptions.mapArray(
 		desc => props.makeUrl(desc),
 		descBox => {
 			const natSideRatio = box(1)
@@ -359,11 +361,11 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				})
 			}
 
-			return imgWrap
+			return [imgWrap, descBox] as const
 		}
 	)
 
-	const imgs = imgsWithLabels.map(wraps => wraps.map(wrap => wrap.getElementsByTagName("img")[0]!))
+	const imgs = imgsWithLabelsAndBoxes.map(wraps => wraps.map(wrap => wrap[0].getElementsByTagName("img")[0]!))
 
 	const wrap = tag({
 		class: [css.imageViewer],
@@ -373,7 +375,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		onClick: () => modal.close()
 	})
 
-	bindBox(wrap, imgsWithLabels, els => wrap.replaceChildren(...els))
+	bindBox(wrap, imgsWithLabelsAndBoxes, els => wrap.replaceChildren(...els.map(x => x[0])))
 
 	onMount(wrap, async() => {
 		const targetIndex = props.centerOn ?? 0
@@ -515,6 +517,11 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		setZoom: (zoomValue, centerCoords) => setZoomByCoords(centerCoords, zoomValue, true)
 	})
 
+	addDeleteHandler(() => {
+		const index = getCentralImageIndex()
+		return imgsWithLabelsAndBoxes.get()[index]?.[1]
+	}, modal, props)
+
 	let toast: TopToast | null = null
 	if(shiftWheelForZoom.get() && shiftWheelHint.get()){
 		toast = showTopToast({
@@ -527,4 +534,49 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	if(toast){
 		toast.remove()
 	}
+}
+
+function addDeleteHandler<T>(getCentralBox: () => RBox<T> | undefined, modal: Modal, props: ShowImageViewerProps<T>): void {
+	let currentDeletionTimer: DeletionTimer | null = null
+	onMount(modal.overlay, () => {
+		const onDown = (e: KeyboardEvent) => {
+			if(e.key !== "Delete" || !props.getDeletionTimer){
+				return
+			}
+
+			const descBox = getCentralBox()
+			if(!descBox){
+				return
+			}
+
+			currentDeletionTimer = props.getDeletionTimer(descBox)
+			if(!currentDeletionTimer){
+				return
+			}
+
+			if(e.shiftKey){
+				currentDeletionTimer.completeNow()
+				currentDeletionTimer = null
+			} else {
+				currentDeletionTimer.run()
+			}
+		}
+		const onUp = (e: KeyboardEvent) => {
+			if(e.key !== "Delete"){
+				return
+			}
+			if(currentDeletionTimer){
+				currentDeletionTimer.cancel()
+				currentDeletionTimer = null
+			}
+		}
+
+		window.addEventListener("keydown", onDown, {passive: true})
+		window.addEventListener("keyup", onUp, {passive: true})
+
+		return () => {
+			window.removeEventListener("keydown", onDown)
+			window.removeEventListener("keyup", onUp)
+		}
+	}, {ifInDom: "call"})
 }

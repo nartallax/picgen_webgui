@@ -11,7 +11,7 @@ import {showTaskArgsModal} from "client/components/task_args_modal/task_args_mod
 import {ThumbnailProvidingContext} from "client/app/thumbnail_provider"
 import notFoundSvg from "../../../../static/not_found.svg"
 import {Icon} from "client/generated/icons"
-import {makeDeletionTimer} from "client/client_common/deletion_timer"
+import {DeletionTimer, makeDeletionTimer} from "client/client_common/deletion_timer"
 import {argumentsByParamSet, currentParamSetName, defaultRedrawParameter} from "client/app/global_values"
 
 interface TaskPictureProps {
@@ -28,6 +28,7 @@ class TaskPictureContext {
 	readonly favAddTime: WBox<number | null> | null
 	private readonly haveTask: RBox<boolean>
 	readonly deletionProgress = box(0)
+	readonly deletionTimer: DeletionTimer | null
 
 	constructor(
 		readonly picture: RBox<Picture>,
@@ -38,7 +39,13 @@ class TaskPictureContext {
 			[this.picture, constBoxWrap(this.generationTask)],
 			(pic, task) => pictureHasAttachedTask(pic) || !!task
 		)
+		if(isArrayItemWBox(this.picture)){
+			this.deletionTimer = makeDeletionTimer(500, this.deletionProgress, () => (void this.deletePicture()))
+		} else {
+			this.deletionTimer = null
+		}
 	}
+
 
 	private getPictureArgs(): GenerationTaskInputData {
 		return getTaskInputDataFromPicture(this.picture.get(), this.getTask())
@@ -90,20 +97,24 @@ class TaskPictureContext {
 		return copyTaskButton
 	}
 
-	makeDeleteButton(): HTMLElement | null {
+	private async deletePicture(): Promise<void> {
 		const arrayItemPicture = this.picture
 		if(!isArrayItemWBox(arrayItemPicture)){
+			return
+		}
+
+		const id = this.picture.get().id
+		await ClientApi.deletePicture(id)
+		arrayItemPicture.deleteArrayElement()
+		this.deletionProgress.set(1)
+	}
+
+	makeDeleteButton(): HTMLElement | null {
+		const timer = this.deletionTimer
+		if(!timer){
 			return null
 		}
-
-		const delNow = async() => {
-			const id = this.picture.get().id
-			await ClientApi.deletePicture(id)
-			arrayItemPicture.deleteArrayElement()
-			this.deletionProgress.set(1)
-		}
-
-		const delTimer = makeDeletionTimer(500, this.deletionProgress, delNow)
+		const delTimer = timer // for typechecking
 
 		const copyTaskButton = tag({
 			class: [Icon.trashEmpty, css.iconDelete],
@@ -114,7 +125,7 @@ class TaskPictureContext {
 			e.preventDefault()
 			e.stopPropagation()
 			if(e.shiftKey){
-				void delNow()
+				delTimer.completeNow()
 			} else {
 				delTimer.run()
 			}
@@ -325,6 +336,10 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 		getPictureOpacity: pic => {
 			const cont = getContext(pic)
 			return cont.deletionProgress.map(x => 1 - x)
+		},
+		getDeletionTimer: pic => {
+			const cont = getContext(pic)
+			return cont.deletionTimer
 		}
 	} satisfies Partial<ShowImageViewerProps<Picture>>
 	if(task){

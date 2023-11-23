@@ -1,8 +1,10 @@
 import {WBox} from "@nartallax/cardboard"
 
-interface DeletionTimer {
+export interface DeletionTimer {
+	readonly isCompleted: boolean
 	cancel(): void
 	run(): void
+	completeNow(): void
 }
 
 export function makeDeletionTimer(duration: number, box: WBox<number>, afterEnd: () => void): DeletionTimer {
@@ -14,9 +16,7 @@ export function makeDeletionTimer(duration: number, box: WBox<number>, afterEnd:
 		const passedTime = Date.now() - startTime
 		const passedPercent = passedTime / duration
 		if(passedPercent >= 1){
-			box.set(1)
-			cancel(true)
-			afterEnd()
+			completeNow()
 			return
 		}
 
@@ -43,5 +43,13 @@ export function makeDeletionTimer(duration: number, box: WBox<number>, afterEnd:
 		onFrame()
 	}
 
-	return {run, cancel}
+	const completeNow = () => {
+		box.set(1)
+		cancel(true)
+		afterEnd()
+		result.isCompleted = true
+	}
+
+	const result = {run, cancel, completeNow, isCompleted: false}
+	return result
 }

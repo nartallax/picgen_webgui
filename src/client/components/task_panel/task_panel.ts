@@ -186,7 +186,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 					onTouchend: () => delTimer.cancel(),
 					onClick: limitClickRate(async e => {
 						if(e.shiftKey){
-							void delTaskNow()
+							delTimer.completeNow()
 						}
 					})
 				}),
