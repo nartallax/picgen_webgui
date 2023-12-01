@@ -11,7 +11,7 @@ interface HandlerPack<R, T> {
  *
  * Not very performant, but will do for this app. */
 export class LockSet<T> {
-	private globalLock = false
+	private globalLock = 0
 	private lockedIds = new Set<T>()
 	private waiters = new Set<HandlerPack<any, T>>()
 
@@ -61,7 +61,7 @@ export class LockSet<T> {
 				this.lockedIds.add(id)
 			}
 		} else {
-			this.globalLock = true
+			this.globalLock++
 		}
 	}
 
@@ -71,7 +71,7 @@ export class LockSet<T> {
 				this.lockedIds.delete(id)
 			}
 		} else {
-			this.globalLock = false
+			this.globalLock--
 		}
 	}
 

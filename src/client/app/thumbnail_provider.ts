@@ -120,6 +120,7 @@ export class ThumbnailProvider {
 		return {
 			getThumbnail: picture => {
 				const img = tag({tag: "img", attrs: {alt: "thumbnail"}, style: {visibility: "hidden"}})
+				img.loading = "eager"
 				pics.push({picture, img: img})
 				if(timer === null){
 					timer = setTimeout(() => void sendIt(), debounceTimeMs)

@@ -16,7 +16,7 @@ export class SmoothValueChanger {
 	private frame: ReturnType<typeof requestAnimationFrame> | null = null
 
 
-	constructor(private readonly box: NumWBoxEssentials, private readonly timeSpan: number, private readonly opts: Options = {}) {
+	constructor(private readonly box: NumWBoxEssentials, private readonly timeSpan: number, private readonly opts: Options = {}, private readonly onComplete?: () => void) {
 		this.lastKnownValue = box.get()
 		this.targetValue = this.lastKnownValue
 	}
@@ -46,6 +46,9 @@ export class SmoothValueChanger {
 		if(linearProgress >= 1){
 			this.lastKnownValue = this.targetValue
 			this.box.set(this.lastKnownValue)
+			if(this.onComplete){
+				this.onComplete()
+			}
 			return
 		}
 

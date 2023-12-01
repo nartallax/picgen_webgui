@@ -177,7 +177,9 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return newZoom
 	}
 
-	const smoothXChanger = new SmoothValueChanger(xPos, 150, {curvePower: 3})
+	const smoothXChanger = new SmoothValueChanger(xPos, 1500, {curvePower: 3}, () => {
+		visibilityController.doDeferredWork()
+	})
 	const smoothYChanger = new SmoothValueChanger(yPos, 150, {curvePower: 3})
 	function centerOn(img: HTMLImageElement, smooth?: boolean, preserveZoom?: boolean): void {
 		if(!preserveZoom){
