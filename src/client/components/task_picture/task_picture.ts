@@ -13,6 +13,7 @@ import notFoundSvg from "../../../../static/not_found.svg"
 import {Icon} from "client/generated/icons"
 import {DeletionTimer, makeDeletionTimer} from "client/client_common/deletion_timer"
 import {argumentsByParamSet, currentParamSetName, defaultRedrawParameter} from "client/app/global_values"
+import {ImageVisibilityController} from "client/components/image_viewer/image_visibility_controller"
 
 interface TaskPictureProps {
 	picture: WBox<Picture>
@@ -22,6 +23,7 @@ interface TaskPictureProps {
 	loadAnimation?: boolean
 	thumbContext: ThumbnailProvidingContext
 	onScroll?: ShowImageViewerProps<unknown>["onScroll"]
+	visibilityController: ImageVisibilityController
 }
 
 class TaskPictureContext {
@@ -276,6 +278,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 
 	void(async() => {
 		await props.thumbContext.waitNextBatchLoad()
+		props.visibilityController.addImage(img)
 		if(!props.loadAnimation){
 			if(props.onLoad){
 				props.onLoad()

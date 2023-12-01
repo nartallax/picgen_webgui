@@ -1,3 +1,5 @@
+import {onMount} from "@nartallax/cardboard-dom"
+
 const noop = () => {
 	// nothing!
 }
@@ -119,6 +121,14 @@ export class ImageVisibilityController {
 		this.farObserver = null
 		this.veryFarObserver?.disconnect()
 		this.veryFarObserver = null
+	}
+
+	attachTo(root: HTMLElement): void {
+		onMount(root, () => {
+			this.start()
+			requestAnimationFrame(() => this.doDeferredWork())
+			return () => this.stop()
+		}, {ifInDom: "call"})
 	}
 }
 

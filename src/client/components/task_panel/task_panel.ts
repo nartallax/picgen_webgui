@@ -15,6 +15,7 @@ import {Icon} from "client/generated/icons"
 import {makeDeletionTimer} from "client/client_common/deletion_timer"
 import {Row} from "client/controls/layout/row_col"
 import {NoteBlock} from "client/components/note_block/note_block"
+import {ImageVisibilityController} from "client/components/image_viewer/image_visibility_controller"
 
 interface TaskPanelProps {
 	task: ArrayItemWBox<GenerationTaskWithPictures>
@@ -24,7 +25,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const taskDeletionProgress = box(0)
 	const taskDeletionOpacity = taskDeletionProgress.map(x => 1 - x)
 	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse(), arr => [...arr].reverse())
-	const thumbContext = thumbnailProvider.makeContext({useDataAttribute: false})
+	const thumbContext = thumbnailProvider.makeContext({useDataAttribute: true})
 	let isInDOM = false
 
 	function detectCurrentScrollPictureIndex(): number | null {
@@ -39,6 +40,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		}
 		return Math.max(0, pictureContainer.children.length - 1)
 	}
+
+	const visibilityController = new ImageVisibilityController()
 
 	function scrollToNextPicture(direction: -1 | 1): void {
 		const currentPicIndex = detectCurrentScrollPictureIndex()
@@ -81,6 +84,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 			picture => {
 				const isDisabled = box(true)
 				const el = TaskPicture({
+					visibilityController,
 					picture,
 					isDisabled,
 					onLoad: debouncedUpdateDisabledState,
@@ -118,6 +122,8 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 		isInDOM = true
 		return () => isInDOM = false
 	})
+
+	visibilityController.attachTo(pictureContainer)
 
 	const delTaskNow = async() => {
 		const id = props.task.get().id

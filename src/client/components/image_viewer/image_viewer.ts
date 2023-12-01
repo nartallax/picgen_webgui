@@ -509,11 +509,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		})
 	}
 
-	onMount(modal.overlay, () => {
-		visibilityController.start()
-		requestAnimationFrame(() => visibilityController.doDeferredWork())
-		return () => visibilityController.stop()
-	}, {ifInDom: "call"})
+	visibilityController.attachTo(modal.overlay)
 
 	await modal.waitClose()
 	if(toast){
