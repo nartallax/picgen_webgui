@@ -52,8 +52,8 @@ interface RectBounds {
 export type ShowImageViewerProps<T> = {
 	readonly imageDescriptions: RBox<readonly T[]>
 	readonly getDimensions: (imageDescription: T) => ({readonly width: number, readonly height: number})
-	readonly makeUrl: (imageDescription: T) => string
-	readonly updateImg?: (desc: T, img: HTMLImageElement) => void
+	readonly getId: (imageDescription: T) => string | number
+	readonly getUrl: (imageDescription: T) => string
 	readonly zoomSpeed?: number
 	readonly centerOn?: number
 	readonly equalizeByHeight?: boolean
@@ -246,7 +246,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	}
 
 	const imgsWithLabelsAndBoxes = props.imageDescriptions.mapArray(
-		desc => props.makeUrl(desc),
+		desc => props.getId(desc),
 		descBox => {
 			const {width: natWidth, height: natHeight} = props.getDimensions(descBox.get())
 			const natSideRatio = natWidth / natHeight
@@ -273,17 +273,14 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				},
 				onMousedown: e => {
 					if(e.button === 1){
-						window.open(props.makeUrl(descBox.get()), "_blank")
+						window.open(props.getUrl(descBox.get()), "_blank")
 					}
 				}
 			})
 			const img: HTMLImageElement = _img
 			img.dataset["natWidth"] = natWidth + ""
 			img.dataset["natHeight"] = natHeight + ""
-			img.dataset["src"] = props.makeUrl(descBox.get())
-			if(props.updateImg){
-				props.updateImg(descBox.get(), img)
-			}
+			img.dataset["src"] = props.getUrl(descBox.get())
 
 			updateBounds()
 

@@ -306,15 +306,9 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 	}
 
 	const commonProps = {
-		makeUrl: (picture: Picture) => ClientApi.getPictureUrl(picture.id, picture.salt),
+		getId: picture => picture.id,
+		getUrl: picture => picture.deleted ? notFoundSvg : ClientApi.getPictureUrl(picture.id, picture.salt),
 		panBounds: {x: "centerInPicture", y: "borderToBorder"},
-		updateImg: (picture, img) => {
-			if(picture.deleted){
-				img.style.minWidth = "128px"
-				img.style.minHeight = "128px"
-				img.setAttribute("src", notFoundSvg)
-			}
-		},
 		onScroll,
 		getAdditionalControls: pic => {
 			const cont = getContext(pic)
@@ -339,7 +333,7 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 			const cont = getContext(pic)
 			return cont.deletionTimer
 		},
-		getDimensions: pic => pic
+		getDimensions: pic => pic.deleted ? {width: 128, height: 128} : pic
 	} satisfies Partial<ShowImageViewerProps<Picture>>
 	if(task){
 		const srcOrderPics = constBoxWrap(task).prop("pictures")

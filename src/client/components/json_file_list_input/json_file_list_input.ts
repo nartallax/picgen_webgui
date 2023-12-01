@@ -167,8 +167,9 @@ function makeThumbnail(context: ThumbnailProvidingContext, path: string, def: RB
 function openJsonListItemImageViewer(def: RBox<JsonFileListItemDescription>): void {
 	const sizeMap = new Map(userStaticPictureInfo.get().map(x => [x.name, x]))
 	void showImageViewer({
+		getId: img => img,
 		imageDescriptions: def.prop("images").map(imgs => imgs ?? []),
-		makeUrl: img => ClientApi.getUserStaticPictureUrl(img),
+		getUrl: img => ClientApi.getUserStaticPictureUrl(img),
 		getDimensions: img => sizeMap.get(img) ?? {width: 10, height: 10}
 	})
 }
