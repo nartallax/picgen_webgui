@@ -10,6 +10,7 @@ import {GenerationTaskArgument} from "common/entities/arguments"
 import {JsonFileListItemDescription} from "common/entities/json_file_list"
 import {GenerationParameterSet, PictureGenParam} from "common/entities/parameter"
 import {User} from "common/entities/user"
+import {UserStaticPictureDescription} from "server/user_static_controller"
 
 
 export const currentUser = box<User | null>(null)
@@ -36,6 +37,7 @@ export const argumentsByParamSet = localStorageBox<Record<string, Record<string,
 export const lockedParameters = localStorageBox<Record<string, boolean>>(document.body, "lockedParameters", {})
 export const currentParamSetName = localStorageBox(document.body, "fixedGenArgument.selectedParamSetName", "")
 
+export const userStaticPictureInfo = box<readonly UserStaticPictureDescription[]>([])
 export const queueStatus = box<"paused" | "running">("running")
 export const allKnownParamSets = box<GenerationParameterSet[]>([])
 export const allKnownJsonFileLists = box<{readonly [name: string]: readonly JsonFileListItemDescription[]}>({})
@@ -51,18 +53,6 @@ export const defaultRedrawParameter: RBox<[GenerationParameterSet, PictureGenPar
 	}
 	return null
 })
-
-// export const currentArguments = calcBox([argumentsByParamSet, currentParamSetName, allKnownParamSets],
-// 	(allArgs, name, allParamSets) => {
-// 		const paramSet = allParamSets.find(set => set.internalName === name)
-// 		if(!paramSet){
-// 			return null
-// 		}
-// 		console.log("fwdmap", allArgs)
-// 		return fixArgumentMap(allArgs[name] ?? {}, paramSet.parameterGroups)
-// 	},
-// 	(value, allArgs, name, allParamSets) => [value === null ? allArgs : {...allArgs, [name]: value}, name, allParamSets]
-// )
 
 export const thumbnailProvider = new ThumbnailProvider()
 

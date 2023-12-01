@@ -86,6 +86,7 @@ interface RectBounds {
 
 export type ShowImageViewerProps<T> = {
 	readonly imageDescriptions: RBox<readonly T[]>
+	readonly getDimensions: (imageDescription: T) => ({readonly width: number, readonly height: number})
 	readonly makeUrl: (imageDescription: T) => string
 	readonly updateImg?: (desc: T, img: HTMLImageElement) => void
 	readonly zoomSpeed?: number

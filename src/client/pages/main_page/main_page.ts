@@ -6,7 +6,7 @@ import {onMount, tag} from "@nartallax/cardboard-dom"
 import * as css from "./main_page.module.scss"
 import {GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenerationParameterSet} from "common/entities/parameter"
-import {currentParamSetName, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, argumentsByParamSet, limitThumbnailWidth, queueStatus} from "client/app/global_values"
+import {currentParamSetName, allKnownParamSets, allKnownJsonFileLists, hideSomeScrollbars, argumentsByParamSet, limitThumbnailWidth, queueStatus, userStaticPictureInfo} from "client/app/global_values"
 import {Row} from "client/controls/layout/row_col"
 import {isPictureArgument} from "common/entities/arguments"
 import {Tabs} from "client/controls/tabs/tabs"
@@ -138,13 +138,15 @@ export function MainPage(): HTMLElement {
 }
 
 async function loadGlobalData(page: HTMLElement, knownTasks: WBox<GenerationTaskWithPictures[]>): Promise<void> {
-	void userStaticThumbnailProvider.loadUserStaticThumbnails()
-
-	const [paramSets, jsonFileLists, isQueuePaused] = await Promise.all([
+	const [paramSets, jsonFileLists, isQueuePaused, userStaticPics] = await Promise.all([
 		ClientApi.getGenerationParameterSets(),
 		ClientApi.getAllJsonFileLists(),
-		ClientApi.getIsQueuePaused()
+		ClientApi.getIsQueuePaused(),
+		ClientApi.getUserStaticPictureInfo()
 	])
+
+	userStaticPictureInfo.set(userStaticPics)
+	void userStaticThumbnailProvider.loadUserStaticThumbnails(userStaticPics.map(pic => pic.name))
 
 	queueStatus.set(isQueuePaused ? "paused" : "running")
 

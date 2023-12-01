@@ -11,6 +11,7 @@ import * as Path from "path"
 import {JsonFileList} from "common/entities/json_file_list"
 import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, thumbnails, userDao, userStatic, websocketServer} from "server/server_globals"
 import {getHttpContext} from "server/context"
+import {UserStaticPictureDescription} from "server/user_static_controller"
 
 async function checkIsAdmin(): Promise<void> {
 	userDao.checkIsAdmin(await userDao.getCurrent())
@@ -193,10 +194,10 @@ export namespace ServerApi {
 		}
 	)
 
-	export const getUserStaticNames = RCV.validatedFunction(
+	export const getUserStaticPictureInfo = RCV.validatedFunction(
 		[],
-		async(): Promise<string[]> => {
-			return await userStatic.getNames()
+		async(): Promise<readonly UserStaticPictureDescription[]> => {
+			return await userStatic.getPictureDescriptions()
 		}
 	)
 

@@ -51,11 +51,8 @@ export class ThumbnailProvider {
 		}})
 	}
 
-	async loadUserStaticThumbnails(): Promise<void> {
-		const [packBytes, names] = await Promise.all([
-			ClientApi.getUserStaticThumbnails(),
-			ClientApi.getUserStaticNames()
-		])
+	async loadUserStaticThumbnails(names: readonly string[]): Promise<void> {
+		const packBytes = await ClientApi.getUserStaticThumbnails()
 		this.loadPack(packBytes, names)
 	}
 

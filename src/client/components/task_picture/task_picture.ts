@@ -340,7 +340,8 @@ function openViewer(picture: MRBox<Picture>, task?: MRBox<GenerationTaskWithPict
 		getDeletionTimer: pic => {
 			const cont = getContext(pic)
 			return cont.deletionTimer
-		}
+		},
+		getDimensions: pic => pic
 	} satisfies Partial<ShowImageViewerProps<Picture>>
 	if(task){
 		const srcOrderPics = constBoxWrap(task).prop("pictures")

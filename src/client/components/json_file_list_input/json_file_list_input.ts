@@ -1,6 +1,6 @@
 import {RBox, WBox, box, calcBox} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
-import {allKnownJsonFileLists, jsonFileListOrdering} from "client/app/global_values"
+import {allKnownJsonFileLists, jsonFileListOrdering, userStaticPictureInfo} from "client/app/global_values"
 import {showJsonFileListOrderModal} from "client/components/json_file_list_input/json_file_list_ordering"
 import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
@@ -169,8 +169,10 @@ function makeThumbnail(path: string, def: RBox<JsonFileListItemDescription>): HT
 }
 
 function openJsonListItemImageViewer(def: RBox<JsonFileListItemDescription>): void {
+	const sizeMap = new Map(userStaticPictureInfo.get().map(x => [x.name, x]))
 	void showImageViewer({
 		imageDescriptions: def.prop("images").map(imgs => imgs ?? []),
-		makeUrl: img => ClientApi.getUserStaticPictureUrl(img)
+		makeUrl: img => ClientApi.getUserStaticPictureUrl(img),
+		getDimensions: img => sizeMap.get(img) ?? {width: 10, height: 10}
 	})
 }

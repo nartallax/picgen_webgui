@@ -6,6 +6,7 @@ import {GenerationParameterSet} from "common/entities/parameter"
 import {Picture, PictureWithTask} from "common/entities/picture"
 import {User} from "common/entities/user"
 import {SimpleListQueryParams} from "common/infra_entities/query"
+import {UserStaticPictureDescription} from "server/user_static_controller"
 
 export namespace ClientApi {
 
@@ -48,7 +49,7 @@ export namespace ClientApi {
 		return `${apiPrefix}getUserStaticPicture?name=${encodeURIComponent(name)}`
 	}
 
-	export const getUserStaticNames = () => client.call<string[]>("getUserStaticNames", {})
+	export const getUserStaticPictureInfo = () => client.call<UserStaticPictureDescription[]>("getUserStaticPictureInfo", {})
 
 	export function getUserStaticThumbnails(): Promise<ArrayBuffer> {
 		return client.callGetForBinary("getUserStaticThumbnails", {})
