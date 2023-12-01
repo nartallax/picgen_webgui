@@ -28,7 +28,7 @@ async function main() {
 	await new Promise(ok => setTimeout(ok, 1500))
 	Process.stdout.write(JSON.stringify({warmupFinished: true}) + "\n")
 
-	const willGenerateFilesCount = 3
+	const willGenerateFilesCount = 5
 	const totalGenerationTime = 3000
 
 	// let's tell the bot how many pictures to expect

@@ -5,7 +5,7 @@ import {GenerationParameterSet} from "common/entities/parameter"
 import {User} from "common/entities/user"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {SimpleListQueryParams} from "common/infra_entities/query"
-import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
+import {Picture, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import * as Path from "path"
 import {JsonFileList} from "common/entities/json_file_list"
@@ -209,18 +209,13 @@ export namespace ServerApi {
 
 	export const getPictureInfoById = RCV.validatedFunction(
 		[RC.struct({id: RC.int(), salt: RC.int()})],
-		async({id, salt}): Promise<Picture & PictureInfo> => {
+		async({id, salt}): Promise<Picture> => {
 
 			const picture = await pictureDao.getById(id)
 			if(picture.salt !== salt){
 				throw new ApiError("generic", "Wrong salt")
 			}
-			const info = await pictureDao.getPictureInfo(picture)
-			const strippedPicture = pictureDao.stripServerData(picture)
-			return {
-				...strippedPicture,
-				...info
-			}
+			return pictureDao.stripServerData(picture)
 		})
 
 	export const killOwnTask = RCV.validatedFunction(
@@ -234,14 +229,13 @@ export namespace ServerApi {
 
 	export const uploadPictureAsArgument = RCV.validatedFunction(
 		[RC.struct({paramSetName: RC.string(), paramName: RC.string(), fileName: RC.string(), data: RC.binary()})],
-		async({paramSetName, paramName, fileName, data}): Promise<Picture & PictureInfo> => {
+		async({paramSetName, paramName, fileName, data}): Promise<Picture> => {
 			if(!(data instanceof Buffer)){
 				throw new Error("Data is not buffer!")
 			}
 
-
-			const {picture, info} = await pictureDao.uploadPictureAsArgumentAndValidate(paramSetName, paramName, fileName, data)
-			return {...pictureDao.stripServerData(picture), ...info}
+			const picture = await pictureDao.uploadPictureAsArgumentAndValidate(paramSetName, paramName, fileName, data)
+			return pictureDao.stripServerData(picture)
 		})
 
 	export const deleteTask = RCV.validatedFunction(

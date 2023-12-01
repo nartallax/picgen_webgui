@@ -320,17 +320,17 @@ export class TaskQueueController {
 				switch(config.resultingPictureReceivingStrategy){
 					case "copy": {
 						const content = await Fs.readFile(path)
-						serverPic = await pictureDao.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext, modifiedArguments)
+						serverPic = await pictureDao.storeGeneratedPictureByContent(content, task, task.generatedPictures, modifiedArguments)
 						break
 					}
 					case "move": {
 						const content = await Fs.readFile(path)
-						serverPic = await pictureDao.storeGeneratedPictureByContent(content, task, task.generatedPictures, ext, modifiedArguments)
+						serverPic = await pictureDao.storeGeneratedPictureByContent(content, task, task.generatedPictures, modifiedArguments)
 						await Fs.rm(path)
 						break
 					}
 					case "refer": {
-						serverPic = await pictureDao.storeGeneratedPictureByPathReference(path, task, task.generatedPictures, ext, modifiedArguments)
+						serverPic = await pictureDao.storeGeneratedPictureByPathReference(path, task, task.generatedPictures, modifiedArguments)
 						break
 					}
 				}

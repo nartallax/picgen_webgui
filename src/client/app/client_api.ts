@@ -3,7 +3,7 @@ import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {JsonFileList} from "common/entities/json_file_list"
 import {GenerationParameterSet} from "common/entities/parameter"
-import {Picture, PictureInfo, PictureWithTask} from "common/entities/picture"
+import {Picture, PictureWithTask} from "common/entities/picture"
 import {User} from "common/entities/user"
 import {SimpleListQueryParams} from "common/infra_entities/query"
 
@@ -55,10 +55,10 @@ export namespace ClientApi {
 	}
 
 	export const getPictureInfoById = (id: number, salt: number) =>
-		client.call<Picture & PictureInfo>("getPictureInfoById", {id, salt})
+		client.call<Picture>("getPictureInfoById", {id, salt})
 
 	export const uploadPictureAsArgument = (paramSetName: string, paramName: string, fileName: string, data: ArrayBuffer) =>
-		client.callPut<Picture & PictureInfo>("uploadPictureAsArgument", data, {paramSetName, paramName, fileName})
+		client.callPut<Picture>("uploadPictureAsArgument", data, {paramSetName, paramName, fileName})
 
 	export const deleteTask = (taskId: number) =>
 		client.call<void>("deleteTask", {taskId})

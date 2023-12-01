@@ -5,7 +5,6 @@ import {promises as Fs} from "fs"
 import * as FsSync from "fs"
 import {directoryExists, fileExists} from "server/utils/file_exists"
 import {unixtime} from "server/utils/unixtime"
-import {httpGet} from "server/http/http_req"
 import {makeTempFile, makeTempFileName} from "server/utils/with_temp_file"
 import {decodePictureMask} from "common/picture_mask_encoding"
 import {rasterizePictureMask} from "server/utils/picture_mask_rasterizer"
@@ -20,10 +19,10 @@ import {config, context, generationTaskDao, pictureDao, thumbnails, userDao} fro
 import {runWithMinimalContext} from "server/context"
 
 export interface ServerPicture extends Picture {
-	directLink: string | null
-	fileName: string | null
+	fileName: string
 }
 
+// picture pre-storage. only fields that can be extracted from picture bytes alone
 export interface PictureInfo {
 	width: number
 	height: number
@@ -92,11 +91,13 @@ export class PictureDAO extends DAO<ServerPicture> {
 			modifiedArguments: pic.modifiedArguments,
 			favoritesAddTime: pic.favoritesAddTime,
 			deleted: pic.deleted,
-			isUsedAsArgument: pic.isUsedAsArgument
+			isUsedAsArgument: pic.isUsedAsArgument,
+			width: pic.width,
+			height: pic.height
 		}
 	}
 
-	async uploadPictureAsArgumentAndValidate(paramSetName: string, paramName: string, fileName: string, data: Buffer): Promise<{picture: ServerPicture, info: PictureInfo}> {
+	async uploadPictureAsArgumentAndValidate(paramSetName: string, paramName: string, fileName: string, data: Buffer): Promise<ServerPicture> {
 		const paramSet = config.parameterSets.find(set => set.internalName === paramSetName)
 		if(!paramSet){
 			throw new ApiError("validation_not_passed", "Unknown parameter set name: " + paramSetName)
@@ -110,10 +111,13 @@ export class PictureDAO extends DAO<ServerPicture> {
 			throw new ApiError("validation_not_passed", `Parameter ${paramName} is not picture parameter, it's ${paramDef.type} parameter. You cannot upload a picture as this parameter value.`)
 		}
 
-		const pictureInfo = await generationTaskDao.validateInputPicture(data, paramDef)
+		// this is not very optimal, because we will calc this data again when storing
+		// but whatever
+		const info = await this.getPictureInfo(data)
+		await generationTaskDao.validateInputPicture(info, paramDef)
 		const user = await userDao.getCurrent()
-		const serverPic = await pictureDao.storeExternalPicture(data, user.id, fileName, pictureInfo.ext)
-		return {picture: serverPic, info: pictureInfo}
+		const serverPic = await pictureDao.storeExternalPicture(data, user.id, fileName)
+		return serverPic
 	}
 
 	protected makeFullPicturePath(fileName: string): string {
@@ -124,53 +128,55 @@ export class PictureDAO extends DAO<ServerPicture> {
 		return Math.floor(Math.random() * 0xffffffff)
 	}
 
-	async storeGeneratedPictureByContent(data: Buffer, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"], otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
+	async storeGeneratedPictureByContent(data: Buffer, genTask: GenerationTask, index: number, modifiedArguments: ServerPicture["modifiedArguments"], otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
+		const info = await this.getPictureInfo(data)
 		return await this.storePicture(data, {
 			generationTaskId: genTask.id,
 			ownerUserId: genTask.userId,
-			ext: ext,
 			name: (index + 1) + "",
 			salt: this.getSalt(),
 			modifiedArguments,
 			favoritesAddTime: null,
 			deleted: false,
 			isUsedAsArgument: false,
+			...info,
 			...(otherFields || {})
 		})
 	}
 
-	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, ext: PictureType, modifiedArguments: ServerPicture["modifiedArguments"], otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
+	async storeGeneratedPictureByPathReference(path: string, genTask: GenerationTask, index: number, modifiedArguments: ServerPicture["modifiedArguments"], otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
 		const relPath = Path.relative(config.pictureStorageDir, path)
+		const info = await this.getPictureInfo(relPath)
 		const result = await this.create({
 			creationTime: unixtime(),
-			directLink: null,
 			fileName: relPath,
 			generationTaskId: genTask.id,
 			ownerUserId: genTask.userId,
-			ext: ext,
 			name: (index + 1) + "",
 			salt: this.getSalt(),
 			modifiedArguments,
 			favoritesAddTime: null,
 			deleted: false,
 			isUsedAsArgument: false,
+			...info,
 			...(otherFields || {})
 		})
 		await thumbnails.makeThumbnail(result)
 		return result
 	}
 
-	async storeExternalPicture(data: Buffer, userId: number, name: string, ext: PictureType, otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
+	async storeExternalPicture(data: Buffer, userId: number, name: string, otherFields?: Partial<ServerPicture>): Promise<ServerPicture> {
+		const info = await this.getPictureInfo(data)
 		return await this.storePicture(data, {
 			generationTaskId: null,
 			ownerUserId: userId,
-			ext: ext,
 			name: name,
 			salt: this.getSalt(),
 			modifiedArguments: null,
 			favoritesAddTime: null,
 			deleted: false,
 			isUsedAsArgument: false,
+			...info,
 			...(otherFields || {})
 		})
 	}
@@ -183,7 +189,6 @@ export class PictureDAO extends DAO<ServerPicture> {
 			await Fs.writeFile(filePath, data)
 			const result = await this.create({
 				creationTime: unixtime(),
-				directLink: null,
 				fileName: fileName,
 				...picture
 			})
@@ -199,20 +204,16 @@ export class PictureDAO extends DAO<ServerPicture> {
 		}
 	}
 
-	async getPictureInfo(picture: ServerPicture | Buffer): Promise<PictureInfo> {
+	private async getPictureInfo(picture: string | ServerPicture | Buffer): Promise<PictureInfo> {
 		if(picture instanceof Buffer){
 			const rawInfo = ProbeImageSize.sync(picture)
 			if(!rawInfo){
 				throw new Error("Failed to get picture info from data. Maybe that's not a picture at all?")
 			}
 			return this.fixPictureInfo(rawInfo)
-		} else if(picture.directLink){
-			return this.fixPictureInfo(await ProbeImageSize(picture.directLink))
-		} else if(picture.fileName){
-			return this.fixPictureInfo(await ProbeImageSize(FsSync.createReadStream(this.makeFullPicturePath(picture.fileName))))
-		} else {
-			throw new Error("Cannot get picture info: no direct link, no file name, no data.")
 		}
+		const relPath = typeof picture === "string" ? picture : picture.fileName
+		return this.fixPictureInfo(await ProbeImageSize(FsSync.createReadStream(this.makeFullPicturePath(relPath))))
 	}
 
 	private fixPictureInfo(info: {width: number, height: number, type: string}): PictureInfo {
@@ -229,17 +230,11 @@ export class PictureDAO extends DAO<ServerPicture> {
 	}
 
 	async getPictureData(picture: ServerPicture): Promise<Buffer> {
-		if(picture.directLink){
-			return await httpGet(picture.directLink)
-		} else if(picture.fileName){
-			return await Fs.readFile(this.makeFullPicturePath(picture.fileName))
-		} else {
-			throw new Error(`Picture #${picture.id} does not have link nor file path! Cannot read it.`)
-		}
+		return await Fs.readFile(this.makeFullPicturePath(picture.fileName))
 	}
 
-	async getPicturePathForGenerationRun(picture: ServerPicture, info?: PictureInfo): Promise<{path: string, info: PictureInfo}> {
-		info ??= await this.getPictureInfo(picture)
+	async getPicturePathForGenerationRun(picture: ServerPicture): Promise<{path: string, info: PictureInfo}> {
+		const info = await this.getPictureInfo(picture)
 		const pictureBytes = await this.getPictureData(picture)
 		const runningGenDir = config.runningGenerationPictureStorageDir
 		return {

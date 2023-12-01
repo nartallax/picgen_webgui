@@ -236,45 +236,41 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 		return result
 	}
 
-	async validateInputPicture(picture: ServerPicture | Buffer, def: PictureGenParam): Promise<PictureInfo> {
-		const picInf = await pictureDao.getPictureInfo(picture)
-
-		if(def.minHeight !== undefined && picInf.height < def.minHeight){
-			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minHeight}px in height; it is ${picInf.height}px now.`)
+	async validateInputPicture(picture: PictureInfo, def: PictureGenParam): Promise<void> {
+		if(def.minHeight !== undefined && picture.height < def.minHeight){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minHeight}px in height; it is ${picture.height}px now.`)
 		}
 
-		if(def.maxHeight !== undefined && picInf.height > def.maxHeight){
-			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.maxHeight}px in height; it is ${picInf.height}px now.`)
+		if(def.maxHeight !== undefined && picture.height > def.maxHeight){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.maxHeight}px in height; it is ${picture.height}px now.`)
 		}
 
-		if(def.minWidth !== undefined && picInf.width < def.minWidth){
-			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minWidth}px wide; it is ${picInf.width}px now.`)
+		if(def.minWidth !== undefined && picture.width < def.minWidth){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at least ${def.minWidth}px wide; it is ${picture.width}px now.`)
 		}
 
-		if(def.maxWidth !== undefined && picInf.width > def.maxWidth){
-			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.maxWidth}px wide; it is ${picInf.width}px now.`)
+		if(def.maxWidth !== undefined && picture.width > def.maxWidth){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be at most ${def.maxWidth}px wide; it is ${picture.width}px now.`)
 		}
 
 		if(def.allowedTypes){
-			if(!(def.allowedTypes as readonly string[]).includes(picInf.ext)){
-				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should contain picture of one of the following formats: ${def.allowedTypes.join(", ")}; it is ${picInf.ext} now.`)
+			if(!(def.allowedTypes as readonly string[]).includes(picture.ext)){
+				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should contain picture of one of the following formats: ${def.allowedTypes.join(", ")}; it is ${picture.ext} now.`)
 			}
 		}
 
 		if(def.sizeStep !== undefined){
-			if((picInf.height % def.sizeStep) !== 0){
-				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should have height evenly divisible by ${def.sizeStep}px; it is ${picInf.height}px now.`)
+			if((picture.height % def.sizeStep) !== 0){
+				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should have height evenly divisible by ${def.sizeStep}px; it is ${picture.height}px now.`)
 			}
-			if((picInf.width % def.sizeStep) !== 0){
-				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should have width evenly divisible by ${def.sizeStep}px; it is ${picInf.width}px now.`)
+			if((picture.width % def.sizeStep) !== 0){
+				throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should have width evenly divisible by ${def.sizeStep}px; it is ${picture.width}px now.`)
 			}
 		}
 
-		if(def.square && picInf.height !== picInf.width){
-			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be square (i.e. have height equal width); it is ${picInf.width}px x ${picInf.height}px now.`)
+		if(def.square && picture.height !== picture.width){
+			throw new ApiError("validation_not_passed", `Generation parameter ${def.jsonName} should be square (i.e. have height equal width); it is ${picture.width}px x ${picture.height}px now.`)
 		}
-
-		return picInf
 	}
 
 	override async delete(task: GenerationTask): Promise<void> {

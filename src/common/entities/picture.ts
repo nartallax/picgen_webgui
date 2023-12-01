@@ -2,12 +2,6 @@ import {RC} from "@nartallax/ribcage"
 import {GenerationTaskArgsObject} from "common/entities/arguments"
 import type {GenerationTask} from "common/entities/generation_task"
 
-export interface PictureInfo {
-	width: number
-	height: number
-	ext: PictureType
-}
-
 const pictureTypeArr = ["gif", "png", "jpg", "webp", "bmp", "tiff", "svg", "psd", "ico", "avif", "heic", "heif"] as const
 export type PictureType = RC.Value<typeof PictureType>
 export const PictureType = RC.constUnion(pictureTypeArr)
@@ -23,7 +17,9 @@ export const Picture = RC.struct(RC.structFields({
 		name: RC.union([RC.constant(null), RC.string()]),
 		salt: RC.int(),
 		modifiedArguments: RC.union([RC.constant(null), GenerationTaskArgsObject]),
-		deleted: RC.bool()
+		deleted: RC.bool(),
+		width: RC.int(),
+		height: RC.int()
 	},
 	normal: {
 		favoritesAddTime: RC.union([RC.constant(null), RC.int()]),

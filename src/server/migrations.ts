@@ -2,10 +2,12 @@ import {Migration} from "server/db/db_controller"
 import {log} from "server/log"
 import * as Path from "path"
 import {promises as Fs} from "fs"
+import * as FsSync from "fs"
 import {config, generationTaskDao, thumbnails} from "server/server_globals"
 import {ServerPicture} from "server/entities/picture_dao"
 import {GenerationTask} from "common/entities/generation_task"
 import {runWithMinimalContextWithDb} from "server/context"
+import ProbeImageSize from "probe-image-size"
 
 export const migrations: Migration[] = [
 	{name: "00000_users_gentasks_pictures", handler: async db => {
@@ -418,6 +420,34 @@ export const migrations: Migration[] = [
 		await db.run(`
 			update "pictures" set "favoritesAddTime" = "favoritesAddTime" + abs(random() % 1000) where "favoritesAddTime" is not null;
 		`)
+	}},
+
+	{name: "00029", handler: async db => {
+		await db.run(`
+			alter table "pictures" add "width" int;
+		`)
+		await db.run(`
+			alter table "pictures" add "height" int;
+		`)
+		await db.run(`
+			update "pictures" set "width" = 1, height = "1"
+		`)
+		const pictureFileNames = (await db.query(` 
+			select "fileName" from "pictures" where not "deleted"
+		`)) as {fileName: string}[]
+		log(`Starting to scan the pictures to update width and height in DB, ${pictureFileNames.length} to scan`)
+		for(let i = 0; i < pictureFileNames.length; i++){
+			const fileName = pictureFileNames[i]!.fileName
+			const fullPath = Path.resolve(config.pictureStorageDir, fileName)
+			const {width, height} = await ProbeImageSize(FsSync.createReadStream(fullPath))
+			await db.run(`
+				update "pictures" set "width" = ?, "height" = ? where "fileName" = ?
+			`, [width, height, fileName])
+			if((i % 100) === 0 && i !== 0){
+				log(`Updated ${i} pictures out of ${pictureFileNames.length} (${Math.floor((i / pictureFileNames.length) * 100)}%)`)
+			}
+		}
+		log("Done.")
 	}}
 
 ]
