@@ -23,7 +23,7 @@ interface TaskPictureProps {
 	loadAnimation?: boolean
 	thumbContext: ThumbnailProvidingContext
 	onScroll?: ShowImageViewerProps<unknown>["onScroll"]
-	visibilityController: ImageVisibilityController
+	visibilityController?: ImageVisibilityController
 }
 
 class TaskPictureContext {
@@ -278,7 +278,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 
 	void(async() => {
 		await props.thumbContext.waitNextBatchLoad()
-		props.visibilityController.addImage(img)
+		props.visibilityController?.addImage(img)
 		if(!props.loadAnimation){
 			if(props.onLoad){
 				props.onLoad()
