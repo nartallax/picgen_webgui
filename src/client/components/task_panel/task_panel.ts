@@ -24,7 +24,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 	const taskDeletionProgress = box(0)
 	const taskDeletionOpacity = taskDeletionProgress.map(x => 1 - x)
 	const pictures = props.task.prop("pictures").map(arr => [...arr].reverse(), arr => [...arr].reverse())
-	const thumbContext = thumbnailProvider.makeContext()
+	const thumbContext = thumbnailProvider.makeContext({useDataAttribute: false})
 	let isInDOM = false
 
 	function detectCurrentScrollPictureIndex(): number | null {

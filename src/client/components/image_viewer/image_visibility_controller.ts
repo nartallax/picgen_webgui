@@ -1,11 +1,14 @@
 import {RBox} from "@nartallax/cardboard"
 import {bindBox} from "@nartallax/cardboard-dom"
 
-export class LazyDisplayController {
+/** A class that is able to only show images that are actually on screen, and hide them when they are not
+ * Doing so allows browser to unload pictures offscreen, which can help conserve memory
+ * Expects data-src attribute to be assigned to actual image src */
+export class ImageVisibilityController {
 	private readonly observer: IntersectionObserver
 	private readonly knownImages = new Set<HTMLImageElement>()
 
-	constructor(root: HTMLElement, imgs: RBox<HTMLImageElement[]>) {
+	constructor() {
 		this.observer = new IntersectionObserver(entries => {
 			for(const entry of entries){
 				const img = entry.target
@@ -24,21 +27,31 @@ export class LazyDisplayController {
 				}
 			}
 		}, {rootMargin: "250px"})
+	}
 
+	addImage(img: HTMLImageElement): void {
+		this.observer.observe(img)
+		this.knownImages.add(img)
+	}
+
+	removeImage(img: HTMLImageElement): void {
+		this.observer.unobserve(img)
+		this.knownImages.delete(img)
+	}
+
+	addImageArrayBox(root: HTMLElement, imgs: RBox<HTMLImageElement[]>): void {
 		bindBox(root, imgs, imgs => {
 			const newImgSet = new Set(imgs)
 
 			for(const oldImg of this.knownImages){
 				if(!newImgSet.has(oldImg)){
-					this.observer.unobserve(oldImg)
-					this.knownImages.delete(oldImg)
+					this.removeImage(oldImg)
 				}
 			}
 
 			for(const newImg of newImgSet){
 				if(!this.knownImages.has(newImg)){
-					this.observer.observe(newImg)
-					this.knownImages.add(newImg)
+					this.addImage(newImg)
 				}
 			}
 		})

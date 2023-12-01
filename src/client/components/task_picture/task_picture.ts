@@ -221,8 +221,6 @@ class TaskPictureContext {
 export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	const url = props.picture.map(picture => ClientApi.getPictureUrl(picture.id, picture.salt))
 
-	const imgPlaceholder = tag()
-
 	const context = new TaskPictureContext(props.picture, props.generationTask)
 
 	const isLoaded = box(props.loadAnimation ? false : true)
@@ -235,6 +233,10 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 		})
 	}
 
+	const img = props.thumbContext.getThumbnail(props.picture.get())
+	// this is for mobile devices, on which overlay is disabled and non-clickable
+	img.addEventListener("click", openViewerForThisPicture)
+
 	const result: HTMLElement = tag({
 		class: [css.taskPicture, {
 			[css.disabled!]: props.isDisabled,
@@ -244,7 +246,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 			opacity: context.deletionProgress.map(x => 1 - x)
 		}
 	}, [
-		imgPlaceholder,
+		img,
 		tag({
 			class: css.overlay,
 			onClick: openViewerForThisPicture,
@@ -273,11 +275,7 @@ export function TaskPicture(props: TaskPictureProps): HTMLElement {
 	])
 
 	void(async() => {
-		const img = await props.thumbContext.getThumbnail(props.picture.get())
-		// this is for mobile devices, on which overlay is disabled and non-clickable
-		img.addEventListener("click", openViewerForThisPicture)
-		imgPlaceholder.before(img)
-		imgPlaceholder.remove()
+		await props.thumbContext.waitNextBatchLoad()
 		if(!props.loadAnimation){
 			if(props.onLoad){
 				props.onLoad()

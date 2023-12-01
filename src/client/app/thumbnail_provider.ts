@@ -3,7 +3,8 @@ import {ClientApi} from "client/app/client_api"
 import {Picture} from "common/entities/picture"
 
 export interface ThumbnailProvidingContext {
-	getThumbnail(picture: Picture | string): Promise<HTMLImageElement>
+	getThumbnail(picture: Picture | string): HTMLImageElement
+	waitNextBatchLoad(): Promise<void>
 }
 
 export class ThumbnailProvider {
@@ -44,25 +45,9 @@ export class ThumbnailProvider {
 		return typeof(picture) === "string" ? picture : picture.id
 	}
 
-	private makeImageFromUrl(url: string): HTMLImageElement {
-		return tag({tag: "img", attrs: {
-			src: url,
-			alt: "thumbnail"
-		}})
-	}
-
 	async loadUserStaticThumbnails(names: readonly string[]): Promise<void> {
 		const packBytes = await ClientApi.getUserStaticThumbnails()
 		this.loadPack(packBytes, names)
-	}
-
-	getThumbnailNow(picture: Picture | string): HTMLImageElement | null {
-		const url = this.urlCache.get(this.getPictureId(picture))
-		if(!url){
-			return null
-		} else {
-			return this.makeImageFromUrl(url)
-		}
 	}
 
 	private loadPack(packBytes: ArrayBuffer, pictures: readonly (Picture | string)[]): void {
@@ -87,7 +72,7 @@ export class ThumbnailProvider {
 		}
 	}
 
-	async getThumbnails(pictures: (Picture | string)[]): Promise<HTMLImageElement[]> {
+	private async loadThumbnails(pictures: (Picture | string)[]): Promise<void> {
 		const unknownPictures = pictures.filter(pic => !this.urlCache.has(this.getPictureId(pic)))
 
 		if(unknownPictures.length > 0){
@@ -99,43 +84,53 @@ export class ThumbnailProvider {
 			const packBytes = await ClientApi.getPictureThumbnails(unknownPictures as Picture[])
 			this.loadPack(packBytes, unknownPictures)
 		}
-
-		const imgs: HTMLImageElement[] = pictures.map(picture =>
-			this.makeImageFromUrl(this.urlCache.get(this.getPictureId(picture))!)
-		)
-
-		return imgs
 	}
 
-	makeContext(debounceTimeMs = 25): ThumbnailProvidingContext {
-		let picturesAndPromises: {picture: Picture | string, ok: (img: HTMLImageElement) => void, err: (err: Error) => void}[] = []
+	makeContext(options: {debounceTimeMs?: number, useDataAttribute?: boolean} = {}): ThumbnailProvidingContext {
+		const debounceTimeMs = options.debounceTimeMs ?? 25
+		let pics: {img: HTMLImageElement, picture: Picture | string}[] = []
 		let timer: ReturnType<typeof setTimeout> | null = null
+		let loadWaiters: (() => void)[] = []
 
 		const sendIt = async() => {
 			timer = null
-			const inputData = picturesAndPromises
-			picturesAndPromises = []
-			try {
-				const thumbs = await this.getThumbnails(inputData.map(x => x.picture))
-				for(let i = 0; i < inputData.length; i++){
-					inputData[i]!.ok(thumbs[i]!)
+			const oldPics = pics
+			pics = []
+
+			await this.loadThumbnails(oldPics.map(x => x.picture))
+			for(const {img, picture} of oldPics){
+				const id = this.getPictureId(picture)
+				const src = this.urlCache.get(id)!
+				if(options.useDataAttribute){
+					img.dataset["src"] = src
+				} else {
+					img.setAttribute("src", src)
 				}
-			} catch(e){
-				if(!(e instanceof Error)){
-					throw e
-				}
-				for(const {err} of inputData){
-					err(e)
-				}
+				img.style.visibility = ""
+			}
+
+			const oldLoadWaiters = loadWaiters
+			loadWaiters = []
+			for(const waiter of oldLoadWaiters){
+				waiter()
 			}
 		}
 
 
 		return {
-			getThumbnail: picture => new Promise<HTMLImageElement>((ok, err) => {
-				picturesAndPromises.push({picture, ok, err})
+			getThumbnail: picture => {
+				const img = tag({tag: "img", attrs: {alt: "thumbnail"}, style: {visibility: "hidden"}})
+				pics.push({picture, img: img})
 				if(timer === null){
 					timer = setTimeout(() => void sendIt(), debounceTimeMs)
+				}
+				return img
+			},
+			waitNextBatchLoad: () => new Promise<void>(ok => {
+				if(timer === null){
+					ok()
+				} else {
+					loadWaiters.push(ok)
 				}
 			})
 		}

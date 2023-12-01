@@ -10,7 +10,7 @@ import {preventGalleryImageInteractions, shiftWheelForZoom, shiftWheelHint} from
 import {SmoothValueChanger} from "client/base/smooth_value_changer"
 import {TopToast, showTopToast} from "client/controls/toast/top_toast"
 import {DeletionTimer} from "client/client_common/deletion_timer"
-import {LazyDisplayController} from "client/components/image_viewer/lazy_display_controller"
+import {ImageVisibilityController} from "client/components/image_viewer/image_visibility_controller"
 
 type PanBoundsType = "centerInPicture" | "borderToBorder" | "none"
 
@@ -501,7 +501,8 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	}
 
 	onMount(modal.overlay, () => {
-		const controller = new LazyDisplayController(modal.overlay, imgs)
+		const controller = new ImageVisibilityController()
+		controller.addImageArrayBox(modal.overlay, imgs)
 		return () => controller.destroy()
 	}, {ifInDom: "call"})
 

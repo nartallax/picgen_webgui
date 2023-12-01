@@ -1,6 +1,6 @@
 import {RBox, WBox, box, calcBox} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
-import {allKnownJsonFileLists, jsonFileListOrdering, userStaticPictureInfo} from "client/app/global_values"
+import {allKnownJsonFileLists, jsonFileListOrdering, thumbnailProvider, userStaticPictureInfo} from "client/app/global_values"
 import {showJsonFileListOrderModal} from "client/components/json_file_list_input/json_file_list_ordering"
 import {Button} from "client/controls/button/button"
 import {FormField} from "client/controls/form/form"
@@ -12,9 +12,9 @@ import {JsonFileListGenParam} from "common/entities/parameter"
 import * as css from "./json_file_list_input.module.scss"
 import {Icon} from "client/generated/icons"
 import {LockButton} from "client/controls/lock_button/lock_button"
-import {userStaticThumbnailProvider} from "client/pages/main_page/user_static_thumbnail_provider"
 import {showImageViewer} from "client/components/image_viewer/image_viewer"
 import {ClientApi} from "client/app/client_api"
+import {ThumbnailProvidingContext} from "client/app/thumbnail_provider"
 
 type Props = {
 	def: JsonFileListGenParam
@@ -26,6 +26,7 @@ type Props = {
 export const JsonFileListInput = (props: Props) => {
 
 	const listName = props.def.directory
+	const thumbContext = thumbnailProvider.makeContext()
 
 	const emptySelectValue = {
 		label: props.def.inputInvitation ?? "Select item...",
@@ -108,7 +109,7 @@ export const JsonFileListInput = (props: Props) => {
 							[css.hidden!]: itemDef.prop("images").map(imgs => !imgs || imgs.length < 1)
 						}]}, [
 							itemDef.prop("images").map(imgs =>
-								(imgs ?? []).map(img => makeThumbnail(img, itemDef))
+								(imgs ?? []).map(img => makeThumbnail(thumbContext, img, itemDef))
 							)
 						]),
 
@@ -157,14 +158,9 @@ export const JsonFileListInput = (props: Props) => {
 	return result
 }
 
-function makeThumbnail(path: string, def: RBox<JsonFileListItemDescription>): HTMLImageElement | null {
-	const img = userStaticThumbnailProvider.getThumbnailNow(path)
-	if(!img){
-		return null
-	}
-
+function makeThumbnail(context: ThumbnailProvidingContext, path: string, def: RBox<JsonFileListItemDescription>): HTMLImageElement | null {
+	const img = context.getThumbnail(path)
 	img.addEventListener("click", () => openJsonListItemImageViewer(def))
-
 	return img
 }
 
