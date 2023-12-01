@@ -146,7 +146,7 @@ async function loadGlobalData(page: HTMLElement, knownTasks: WBox<GenerationTask
 	])
 
 	userStaticPictureInfo.set(userStaticPics)
-	void userStaticThumbnailProvider.loadUserStaticThumbnails(userStaticPics.map(pic => pic.name))
+	await userStaticThumbnailProvider.loadUserStaticThumbnails(userStaticPics.map(pic => pic.name))
 
 	queueStatus.set(isQueuePaused ? "paused" : "running")
 
