@@ -26,9 +26,13 @@ export class ImageVisibilityController {
 	// (or was I mistaken and it was something else...?)
 	private readonly deferredUnloadableImages = new Set<HTMLImageElement>()
 
+	// idea here that user of this class can call this function when there's nothing going on
+	// so this class can do some work ahead of time
+	// this class alone don't have this information
 	doDeferredWork(): void {
 		for(const img of this.deferredLoadableImages){
 			this.load(img)
+			// void forcePaintImage(img)
 		}
 		for(const img of this.deferredUnloadableImages){
 			this.unload(img)
@@ -74,14 +78,16 @@ export class ImageVisibilityController {
 
 		this.farObserver = this.makeObserver(window.innerWidth, (isIntersecting, img) => {
 			if(isIntersecting){
+				this.deferredUnloadableImages.delete(img)
 				this.deferredLoadableImages.add(img)
-			} else if(img.getAttribute("src")){
+			} else {
+				this.deferredLoadableImages.delete(img)
 				this.deferredUnloadableImages.add(img)
 			}
 		})
 
 		this.veryFarObserver = this.makeObserver(window.innerWidth * 2, (isIntersecting, img) => {
-			if(img.getAttribute("src") && !isIntersecting){
+			if(!isIntersecting){
 				this.unload(img)
 			}
 		})
@@ -114,6 +120,65 @@ export class ImageVisibilityController {
 		this.veryFarObserver?.disconnect()
 		this.veryFarObserver = null
 	}
-
-
 }
+
+// type DomLocation = {parent: Element, previous: Element | null}
+
+// async function forcePaintImage(img: HTMLImageElement): Promise<void> {
+// 	console.log("force painting", img)
+// 	const pos = getDomLocation(img)
+// 	await withStyleSubstitute(img, {
+// 		position: "absolute",
+// 		top: "0px",
+// 		left: "0px",
+// 		opacity: "0.01",
+// 		pointerEvents: "none",
+// 		maxWidth: "100vw",
+// 		maxHeight: "100vh"
+// 	}, async() => {
+// 		await waitFrame()
+// 		document.body.appendChild(img)
+// 		void img.clientWidth
+// 		await new Promise(ok => setTimeout(ok, 100))
+// 	})
+// 	void img.clientWidth
+// 	// await waitFrame()
+// 	await new Promise(ok => setTimeout(ok, 100))
+// 	setDomLocation(img, pos)
+// }
+
+// function getDomLocation(el: Element): DomLocation {
+// 	if(!el.parentElement){
+// 		throw new Error("Not in DOM")
+// 	}
+// 	return {parent: el.parentElement, previous: el.previousElementSibling}
+// }
+
+// function setDomLocation(el: Element, pos: DomLocation): void {
+// 	if(pos.previous){
+// 		pos.previous.after(el)
+// 	} else {
+// 		pos.parent.prepend(el)
+// 	}
+// }
+
+// async function withStyleSubstitute<T>(el: HTMLElement, style: Partial<WritableStyles>, handler: () => Promise<T>): Promise<T> {
+// 	const oldStyles: Partial<WritableStyles> = {}
+// 	for(const name in style){
+// 		oldStyles[name] = el.style[name]
+// 		el.style[name] = style[name]!
+// 	}
+// 	try {
+// 		return await Promise.resolve(handler())
+// 	} finally {
+// 		for(const name in oldStyles){
+// 			el.style[name] = oldStyles[name]!
+// 		}
+// 	}
+// }
+
+// function waitFrame(): Promise<void> {
+// 	return new Promise(ok => {
+// 		requestAnimationFrame(() => ok())
+// 	})
+// }
