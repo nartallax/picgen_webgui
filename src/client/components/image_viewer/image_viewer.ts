@@ -245,6 +245,8 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return parseInt(picture.dataset["natWidth"] ?? "")
 	}
 
+	const visibilityController = new ImageVisibilityController()
+
 	const imgsWithLabelsAndBoxes = props.imageDescriptions.mapArray(
 		desc => props.getId(desc),
 		descBox => {
@@ -281,6 +283,11 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			img.dataset["natWidth"] = natWidth + ""
 			img.dataset["natHeight"] = natHeight + ""
 			img.dataset["src"] = props.getUrl(descBox.get())
+			const isVisible = box(false)
+
+			visibilityController.addImage(img, isVisibleNow => {
+				isVisible.set(isVisibleNow)
+			})
 
 			updateBounds()
 
@@ -320,7 +327,10 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 
 			const imgWrap = tag({
 				class: css.imgWrap
-			}, [img, label, additionalControls, imgOverlay])
+			}, [img, tag([
+				// this allow to avoid recalc of labels and other stuff for non-visible images
+				isVisible.map(visible => !visible ? null : [label, additionalControls, imgOverlay])
+			])])
 
 			if(props.getPictureOpacity){
 				const opacity = constBoxWrap(props.getPictureOpacity(descBox))
@@ -498,9 +508,8 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 	}
 
 	onMount(modal.overlay, () => {
-		const controller = new ImageVisibilityController()
-		controller.addImageArrayBox(modal.overlay, imgs)
-		return () => controller.destroy()
+		visibilityController.start()
+		return () => visibilityController.stop()
 	}, {ifInDom: "call"})
 
 	await modal.waitClose()
