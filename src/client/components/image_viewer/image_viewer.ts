@@ -11,42 +11,6 @@ import {SmoothValueChanger} from "client/base/smooth_value_changer"
 import {TopToast, showTopToast} from "client/controls/toast/top_toast"
 import {DeletionTimer} from "client/client_common/deletion_timer"
 
-function waitLoadEvent(img: HTMLImageElement): Promise<void> {
-	return new Promise(ok => {
-		if(img.complete){
-			ok()
-			return
-		}
-		function onImageLoad(): void {
-			img.removeEventListener("load", onImageLoad)
-			ok()
-		}
-		// this event listener must not be passive
-		// because passive = async call
-		// and this could introduce race condition between updateBounds() and centerOn()
-		img.addEventListener("load", onImageLoad, {passive: true})
-	})
-}
-
-async function waitLoadAndPaint(img: HTMLImageElement): Promise<void> {
-	await waitLoadEvent(img)
-	await new Promise<void>((ok, err) => {
-		let spinCount = 0
-		const cycler = () => {
-			if(spinCount > 1000){
-				err(new Error("Paint is taking too long"))
-			}
-			if(img.naturalHeight < 1 || img.clientHeight < 1){
-				requestAnimationFrame(cycler)
-				spinCount++
-			} else {
-				ok()
-			}
-		}
-		requestAnimationFrame(cycler)
-	})
-}
-
 type PanBoundsType = "centerInPicture" | "borderToBorder" | "none"
 
 type BoundCalcParams = {
@@ -134,19 +98,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		right: Number.MAX_SAFE_INTEGER
 	}
 
-	const updateMaxNatHeight = debounce(1, () => {
-		const imgArr = imgs.get()
-		let natHeight = maxNatHeight.get()
-		for(const img of imgArr){
-			natHeight = Math.max(img.naturalHeight, natHeight)
-		}
-		lastKnownHeight = null
-		maxNatHeight.set(natHeight)
-	})
-
 	const updateBounds = debounce(1, async() => {
-		await updateMaxNatHeight.waitForScheduledRun() // just in case
-
 		const imgArr = imgs.get()
 
 		const halfWidth = (window.innerWidth / 2)// * zoom()
@@ -185,8 +137,7 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		lastKnownHeight = null
 	})
 
-	let defaultZoom = 1
-	const zoom = box(defaultZoom)
+	const zoom = box(1)
 	const smoothZoomChanger = new SmoothValueChanger(zoom, 150, {curvePower: 3})
 
 	let lastScrollActionCoords: {
@@ -216,29 +167,30 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		return imgArr.length - 1
 	}
 
+	function calcDefaultZoomForImage(img: HTMLImageElement): number {
+		const height = props.equalizeByHeight ? maxNatHeight.get() : getNatHeight(img)
+		const width = props.equalizeByHeight ? (getNatWidth(img) / getNatHeight(img)) * maxNatHeight.get() : getNatWidth(img)
+		const hRatio = window.innerHeight / height
+		const wRatio = window.innerWidth / width
+		const newZoom = Math.min(1, Math.min(hRatio, wRatio) * defaultOffsetZoomMult)
+		return newZoom
+	}
+
 	const smoothXChanger = new SmoothValueChanger(xPos, 150, {curvePower: 3})
 	const smoothYChanger = new SmoothValueChanger(yPos, 150, {curvePower: 3})
 	function centerOn(img: HTMLImageElement, smooth?: boolean, preserveZoom?: boolean): void {
-		let upcomingZoomChange = 1
 		if(!preserveZoom){
-			const natHeight = props.equalizeByHeight ? maxNatHeight.get() : img.naturalHeight
-			const natWidth = props.equalizeByHeight ? (img.naturalWidth / img.naturalHeight) * maxNatHeight.get() : img.naturalWidth
-			const hRatio = window.innerHeight / natHeight
-			const wRatio = window.innerWidth / natWidth
-			defaultZoom = Math.min(1, Math.min(hRatio, wRatio) * defaultOffsetZoomMult)
-			upcomingZoomChange = defaultZoom / smoothZoomChanger.get()
-			smoothZoomChanger.set(defaultZoom)
+			smoothZoomChanger.set(calcDefaultZoomForImage(img))
 		}
+
+		const upcomingZoomChange = smoothZoomChanger.get() / zoom.get()
 
 		const imgRect = img.getBoundingClientRect()
 
 		const imgLeft = imgRect.left - (window.innerWidth / 2)
 
 		;(smooth ? smoothYChanger : yPos).set(0)
-		;(smooth ? smoothXChanger : xPos).set(xPos.get() + imgLeft + (imgRect.width * upcomingZoomChange / 2))
-
-		updatePanX()
-		updatePanY()
+		;(smooth ? smoothXChanger : xPos).set(xPos.get() + (imgLeft * upcomingZoomChange) + (imgRect.width * upcomingZoomChange / 2))
 	}
 
 	// scroll view in a way that point of the picture is present at the coords of the screen
@@ -274,29 +226,48 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		setZoomByCoords(pointerEventsToClientCoords(e), value)
 	}
 
+	// this exists to prevent frequent .getBoundingClientRect() calls
+	// which helps FPS when zooming
 	let lastKnownHeight: number | null = null
 	function calcZoomnessRate(img: HTMLImageElement): number {
 		const height = lastKnownHeight !== null && props.equalizeByHeight
 			? lastKnownHeight
 			: lastKnownHeight = img.getBoundingClientRect().height
-		return height / img.naturalHeight
+		return height / getNatHeight(img)
+	}
+
+	function getNatHeight(picture: HTMLImageElement): number {
+		return parseInt(picture.dataset["natHeight"] ?? "")
+	}
+
+	function getNatWidth(picture: HTMLImageElement): number {
+		return parseInt(picture.dataset["natWidth"] ?? "")
 	}
 
 	const imgsWithLabelsAndBoxes = props.imageDescriptions.mapArray(
 		desc => props.makeUrl(desc),
 		descBox => {
-			const natSideRatio = box(1)
-			const loaded = box(false)
-			const widthByHeight = calcBox([natSideRatio, maxNatHeight], (ratio, height) => ratio * height)
-			const heightBox = calcBox([loaded, maxNatHeight], (loaded, height) => !loaded ? null : height + "px")
+			const {width: natWidth, height: natHeight} = props.getDimensions(descBox.get())
+			const natSideRatio = natWidth / natHeight
+			if(natHeight > maxNatHeight.get()){
+				maxNatHeight.set(natHeight)
+				lastKnownHeight = null
+			}
+
+			// width of this picture if we are equalizing by height
+			const eqWidthByHeight = maxNatHeight.map(height => (natSideRatio * height))
 
 			let _img: HTMLImageElement | null = null
 			_img = tag({
 				tag: "img",
 				attrs: {alt: ""},
 				style: {
-					width: !props.equalizeByHeight ? undefined : calcBox([loaded, widthByHeight], (loaded, width) => !loaded ? null : width + "px"),
-					height: !props.equalizeByHeight ? undefined : heightBox,
+					width: !props.equalizeByHeight
+						? natWidth + "px"
+						: eqWidthByHeight.map(eqWidth => eqWidth + "px"),
+					height: !props.equalizeByHeight
+						? natHeight + "px"
+						: maxNatHeight.map(maxNatHeight => maxNatHeight + "px"),
 					imageRendering: zoom.map(() => _img && calcZoomnessRate(_img) >= 1 ? "pixelated" : "auto")
 				},
 				onMousedown: e => {
@@ -305,18 +276,15 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 					}
 				}
 			})
+			_img.dataset["natWidth"] = natWidth + ""
+			_img.dataset["natHeight"] = natHeight + ""
 			const img: HTMLImageElement = _img
 			img.setAttribute("src", props.makeUrl(descBox.get()))
 			if(props.updateImg){
 				props.updateImg(descBox.get(), img)
 			}
 
-			void waitLoadAndPaint(img).then(() => {
-				natSideRatio.set(img.naturalWidth / img.naturalHeight)
-				updateMaxNatHeight()
-				updateBounds()
-				loaded.set(true)
-			})
+			updateBounds()
 
 			const label = tag({
 				class: css.imgLabel,
@@ -326,11 +294,10 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			})
 
 			const updateLabel = debounce(1, () => {
-				label.textContent = `${img.naturalWidth} x ${img.naturalHeight}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
+				label.textContent = `${getNatWidth(img)} x ${getNatHeight(img)}, ${(calcZoomnessRate(img) * 100).toFixed(2)}%`
 			})
-			bindBox(label, loaded, updateLabel)
 			bindBox(label, zoom, updateLabel)
-			bindBox(label, heightBox, updateLabel)
+			bindBox(label, maxNatHeight, updateLabel)
 
 			let additionalControls: HTMLElement | null = null
 			if(props.getAdditionalControls){
@@ -338,8 +305,8 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 					class: css.additionalControls,
 					style: {
 						transform: zoom.map(zoom => `scale(${1 / zoom})`),
-						width: calcBox([zoom, widthByHeight], (zoom, width) => {
-							const w = !props.equalizeByHeight ? img.naturalWidth : width
+						width: calcBox([zoom, eqWidthByHeight], (zoom, eqWidth) => {
+							const w = !props.equalizeByHeight ? getNatWidth(img) : eqWidth
 							return (w * zoom) + "px"
 						})
 					}
@@ -353,7 +320,9 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 				display: preventGalleryImageInteractions.map(prevent => prevent ? "" : "none")
 			}})
 
-			const imgWrap = tag({class: css.imgWrap}, [img, label, additionalControls, imgOverlay])
+			const imgWrap = tag({
+				class: css.imgWrap
+			}, [img, label, additionalControls, imgOverlay])
 
 			if(props.getPictureOpacity){
 				const opacity = constBoxWrap(props.getPictureOpacity(descBox))
@@ -382,12 +351,9 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 		const targetIndex = props.centerOn ?? 0
 
 		const imgArr = imgs.get()
-		const imgsBeforeTarget = imgArr.slice(0, targetIndex + 1)
-		await Promise.all(imgsBeforeTarget.map(img => waitLoadAndPaint(img)))
 		const targetImg = imgArr[targetIndex]!
 
 		await updateBounds.waitForScheduledRun()
-		await updateMaxNatHeight.waitForScheduledRun()
 		centerOn(targetImg)
 	})
 
@@ -463,9 +429,11 @@ export async function showImageViewer<T>(props: ShowImageViewerProps<T>): Promis
 			return (nowZoom < breakpoint) === (nextZoom > breakpoint)
 		}
 
+		const img = imgs.get()[getCentralImageIndex()]
+
 		const breakpoints = [
 			nowZoom * (1 / currentImageZoomness),
-			defaultZoom
+			!img ? 1 : calcDefaultZoomForImage(img)
 		]
 
 		for(const breakpoint of breakpoints){
