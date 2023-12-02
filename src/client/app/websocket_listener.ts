@@ -55,9 +55,15 @@ export class WebsocketListener {
 
 	private applyNotification(notification: ApiNotification): void {
 		switch(notification.type){
-			case "task_created":
-				this.tasks.prependElement({...notification.task, pictures: []})
+			case "task_created": {
+				let tasks = this.tasks.get()
+				tasks = [
+					{...notification.task, pictures: []},
+					...tasks.filter(task => task.id !== notification.task.id)
+				]
+				this.tasks.set(tasks)
 				break
+			}
 			case "task_warming_up":
 				this.updateTaskById(
 					notification.taskId,
@@ -86,7 +92,12 @@ export class WebsocketListener {
 					notification.taskId,
 					task => ({
 						...task,
-						pictures: [...task.pictures, notification.picture],
+						pictures: [
+							// this filter is here to prevent weird situation on page opening
+							// when there's a picture in data already, but there's also a notification that picture is generated
+							...task.pictures.filter(pic => pic.id !== notification.picture.id),
+							notification.picture
+						],
 						generatedPictures: notification.generatedPictures
 					})
 				)
