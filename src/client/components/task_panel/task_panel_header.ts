@@ -50,12 +50,13 @@ export const TaskPanelHeader = (props: Props) => {
 		}),
 		tag({class: css.status}, [
 			calcBox([statusBox, queueStatus], (taskStatus, queueStatus) => {
+				const queueStatusStr = (queueStatus === "paused" ? " [GLOBAL PAUSE]" : "")
 				switch(taskStatus){
 					case "completed": return "Done"
 					case "running": return "Running"
-					case "queued": return "Queued" + (queueStatus === "paused" ? " [GLOBAL PAUSE]" : "")
+					case "lockedForEdit": return "Locked for edit" + queueStatusStr
+					case "queued": return "Queued" + queueStatusStr
 					case "warmingUp": return "Warming up"
-					case "lockedForEdit": return "Locked for edit"
 				}
 			})
 		]),

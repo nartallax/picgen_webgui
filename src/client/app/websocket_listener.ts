@@ -1,9 +1,11 @@
 import {WBox} from "@nartallax/cardboard"
 import {allKnownJsonFileLists, queueStatus} from "client/app/global_values"
 import {Event} from "client/base/event"
+import {editableTextBlurLock} from "client/components/editable_text_block/editable_text_block"
 import {showToast} from "client/controls/toast/toast"
 import {GenerationTask, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {ApiNotification} from "common/infra_entities/notifications"
+import {sortBy} from "common/utils/sort_by"
 
 export const onAdminTaskUpdate = new Event<GenerationTask>()
 
@@ -141,6 +143,26 @@ export class WebsocketListener {
 				this.updateTaskById(
 					notification.taskId,
 					task => ({...task, status: "lockedForEdit"}))
+				break
+			}
+			case "task_reordering": {
+				editableTextBlurLock.set(true)
+				try {
+					let tasks = this.tasks.get()
+					const idToRunOrderMap = new Map(notification.orderPairs.map(({id, runOrder}) => [id, runOrder]))
+					for(let i = 0; i < tasks.length; i++){
+						let task = tasks[i]!
+						const newRunOrder = idToRunOrderMap.get(task.id)
+						if(newRunOrder !== undefined){
+							task = {...task, runOrder: newRunOrder}
+							tasks[i] = task
+						}
+					}
+					tasks = sortBy(tasks, task => -task.runOrder)
+					this.tasks.set(tasks)
+				} finally {
+					editableTextBlurLock.set(false)
+				}
 				break
 			}
 			case "task_edit_unlocked": {

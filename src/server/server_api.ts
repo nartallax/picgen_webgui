@@ -9,7 +9,7 @@ import {Picture, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import * as Path from "path"
 import {JsonFileList} from "common/entities/json_file_list"
-import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskEditLocks, taskQueue, thumbnails, userDao, userStatic, websocketServer} from "server/server_globals"
+import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskEditLocks, taskQueue, thumbnails, userDao, userStatic} from "server/server_globals"
 import {getHttpContext} from "server/context"
 import {UserStaticPictureDescription} from "server/user_static_controller"
 import {GenerationTaskArgsObject} from "common/entities/arguments"
@@ -364,16 +364,7 @@ export namespace ServerApi {
 				taskIds = taskIds.filter(id => idSet.has(id))
 				tasks = sortByIdArray(taskIds, tasks)
 
-				const pairs = await generationTaskDao.reorderTasksByOrder(tasks)
-
-				const objPairs = pairs.map(([id, runOrder]) => ({id, runOrder}))
-
-				// maybe some users shouldn't know about other users tasks here...?
-				// but they still kinda know because run order is sequental
-				// so, whatever
-				websocketServer.sendToAll({type: "task_reordering", orderPairs: objPairs})
-
-				return objPairs
+				return await generationTaskDao.reorderTasksByOrder(tasks)
 			})
 		}
 	)

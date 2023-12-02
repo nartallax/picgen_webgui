@@ -1,5 +1,5 @@
 import {RBox, box} from "@nartallax/cardboard"
-import {localStorageBox} from "@nartallax/cardboard-dom"
+import {initializeCardboardDom, localStorageBox} from "@nartallax/cardboard-dom"
 import {ThumbnailProvider} from "client/app/thumbnail_provider"
 import {globalCssVariableLocalStorageBox} from "client/base/css_variable_box"
 import {LoadingPage} from "client/pages/loading_page/loading_page"
@@ -12,6 +12,7 @@ import {GenerationParameterSet, PictureGenParam} from "common/entities/parameter
 import {User} from "common/entities/user"
 import {UserStaticPictureDescription} from "server/user_static_controller"
 
+void initializeCardboardDom()
 
 export const currentUser = box<User | null>(null)
 export const currentPage = box<PageName>("loading")

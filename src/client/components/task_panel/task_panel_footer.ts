@@ -1,4 +1,4 @@
-import {tag} from "@nartallax/cardboard-dom"
+import {bindBox, onMount, tag} from "@nartallax/cardboard-dom"
 import {Row} from "client/controls/layout/row_col"
 import * as css from "./task_panel.module.scss"
 import {Icon} from "client/generated/icons"
@@ -17,16 +17,31 @@ interface Props {
 
 export const TaskPanelFooter = (props: Props) => {
 	const isEditingNote = box(false)
+	const isEditingPrompt = box(false)
 	const paramSetOfTask = allKnownParamSets.get().find(x => x.internalName === props.task.get().paramSetName)
+	const promptJsonName = paramSetOfTask?.primaryParameter.jsonName ?? ""
+	const isPromptEditable = props.task
+		.prop("status")
+		.map(status => (status === "queued" || status === "lockedForEdit") && !!promptJsonName)
 
-	return tag({class: css.footer, style: {opacity: props.deletionOpacity}}, [
+	const result = tag({class: css.footer, style: {opacity: props.deletionOpacity}}, [
 		Row([
-			tag({class: css.prompt}, [props.task.map(task => {
-				if(!paramSetOfTask){
-					return "<param set deleted, prompt parameter name unknown>"
+			EditableTextBlock({
+				class: css.prompt,
+				isEditing: isEditingPrompt,
+				isEditable: isPromptEditable,
+				value: props.task.prop("arguments").prop(promptJsonName).map(
+					rawPrompt => (rawPrompt ?? "") + "",
+					prompt => prompt
+				),
+				save: async prompt => {
+					const task = props.task.get()
+					await ClientApi.editTaskArguments(task.id, {
+						...task.arguments,
+						[promptJsonName]: prompt
+					})
 				}
-				return (task.arguments[paramSetOfTask.primaryParameter.jsonName] + "") ?? ""
-			})]),
+			}),
 			tag({
 				class: [css.useArgumentsButton, Icon.docs],
 				onClick: limitClickRate(function() {
@@ -50,4 +65,53 @@ export const TaskPanelFooter = (props: Props) => {
 			save: note => ClientApi.setTaskNote(props.task.get().id, note)
 		})
 	])
+
+	let haveLock = false
+	let isInDOM = false
+	let lockRenewalInterval: ReturnType<typeof setInterval> | null = null
+
+	function updateLockRenewalTimer(): void {
+		const shouldHaveInterval = haveLock && isInDOM
+		if(shouldHaveInterval && lockRenewalInterval === null){
+			lockRenewalInterval = setInterval(async() => {
+				try {
+					await ClientApi.renewTaskEditLock(props.task.get().id)
+				} catch(e){
+					isEditingPrompt.set(false)
+					throw e
+				}
+			}, 30 * 1000)
+		} else if(!shouldHaveInterval && lockRenewalInterval !== null){
+			clearInterval(lockRenewalInterval)
+			lockRenewalInterval = null
+		}
+	}
+
+	bindBox(result, isEditingPrompt, async isEditing => {
+		if(isEditing && !haveLock){
+			try {
+				await ClientApi.acquireTaskEditLock(props.task.get().id)
+				haveLock = true
+				updateLockRenewalTimer()
+			} catch(e){
+				isEditingPrompt.set(false)
+				throw e
+			}
+		} else if(!isEditing && haveLock){
+			await ClientApi.releaseTaskEditLock(props.task.get().id)
+			haveLock = false
+			updateLockRenewalTimer()
+		}
+	})
+
+	onMount(result, () => {
+		isInDOM = true
+		updateLockRenewalTimer()
+		return () => {
+			isInDOM = false
+			updateLockRenewalTimer()
+		}
+	})
+
+	return result
 }

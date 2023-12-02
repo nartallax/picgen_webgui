@@ -236,7 +236,7 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 		return !result[0] ? null : this.fromDb(result[0])
 	}
 
-	protected async queryAllByFieldValueIn<K extends string & keyof T>(fieldName: K, values: readonly T[K][]): Promise<T[]> {
+	async queryAllByFieldValueIn<K extends string & keyof T>(fieldName: K, values: readonly T[K][]): Promise<T[]> {
 		this.validateFieldNames([fieldName])
 		const placeholders = values.map(() => "?").join(", ")
 		const result: S[] = await context.get().db.query(

@@ -103,11 +103,11 @@ $arrowButtonSize: 3rem;
 
 		.prompt {
 			font-weight: bold;
-			font-size: 0.9em;
-			color: var(--color-font-on-block);
 			flex-grow: 1;
-			padding: 0.5em 1.5em;
-			overflow-wrap: anywhere;
+
+			> * {
+				font-weight: bold;
+			}
 		}
 
 		.useArgumentsButton, .addNoteButton {

@@ -4,7 +4,7 @@ import {PictureInfo, ServerPicture} from "server/entities/picture_dao"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskStatus, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {GenParameter, GenerationParameterSet, PictureGenParam, getParamDefList} from "common/entities/parameter"
 import {isPictureArgument} from "common/entities/arguments"
-import {config, pictureDao, taskQueue} from "server/server_globals"
+import {config, pictureDao, taskQueue, websocketServer} from "server/server_globals"
 import {FtsTable} from "server/fts_table"
 import {log} from "server/log"
 import {sortByIdArray} from "server/utils/sort_by_id_array"
@@ -80,7 +80,7 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 	}
 
 	// change runOrder of tasks so they go in order they appear in the array
-	async reorderTasksByOrder(tasks: readonly GenerationTask[]): Promise<[number, number][]> {
+	async reorderTasksByOrder(tasks: readonly GenerationTask[]): Promise<{id: number, runOrder: number}[]> {
 		// higher value goes first, so lowest pops first
 		const availableRunOrders = tasks.map(task => task.runOrder).sort((a, b) => b - a)
 		const pairs: [number, number][] = []
@@ -88,7 +88,15 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 			pairs.push([id, availableRunOrders.pop()!])
 		}
 		await this.updateMultipleFieldByCase("runOrder", pairs)
-		return pairs
+
+		const objPairs = pairs.map(([id, runOrder]) => ({id, runOrder}))
+
+		// maybe some users shouldn't know about other users tasks here...?
+		// but they still kinda know because run order is sequental
+		// so, whatever
+		websocketServer.sendToAll({type: "task_reordering", orderPairs: objPairs})
+
+		return objPairs
 	}
 
 	async getAllInQueue(): Promise<GenerationTask[]> {

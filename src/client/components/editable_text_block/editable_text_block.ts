@@ -1,33 +1,57 @@
-import {WBox} from "@nartallax/cardboard"
-import {bindBox, defineControl, tag} from "@nartallax/cardboard-dom"
+import {RBox, WBox, box, constBox} from "@nartallax/cardboard"
+import {ClassName, bindBox, defineControl, tag} from "@nartallax/cardboard-dom"
 import * as css from "./editable_text_block.module.scss"
 import {debounce} from "client/client_common/debounce"
 
 interface Props {
-	readonly isEditing: WBox<boolean>
+	readonly isEditing?: WBox<boolean>
+	readonly isEditable?: RBox<boolean>
 	readonly value: WBox<string>
 	readonly save: (value: string) => Promise<void>
+	readonly class?: ClassName
 }
+
+// this is a hack to prevent blur when text box (or its parents) is moved within DOM
+// there should be some kind of API in our DOM manipulation library to do this entirely within this component
+export const editableTextBlurLock = box(false)
 
 export const EditableTextBlock = defineControl((props: Props) => {
 
+	const isEditing = props.isEditing ?? box(false)
+	const isEditable = props.isEditable ?? constBox(true)
+
 	const result = tag({
-		class: css.editableTextBlock,
-		onClick: () => props.isEditing.set(true),
+		class: [css.editableTextBlock, props.class],
+		onClick: () => {
+			if(isEditable.get()){
+				isEditing.set(true)
+			}
+		},
 		onKeyup: e => {
 			if(e.key === "Escape"){
-				props.isEditing.set(false)
+				isEditing.set(false)
 			}
 		}
 	}, [
-		props.isEditing.map(isEditing => {
-			if(isEditing){
+		isEditing.map(isEditingNow => {
+			if(isEditingNow){
+				const boxSize = result.getBoundingClientRect()
 				const input: HTMLTextAreaElement = tag({
 					tag: "textarea",
+					style: {
+						height: `calc(${boxSize.height}px - 1rem)`
+					},
 					class: css.editableTextInput,
 					onChange: () => props.value.set(input.value),
 					onKeyup: () => props.value.set(input.value),
-					onBlur: () => props.isEditing.set(false)
+					onBlur: async() => {
+						if(editableTextBlurLock.get()){
+							await waitConnected(input)
+							input.focus()
+						} else {
+							isEditing.set(false)
+						}
+					}
 				})
 				input.value = props.value.get()
 				requestAnimationFrame(() => {
@@ -62,6 +86,9 @@ export const EditableTextBlock = defineControl((props: Props) => {
 		try {
 			lastSavedValue = value
 			await props.save(value)
+		} catch(e){
+			isEditing.set(false)
+			throw e
 		} finally {
 			isSaveOngoing = false
 		}
@@ -78,3 +105,25 @@ export const EditableTextBlock = defineControl((props: Props) => {
 
 	return result
 })
+
+function waitConnected(el: HTMLElement): Promise<void> {
+	return new Promise((ok, err) => {
+		let remChecks = 100
+		const check = () => {
+			if(el.isConnected){
+				ok()
+				return
+			}
+
+			remChecks--
+			if(remChecks <= 0){
+				err(new Error("Timed out waiting for element to be in DOM"))
+				return
+			}
+
+			requestAnimationFrame(check)
+		}
+
+		check()
+	})
+}

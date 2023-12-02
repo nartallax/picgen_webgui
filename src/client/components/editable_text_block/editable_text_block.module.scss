@@ -8,18 +8,21 @@
 	resize: none;
 	background-color: transparent;
 	border-radius: 0.5rem;
-	border: 2px solid var(--color-border);
 	color: var(--color-font-on-block);
 	padding: 0.5rem;
 	margin: 0.5rem;
 	height: 100%;
-	outline: none;
+	min-height: 4em;
+	// border: 2px solid var(--color-border);
+	// outline: none;
+	outline: 2px solid var(--color-border);
 }
 
 .editableTextText {
 	color: var(--color-font-on-block);
-	padding: calc(1rem + 2px);
-	white-space: pre;
+	padding: 1rem;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
 
 	&.hidden {
 		display: none;
