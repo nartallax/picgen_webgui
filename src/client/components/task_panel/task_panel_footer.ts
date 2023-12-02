@@ -24,6 +24,16 @@ export const TaskPanelFooter = (props: Props) => {
 		.prop("status")
 		.map(status => (status === "queued" || status === "lockedForEdit") && !!promptJsonName)
 
+	let isSavingNow = false
+	async function tryReleaseLock(): Promise<void> {
+		await waitForFrame() // just to make sure save is started if any
+		if(!isEditingPrompt.get() && haveLock && !isSavingNow){
+			await ClientApi.releaseTaskEditLock(props.task.get().id)
+			haveLock = false
+			updateLockRenewalTimer()
+		}
+	}
+
 	const result = tag({class: css.footer, style: {opacity: props.deletionOpacity}}, [
 		Row([
 			EditableTextBlock({
@@ -35,11 +45,17 @@ export const TaskPanelFooter = (props: Props) => {
 					prompt => prompt
 				),
 				save: async prompt => {
-					const task = props.task.get()
-					await ClientApi.editTaskArguments(task.id, {
-						...task.arguments,
-						[promptJsonName]: prompt
-					})
+					isSavingNow = true
+					try {
+						const task = props.task.get()
+						await ClientApi.editTaskArguments(task.id, {
+							...task.arguments,
+							[promptJsonName]: prompt
+						})
+					} finally {
+						isSavingNow = false
+						void tryReleaseLock()
+					}
 				}
 			}),
 			tag({
@@ -97,10 +113,8 @@ export const TaskPanelFooter = (props: Props) => {
 				isEditingPrompt.set(false)
 				throw e
 			}
-		} else if(!isEditing && haveLock){
-			await ClientApi.releaseTaskEditLock(props.task.get().id)
-			haveLock = false
-			updateLockRenewalTimer()
+		} else {
+			await tryReleaseLock()
 		}
 	})
 
@@ -114,4 +128,8 @@ export const TaskPanelFooter = (props: Props) => {
 	})
 
 	return result
+}
+
+function waitForFrame(): Promise<void> {
+	return new Promise(ok => requestAnimationFrame(() => ok()))
 }
