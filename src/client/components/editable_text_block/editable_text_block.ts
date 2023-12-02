@@ -1,18 +1,18 @@
 import {WBox} from "@nartallax/cardboard"
 import {bindBox, defineControl, tag} from "@nartallax/cardboard-dom"
-import * as css from "./note_block.module.scss"
+import * as css from "./editable_text_block.module.scss"
 import {debounce} from "client/client_common/debounce"
 
 interface Props {
 	readonly isEditing: WBox<boolean>
-	readonly note: WBox<string>
-	readonly save: (note: string) => Promise<void>
+	readonly value: WBox<string>
+	readonly save: (value: string) => Promise<void>
 }
 
-export const NoteBlock = defineControl((props: Props) => {
+export const EditableTextBlock = defineControl((props: Props) => {
 
 	const result = tag({
-		class: css.noteBlock,
+		class: css.editableTextBlock,
 		onClick: () => props.isEditing.set(true),
 		onKeyup: e => {
 			if(e.key === "Escape"){
@@ -24,12 +24,12 @@ export const NoteBlock = defineControl((props: Props) => {
 			if(isEditing){
 				const input: HTMLTextAreaElement = tag({
 					tag: "textarea",
-					class: css.noteInput,
-					onChange: () => props.note.set(input.value),
-					onKeyup: () => props.note.set(input.value),
+					class: css.editableTextInput,
+					onChange: () => props.value.set(input.value),
+					onKeyup: () => props.value.set(input.value),
 					onBlur: () => props.isEditing.set(false)
 				})
-				input.value = props.note.get()
+				input.value = props.value.get()
 				requestAnimationFrame(() => {
 					if(input.isConnected){
 						input.focus()
@@ -38,20 +38,20 @@ export const NoteBlock = defineControl((props: Props) => {
 				return input
 			} else {
 				return tag({
-					class: [css.noteText, {
-						[css.hidden!]: props.note.map(note => !note)
+					class: [css.editableTextText, {
+						[css.hidden!]: props.value.map(value => !value)
 					}]
-				}, [props.note])
+				}, [props.value])
 			}
 		})
 	])
 
 	let isSaveOngoing = false
-	let lastSavedNote = props.note.get()
+	let lastSavedValue = props.value.get()
 
 	const save = async() => {
-		const note = props.note.get()
-		if(note === lastSavedNote){
+		const value = props.value.get()
+		if(value === lastSavedValue){
 			return
 		}
 		if(isSaveOngoing){
@@ -60,8 +60,8 @@ export const NoteBlock = defineControl((props: Props) => {
 		}
 		isSaveOngoing = true
 		try {
-			lastSavedNote = note
-			await props.save(note)
+			lastSavedValue = value
+			await props.save(value)
 		} finally {
 			isSaveOngoing = false
 		}
@@ -69,7 +69,7 @@ export const NoteBlock = defineControl((props: Props) => {
 
 	const saveDebounced = debounce(500, save)
 
-	bindBox(result, props.note, saveDebounced)
+	bindBox(result, props.value, saveDebounced)
 	bindBox(result, props.isEditing, isEditing => {
 		if(!isEditing){
 			void save()

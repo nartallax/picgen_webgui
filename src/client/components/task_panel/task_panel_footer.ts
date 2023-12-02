@@ -4,7 +4,7 @@ import * as css from "./task_panel.module.scss"
 import {Icon} from "client/generated/icons"
 import {limitClickRate} from "client/client_common/rate_limit"
 import {loadArguments} from "client/app/load_arguments"
-import {NoteBlock} from "client/components/note_block/note_block"
+import {EditableTextBlock} from "client/components/editable_text_block/editable_text_block"
 import {ClientApi} from "client/app/client_api"
 import {ArrayItemWBox, RBox, box} from "@nartallax/cardboard"
 import {GenerationTaskWithPictures} from "common/entities/generation_task"
@@ -44,9 +44,9 @@ export const TaskPanelFooter = (props: Props) => {
 				}
 			})
 		]),
-		NoteBlock({
+		EditableTextBlock({
 			isEditing: isEditingNote,
-			note: props.task.prop("note"),
+			value: props.task.prop("note"),
 			save: note => ClientApi.setTaskNote(props.task.get().id, note)
 		})
 	])

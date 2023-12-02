@@ -1,10 +1,10 @@
-.noteBlock {
+.editableTextBlock {
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
 }
 
-.noteInput {
+.editableTextInput {
 	resize: none;
 	background-color: transparent;
 	border-radius: 0.5rem;
@@ -16,7 +16,7 @@
 	outline: none;
 }
 
-.noteText {
+.editableTextText {
 	color: var(--color-font-on-block);
 	padding: calc(1rem + 2px);
 	white-space: pre;
