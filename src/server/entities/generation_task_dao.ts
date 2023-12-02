@@ -84,6 +84,14 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 		return this.queryByFieldValueIn("status", ["running", "warmingUp"])
 	}
 
+	queryEditLocked(): Promise<GenerationTask[]> {
+		return this.queryAllByFieldValue("status", "lockedForEdit")
+	}
+
+	queryEditLockedByUser(userId: number): Promise<GenerationTask[]> {
+		return this.queryAllByTwoFieldValues("status", "lockedForEdit", "userId", userId)
+	}
+
 	override async create(task: Omit<GenerationTask, "id">): Promise<GenerationTask> {
 		const result = await super.create(task)
 		await this.updateFullTextSearch(result, true)

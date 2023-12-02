@@ -121,6 +121,19 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 			where "id" in (${idPlaceholders})`, args)
 	}
 
+	async updateWhere<K extends keyof S & keyof T & string, KK extends keyof S & keyof T & string>(params: {whereField: K, whereValue: T[K], setField: KK, setValue: T[KK]}): Promise<void> {
+		this.validateFieldNames([params.whereField, params.setField])
+
+		await context.get().db.query(`
+		update "${this.getTableName()}"
+		set "${params.setField}" = ?
+		where "${params.whereField}" = ?
+		`, [
+			this.fieldToDb(params.setField, params.setValue),
+			this.fieldToDb(params.whereField, params.whereValue)
+		])
+	}
+
 	async delete(item: T): Promise<void> {
 		await context.get().db.query(`
 			delete from "${this.getTableName()}"
@@ -232,6 +245,25 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 			values.map(value => this.fieldToDb(fieldName as keyof S & keyof T & string, value as any))
 		)
 		return !result[0] ? null : this.fromDb(result[0])
+	}
+
+	protected async queryAllByTwoFieldValues<
+		K extends keyof S & keyof T & string,
+		KK extends keyof S & keyof T & string
+	>(
+		fieldNameA: K, valueA: T[K],
+		fieldNameB: KK, valueB: T[KK]
+	): Promise<T[]> {
+		this.validateFieldNames([fieldNameA, fieldNameB])
+		const result: S[] = await context.get().db.query(
+			`select * from "${this.getTableName()}" 
+			where "${fieldNameA}" = ? and "${fieldNameB}" = ?`,
+			[
+				this.fieldToDb(fieldNameA, valueA),
+				this.fieldToDb(fieldNameB, valueB)
+			]
+		)
+		return result.map(x => this.fromDb(x))
 	}
 
 	protected async queryAllByFieldValue<K extends string & keyof T>(fieldName: K, value: T[K]): Promise<T[]> {

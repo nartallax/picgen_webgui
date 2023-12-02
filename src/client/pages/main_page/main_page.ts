@@ -141,7 +141,8 @@ async function loadGlobalData(page: HTMLElement, knownTasks: WBox<GenerationTask
 		ClientApi.getGenerationParameterSets(),
 		ClientApi.getAllJsonFileLists(),
 		ClientApi.getIsQueuePaused(),
-		ClientApi.getUserStaticPictureInfo()
+		ClientApi.getUserStaticPictureInfo(),
+		ClientApi.releaseAllUserTaskEditLock()
 	])
 
 	userStaticPictureInfo.set(userStaticPics)

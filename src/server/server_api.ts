@@ -9,9 +9,10 @@ import {Picture, PictureWithTask} from "common/entities/picture"
 import * as MimeTypes from "mime-types"
 import * as Path from "path"
 import {JsonFileList} from "common/entities/json_file_list"
-import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskQueue, thumbnails, userDao, userStatic, websocketServer} from "server/server_globals"
+import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskEditLocks, taskQueue, thumbnails, userDao, userStatic, websocketServer} from "server/server_globals"
 import {getHttpContext} from "server/context"
 import {UserStaticPictureDescription} from "server/user_static_controller"
+import {GenerationTaskArgsObject} from "common/entities/arguments"
 
 async function checkIsAdmin(): Promise<void> {
 	userDao.checkIsAdmin(await userDao.getCurrent())
@@ -495,6 +496,79 @@ export namespace ServerApi {
 			const tasks = await generationTaskDao.search(query, pageSize, user.id, minKnownTaskId)
 			const tasksWithPictures = await generationTaskDao.enrichWithPictures(tasks)
 			return tasksWithPictures
+		}
+	)
+
+	export const acquireTaskEditLock = RCV.validatedFunction(
+		[RC.struct({taskId: RC.number()})],
+		async({taskId}): Promise<void> => {
+			const user = await userDao.getCurrent()
+			const task = await generationTaskDao.getById(taskId)
+			if(!task || task.userId !== user.id){
+				throw new Error(`Task ${task.id} does not belong to user ${user.id}.`)
+			}
+			await generationTaskDao.locks.withLock(task.id, async() => {
+				await taskEditLocks.acquireLock(taskId)
+			})
+		}
+	)
+
+	export const renewTaskEditLock = RCV.validatedFunction(
+		[RC.struct({taskId: RC.number()})],
+		async({taskId}): Promise<void> => {
+			const user = await userDao.getCurrent()
+			const task = await generationTaskDao.getById(taskId)
+			if(!task || task.userId !== user.id){
+				throw new Error(`Task ${task.id} does not belong to user ${user.id}.`)
+			}
+			taskEditLocks.renewLock(taskId)
+		}
+	)
+
+	export const releaseTaskEditLock = RCV.validatedFunction(
+		[RC.struct({taskId: RC.number()})],
+		async({taskId}): Promise<void> => {
+			const user = await userDao.getCurrent()
+			const task = await generationTaskDao.getById(taskId)
+			if(!task || task.userId !== user.id){
+				throw new Error(`Task ${task.id} does not belong to user ${user.id}.`)
+			}
+			await generationTaskDao.locks.withLock(task.id, async() => {
+				await taskEditLocks.releaseLock(taskId)
+			})
+		}
+	)
+
+	export const releaseAllUserTaskEditLock = RCV.validatedFunction(
+		[],
+		async(): Promise<void> => {
+			const user = await userDao.getCurrent()
+			await generationTaskDao.locks.withGlobalLock(async() => {
+				await taskEditLocks.releaseAllLocksOfUser(user.id)
+			})
+		}
+	)
+
+	export const editTaskArguments = RCV.validatedFunction(
+		[RC.struct({taskId: RC.number(), args: GenerationTaskArgsObject})],
+		async({taskId, args}): Promise<void> => {
+			const user = await userDao.getCurrent()
+			const task = await generationTaskDao.getById(taskId)
+			if(!task || task.userId !== user.id){
+				throw new Error(`Task ${task.id} does not belong to user ${user.id}.`)
+			}
+
+			await generationTaskDao.locks.withLock(taskId, async() => {
+				// yes, querying again. it could start between this and previous query
+				// it shouldn't happen because of edit locks
+				// but user is not strictly required to get one
+				const task = await generationTaskDao.getById(taskId)
+				if(task.status !== "queued" && task.status !== "lockedForEdit"){
+					throw new Error(`Cannot edit task arguments when task is in ${task.status} status.`)
+				}
+				task.arguments = args
+				await generationTaskDao.update(task)
+			})
 		}
 	)
 

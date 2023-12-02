@@ -111,7 +111,7 @@ export class TaskQueueController {
 	}
 
 	// this method can be called without await
-	private async tryStartNextGeneration(): Promise<void> {
+	async tryStartNextGeneration(): Promise<void> {
 		if(!this.shouldTryRunGeneration()){
 			return
 		}

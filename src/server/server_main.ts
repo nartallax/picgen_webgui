@@ -19,6 +19,7 @@ import {GenerationTaskDAO} from "server/entities/generation_task_dao"
 import {PictureDAO} from "server/entities/picture_dao"
 import {ThumbnailController} from "server/thumbnail_controller"
 import {UserStaticController} from "server/user_static_controller"
+import {TaskEditLockController} from "server/task_edit_lock_controller"
 
 export async function main() {
 	try {
@@ -77,6 +78,7 @@ async function mainInternal(): Promise<void> {
 				const user = await userDao.getCurrent()
 				return {id: user.id, data: {user}}
 			}), notification => ({notification})),
+		new TaskEditLockController(),
 		new TaskQueueController(),
 		new JSONFileListController(),
 		new ThumbnailController(config.thumbnails),

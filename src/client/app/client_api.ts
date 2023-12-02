@@ -1,5 +1,6 @@
 import {ApiClient} from "client/app/api_client"
 import {showToast} from "client/controls/toast/toast"
+import {GenerationTaskArgsObject} from "common/entities/arguments"
 import {GenerationTask, GenerationTaskInputData, GenerationTaskWithPictures} from "common/entities/generation_task"
 import {JsonFileList} from "common/entities/json_file_list"
 import {GenerationParameterSet} from "common/entities/parameter"
@@ -117,5 +118,20 @@ export namespace ClientApi {
 
 	export const searchTasks = (query: string, pageSize: number, minKnownTaskId: number | null) =>
 		client.call<GenerationTaskWithPictures[]>("searchTasks", {query, pageSize, minKnownTaskId})
+
+	export const acquireTaskEditLock = (taskId: number) =>
+		client.call<void>("acquireTaskEditLock", {taskId})
+
+	export const renewTaskEditLock = (taskId: number) =>
+		client.call<void>("renewTaskEditLock", {taskId})
+
+	export const releaseTaskEditLock = (taskId: number) =>
+		client.call<void>("releaseTaskEditLock", {taskId})
+
+	export const releaseAllUserTaskEditLock = () =>
+		client.call<void>("releaseAllUserTaskEditLock", {})
+
+	export const editTaskArguments = (taskId: number, args: GenerationTaskArgsObject) =>
+		client.call<void>("editTaskArguments", {taskId, args})
 
 }

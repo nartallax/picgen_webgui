@@ -12,8 +12,9 @@ import type {Context} from "server/context"
 import type {Config} from "server/config"
 import type {GenerationTaskDAO} from "server/entities/generation_task_dao"
 import type {PictureDAO} from "server/entities/picture_dao"
-import {ThumbnailController} from "server/thumbnail_controller"
-import {UserStaticController} from "server/user_static_controller"
+import type {ThumbnailController} from "server/thumbnail_controller"
+import type {UserStaticController} from "server/user_static_controller"
+import type {TaskEditLockController} from "server/task_edit_lock_controller"
 
 // this file exists for two reasons
 // 1. it's convenient to just be able to import a global variable instead of namespace, or get it from another object
@@ -29,6 +30,7 @@ export let taskQueue: TaskQueueController = null as any
 export let jsonFileLists: JSONFileListController = null as any
 export let thumbnails: ThumbnailController = null as any
 export let userStatic: UserStaticController = null as any
+export let taskEditLocks: TaskEditLockController = null as any
 
 export let generationTaskDao: GenerationTaskDAO = null as any
 export let pictureDao: PictureDAO = null as any
@@ -56,6 +58,7 @@ type GlobalsPack = GlobalServiceRecord<[
 	typeof discordApi,
 	typeof server,
 	typeof websocketServer,
+	typeof taskEditLocks,
 	typeof taskQueue,
 	typeof jsonFileLists,
 	typeof thumbnails,
@@ -79,6 +82,7 @@ export function setGlobals(globals: GlobalsPack): void {
 		discordApi,
 		server,
 		websocketServer,
+		taskEditLocks,
 		taskQueue,
 		jsonFileLists,
 		thumbnails,

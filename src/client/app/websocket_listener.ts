@@ -137,6 +137,27 @@ export class WebsocketListener {
 				queueStatus.set(notification.newStatus)
 				break
 			}
+			case "task_edit_locked": {
+				this.updateTaskById(
+					notification.taskId,
+					task => ({...task, status: "lockedForEdit"}))
+				break
+			}
+			case "task_edit_unlocked": {
+				this.updateTaskById(
+					notification.taskId,
+					task => {
+						if(task.status === "lockedForEdit"){
+							return ({...task, status: "queued"})
+						} else {
+							// I'm afraid that there may be two concurrent notifications,
+							// about task unlock and task start
+							// and if task is started - we should'nt put it back into queued state
+							return task
+						}
+					})
+				break
+			}
 			default:
 				console.log("Unrecognised websocket notification", notification)
 				break

@@ -20,6 +20,8 @@ export type ApiNotification = TaskMessageNotification
 | JsonFileListUpdateNotification
 | TaskReorderingNotification
 | QueueStatusChangeNotification
+| TaskEditLockedNotification
+| TaskEditUnlockedNotification
 
 export interface TaskAdminNotification {
 	type: "task_admin_notification"
@@ -96,4 +98,14 @@ export interface JsonFileListUpdateNotification {
 export interface QueueStatusChangeNotification {
 	type: "queue_status_change"
 	newStatus: "paused" | "running"
+}
+
+export interface TaskEditLockedNotification {
+	type: "task_edit_locked"
+	taskId: number
+}
+
+export interface TaskEditUnlockedNotification {
+	type: "task_edit_unlocked"
+	taskId: number
 }

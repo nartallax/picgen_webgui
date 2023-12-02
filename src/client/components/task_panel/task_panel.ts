@@ -203,6 +203,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 							case "running": return "Running"
 							case "queued": return "Queued" + (queueStatus === "paused" ? " [GLOBAL PAUSE]" : "")
 							case "warmingUp": return "Warming up"
+							case "lockedForEdit": return "Locked for edit"
 						}
 					})
 				]),
@@ -232,6 +233,7 @@ export function TaskPanel(props: TaskPanelProps): HTMLElement {
 				}),
 				tag({class: css.timer}, [calcBox([props.task, nowBox], (task, now) => {
 					switch(task.status){
+						case "lockedForEdit":
 						case "warmingUp":
 						case "queued": return ""
 						case "completed": {
