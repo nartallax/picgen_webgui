@@ -9,6 +9,7 @@ import {FtsTable} from "server/fts_table"
 import {log} from "server/log"
 import {sortByIdArray} from "server/utils/sort_by_id_array"
 import {LockSet} from "server/utils/lock_set"
+import {sortBy} from "common/utils/sort_by"
 
 interface DbGenerationTask extends Omit<GenerationTask, "arguments" | "status"> {
 	arguments: string
@@ -56,9 +57,38 @@ export class GenerationTaskDAO extends DAO<GenerationTask, DbGenerationTask> {
 		}
 	}
 
-	async getNextInQueue(): Promise<GenerationTask | undefined> {
-		const result = await this.querySortedFiltered("status", "queued", "runOrder", false, 1)
-		return result[0]
+	// get next queued task, possibly moving this task up the queue if there are locked tasks before it
+	async reorderAndGetNextInQueue(): Promise<GenerationTask | null> {
+		let tasks = await this.queryAllByFieldValueIn("status", ["queued", "lockedForEdit"])
+		tasks = sortBy(tasks, task => task.runOrder)
+
+		const nonLockedTasks = tasks.filter(task => task.status !== "lockedForEdit")
+		const firstNonLockedTask = nonLockedTasks[0]
+		if(!firstNonLockedTask){
+			return null
+		}
+
+		if(firstNonLockedTask !== tasks[0]){
+			tasks = [
+				firstNonLockedTask,
+				...tasks.filter(task => task !== firstNonLockedTask)
+			]
+			await this.reorderTasksByOrder(tasks)
+		}
+
+		return firstNonLockedTask
+	}
+
+	// change runOrder of tasks so they go in order they appear in the array
+	async reorderTasksByOrder(tasks: readonly GenerationTask[]): Promise<[number, number][]> {
+		// higher value goes first, so lowest pops first
+		const availableRunOrders = tasks.map(task => task.runOrder).sort((a, b) => b - a)
+		const pairs: [number, number][] = []
+		for(const {id} of tasks){
+			pairs.push([id, availableRunOrders.pop()!])
+		}
+		await this.updateMultipleFieldByCase("runOrder", pairs)
+		return pairs
 	}
 
 	async getAllInQueue(): Promise<GenerationTask[]> {

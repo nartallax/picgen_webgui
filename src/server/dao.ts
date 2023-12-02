@@ -236,7 +236,7 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 		return !result[0] ? null : this.fromDb(result[0])
 	}
 
-	protected async queryByFieldValueIn<K extends string & keyof T>(fieldName: K, values: readonly T[K][]): Promise<T | null> {
+	protected async queryAllByFieldValueIn<K extends string & keyof T>(fieldName: K, values: readonly T[K][]): Promise<T[]> {
 		this.validateFieldNames([fieldName])
 		const placeholders = values.map(() => "?").join(", ")
 		const result: S[] = await context.get().db.query(
@@ -244,7 +244,12 @@ export abstract class DAO<T extends IdentifiedEntity, S extends IdentifiedEntity
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			values.map(value => this.fieldToDb(fieldName as keyof S & keyof T & string, value as any))
 		)
-		return !result[0] ? null : this.fromDb(result[0])
+		return result.map(x => this.fromDb(x))
+	}
+
+	protected async queryByFieldValueIn<K extends string & keyof T>(fieldName: K, values: readonly T[K][]): Promise<T | null> {
+		const result = await this.queryAllByFieldValueIn(fieldName, values)
+		return result.length < 1 ? null : result[0]!
 	}
 
 	protected async queryAllByTwoFieldValues<

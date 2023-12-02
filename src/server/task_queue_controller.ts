@@ -118,12 +118,7 @@ export class TaskQueueController {
 		try {
 			const res = await runWithMinimalContext(async() => {
 				return await generationTaskDao.locks.withGlobalLock(async() => {
-					const nextTask = await generationTaskDao.getNextInQueue()
-					if(!nextTask){
-						return null
-					} else {
-						return nextTask
-					}
+					return await generationTaskDao.reorderAndGetNextInQueue()
 				})
 			})
 			if(!res){

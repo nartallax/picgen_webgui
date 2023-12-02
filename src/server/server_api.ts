@@ -13,6 +13,7 @@ import {config, discordApi, generationTaskDao, jsonFileLists, pictureDao, taskEd
 import {getHttpContext} from "server/context"
 import {UserStaticPictureDescription} from "server/user_static_controller"
 import {GenerationTaskArgsObject} from "common/entities/arguments"
+import {sortByIdArray} from "server/utils/sort_by_id_array"
 
 async function checkIsAdmin(): Promise<void> {
 	userDao.checkIsAdmin(await userDao.getCurrent())
@@ -358,20 +359,12 @@ export namespace ServerApi {
 				// this will help to avoid cases when already executing task is pushed back in queue
 				// which doesn't make any sense
 				let tasks = await generationTaskDao.getByIds(taskIds)
-				tasks = tasks.filter(task => task.status === "queued")
-
-				// higher value goes first, so lowest pops first
-				const availableRunOrders = tasks.map(task => task.runOrder).sort((a, b) => b - a)
+				tasks = tasks.filter(task => task.status === "queued" || task.status === "lockedForEdit")
 				const idSet = new Set(tasks.map(task => task.id))
-				const pairs: [number, number][] = []
-				for(const id of taskIds){
-					if(!idSet.has(id)){
-						continue // task is not queued
-					}
-					pairs.push([id, availableRunOrders.pop()!])
-				}
+				taskIds = taskIds.filter(id => idSet.has(id))
+				tasks = sortByIdArray(taskIds, tasks)
 
-				await generationTaskDao.updateMultipleFieldByCase("runOrder", pairs)
+				const pairs = await generationTaskDao.reorderTasksByOrder(tasks)
 
 				const objPairs = pairs.map(([id, runOrder]) => ({id, runOrder}))
 
