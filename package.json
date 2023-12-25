@@ -20,7 +20,9 @@
     "dev:server:watch": "./node_modules/.bin/parcel watch --target server_dev --no-cache --no-hmr",
     "dev:server:run": "./node_modules/.bin/nodemon ./dist/server_dev/server_main.js --watch ./dist/server_dev/server_main.js -- --config config/config.json --http-root-url 'http://localhost:24658'",
     "typecheck": "cd src && ../node_modules/typescript/bin/tsc --noEmit && cd - > /dev/null",
-    "icons:generate": "./node_modules/.bin/icon-font-tool --svg-dir src/client/icons --font-path src/client/generated/icons --font-normalize --font-descent 150 --css-path src/client/generated/icons.css --ts-path src/client/generated/icons.ts --ts-css-import-style star --ts-name Icon"
+    "icons:generate": "./node_modules/.bin/icon-font-tool --svg-dir src/client/icons --font-path src/client/generated/icons --font-normalize --font-descent 150 --css-path src/client/generated/icons.css --ts-path src/client/generated/icons.ts --ts-css-import-style star --ts-name Icon",
+    "grid": "npm run typecheck && npm run icons:generate && npm run grid:client",
+    "grid:client": "./node_modules/.bin/parcel serve --target client_grid --no-cache --no-hmr --port 24658"
   },
   "devDependencies": {
     "@nartallax/icon-font-tool": "^1.0.6",
@@ -93,6 +95,9 @@
     "client_release": {
       "source": "static/index.html",
       "optimize": true
+    },
+    "client_grid": {
+      "source": "static/grid.html"
     }
   }
 }
