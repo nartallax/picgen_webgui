@@ -55,11 +55,14 @@ export class PictureDAO extends DAO<ServerPicture> {
 
 		// this is not very performant, but whatever, we don't have a lot of users anyway
 		await runWithMinimalContext(async() => {
+			await this.markAbsentPicturesAsDeleted()
+
 			const users = await userDao.queryAll()
 			for(const user of users){
 				await this.tryCleanupExcessivePicturesOfUser(user.id)
 			}
 		})
+
 	}
 
 	protected override fieldFromDb<K extends keyof ServerPicture & string>(field: K, value: ServerPicture[K]): unknown {
@@ -320,6 +323,42 @@ export class PictureDAO extends DAO<ServerPicture> {
 			log(`Cleaned up ${pics.length} pictures from task #${lastTask.generationTaskId} of user #${userId}`)
 		}
 		log(`User #${userId} has ${sumCount} resulting pictures, which fits in the limit of ${config.pictureCleanup.resultPictureLimitPerUser}`)
+	}
+
+	async markAbsentPicturesAsDeleted(): Promise<void> {
+		const db = context.get().db
+		const pictures = (await db.query(` 
+			select "id", "fileName" from "pictures" where not "deleted"
+		`)) as {id: number, fileName: string}[]
+
+		const idsOrNulls = await Promise.all(pictures.map(async({id, fileName}) => {
+			const path = this.makeFullPicturePath(fileName)
+			try {
+				await Fs.stat(path)
+				return null
+			} catch(e){
+				if(isEnoent(e)){
+					return id
+				} else {
+					throw e
+				}
+			}
+		}))
+
+		let ids = idsOrNulls.filter((x): x is number => x !== null)
+		if(ids.length < 1){
+			return
+		}
+
+		log(`\nFound out that ${ids.length} pictures are now deleted on disc. Updating the DB.\n`)
+		while(ids.length > 0){
+			const packSize = 100
+			const pack = ids.slice(0, packSize)
+			ids = ids.slice(packSize)
+			await db.run(`
+				update "pictures" set "deleted" = ? where "id" in (${pack.map(() => "?").join(", ")})
+			`, [true, ...pack])
+		}
 	}
 
 }

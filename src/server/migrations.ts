@@ -8,6 +8,7 @@ import {ServerPicture} from "server/entities/picture_dao"
 import {GenerationTask} from "common/entities/generation_task"
 import {runWithMinimalContextWithDb} from "server/context"
 import ProbeImageSize from "probe-image-size"
+import {isEnoent} from "server/utils/is_enoent"
 
 export const migrations: Migration[] = [
 	{name: "00000_users_gentasks_pictures", handler: async db => {
@@ -436,15 +437,24 @@ export const migrations: Migration[] = [
 			select "fileName" from "pictures" where not "deleted"
 		`)) as {fileName: string}[]
 		log(`Starting to scan the pictures to update width and height in DB, ${pictureFileNames.length} to scan`)
+		let notFoundPictures = 0
 		for(let i = 0; i < pictureFileNames.length; i++){
 			const fileName = pictureFileNames[i]!.fileName
 			const fullPath = Path.resolve(config.pictureStorageDir, fileName)
-			const {width, height} = await ProbeImageSize(FsSync.createReadStream(fullPath))
-			await db.run(`
-				update "pictures" set "width" = ?, "height" = ? where "fileName" = ?
-			`, [width, height, fileName])
-			if((i % 100) === 0 && i !== 0){
-				log(`Updated ${i} pictures out of ${pictureFileNames.length} (${Math.floor((i / pictureFileNames.length) * 100)}%)`)
+			try {
+				const {width, height} = await ProbeImageSize(FsSync.createReadStream(fullPath))
+				await db.run(`
+					update "pictures" set "width" = ?, "height" = ? where "fileName" = ?
+				`, [width, height, fileName])
+			} catch(e){
+				if(isEnoent(e)){
+					notFoundPictures++
+				} else {
+					throw e
+				}
+			}
+			if(((i + 1) % 100) === 0){
+				log(`Updated ${i + 1} pictures out of ${pictureFileNames.length} (${Math.floor((i / pictureFileNames.length) * 100)}%), ${notFoundPictures} not found`)
 			}
 		}
 		log("Done.")

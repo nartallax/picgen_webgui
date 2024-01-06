@@ -21,7 +21,7 @@
 		}
 	},
 	"pictureCleanup": {
-		"resultPictureLimitPerUser": 1000
+		"resultPictureLimitPerUser": 2500
 	},
 	"parameterSets": [
 		{"include": "./config/param_sets/default.json"},
