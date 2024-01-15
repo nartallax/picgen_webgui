@@ -1,6 +1,6 @@
-import {box} from "@nartallax/cardboard"
+import {WBox, box} from "@nartallax/cardboard"
 import {initializeCardboardDom} from "@nartallax/cardboard-dom"
-import {Grid} from "client/controls/grid_for_real_this_time/grid"
+import {Grid, GridProps} from "client/controls/grid_for_real_this_time/grid"
 import * as css from "./grid_main_style.module.scss"
 
 interface ExampleDataRow {
@@ -35,15 +35,17 @@ function generateExampleData(): ExampleDataRow[] {
 const main = async() => {
 	await initializeCardboardDom()
 
-	const grid = Grid({
+	const props: GridProps<ExampleDataRow> = {
 		data: box(generateExampleData()),
+		renderRow: (el: WBox<ExampleDataRow>) => el.map(el => el.id + " " + el.name + " of age " + el.age),
 		getKey: row => row.id,
-		renderRow: el => el.id + " " + el.name + " of age " + el.age,
 		css: {
 			root: css.exampleGrid,
 			row: css.exampleGridRow
 		}
-	})
+	}
+
+	const grid = Grid(props)
 
 	document.body.appendChild(grid)
 }
