@@ -85,27 +85,55 @@ export const PictureGenParam = RC.struct(RC.structFields({
 	}
 }), {}, BaseGenParam)
 
+export type EnumSingleOption = RC.Value<typeof EnumSingleOption>
+const EnumSingleOption = RC.union([
+	RC.number(),
+	RC.string(),
+	RC.struct(RC.structFields({ro: {
+		label: RC.string(),
+		value: RC.union([
+			RC.number(),
+			RC.string()
+		])
+	}, roOpt: {
+		isDefault: RC.bool()
+	}}))
+])
+
+export type EnumGroupOption = RC.Value<typeof EnumGroupOption>
+const EnumGroupOption = RC.roStruct({
+	label: RC.string(),
+	items: RC.roArray(EnumSingleOption)
+})
+
+export type EnumOption = RC.Value<typeof EnumOption>
+const EnumOption = RC.union([EnumSingleOption, EnumGroupOption])
+
+export function isSingleEnumOption(option: EnumOption): option is EnumSingleOption {
+	return typeof(option) !== "object" || !(option as EnumGroupOption).items
+}
+
+export function flattenEnumOptions(opts: readonly EnumOption[]): EnumSingleOption[] {
+	const result: EnumSingleOption[] = []
+	for(const opt of opts){
+		if(isSingleEnumOption(opt)){
+			result.push(opt)
+		} else {
+			result.push(...opt.items)
+		}
+	}
+	return result
+}
+
 export type EnumGenParam = RC.Value<typeof EnumGenParam>
 export const EnumGenParam = RC.struct(RC.structFields({
 	ro: {
 		type: RC.constant("enum"),
 		options: RC.roArray(
-			RC.union([
-				RC.number(),
-				RC.string(),
-				RC.struct(RC.structFields({ro: {
-					label: RC.string(),
-					value: RC.union([
-						RC.number(),
-						RC.string()
-					])
-				}, roOpt: {
-					isDefault: RC.bool()
-				}}))
-			]),
+			EnumOption,
 			{validators: [
-				arr => arr.length > 0,
-				arr => arr.filter(x => typeof(x) === "object" && x.isDefault).length < 2
+				arr => flattenEnumOptions(arr).length > 0,
+				arr => flattenEnumOptions(arr).filter(x => typeof(x) === "object" && x.isDefault).length < 2
 			]}
 		)
 	},
@@ -173,7 +201,8 @@ export function defaultValueOfParam(def: GenParameter | GenParameterGroupToggle)
 		case "picture":
 			return {id: 0, salt: 0}
 		case "enum": {
-			const opt = def.options.find(x => typeof(x) === "object" && x.isDefault) ?? def.options[0]!
+			const singleOptions = flattenEnumOptions(def.options)
+			const opt = singleOptions.find(x => typeof(x) === "object" && x.isDefault) ?? singleOptions[0]!
 			if(typeof(opt) === "object"){
 				return opt.value
 			} else {

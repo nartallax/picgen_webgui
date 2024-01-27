@@ -2,12 +2,12 @@ import {MRBox, RBox, WBox, isWBox} from "@nartallax/cardboard"
 import {bindBox, localStorageBox, tag} from "@nartallax/cardboard-dom"
 import {BlockPanel} from "client/components/block_panel/block_panel"
 import {BlockPanelHeader} from "client/components/block_panel_header/block_panel_header"
-import {GenParameter, GenParameterGroup, GenerationParameterSet, defaultValueOfParam} from "common/entities/parameter"
+import {EnumOption, EnumSingleOption, GenParameter, GenParameterGroup, GenerationParameterSet, defaultValueOfParam, isSingleEnumOption} from "common/entities/parameter"
 import {NumberInput} from "client/controls/number_input/number_input"
 import {BoolInput} from "client/controls/bool_input/bool_input"
 import {TextInput} from "client/controls/text_input/text_input"
 import {PictureInput} from "client/components/picture_input/picture_input"
-import {Select} from "client/controls/select/select"
+import {Select, SelectOption, SelectSingleOption} from "client/controls/select/select"
 import {FormField} from "client/controls/form/form"
 import {GenerationTaskArgument, PictureArgument} from "common/entities/arguments"
 import {JsonFileListInput} from "client/components/json_file_list_input/json_file_list_input"
@@ -143,17 +143,30 @@ function ArgumentInput(def: GenParameter, value: WBox<GenerationTaskArgument>): 
 				value: value as WBox<string | number>,
 				isArgumentInput: true,
 				isSearchable: def.searchable,
-				options: def.options.map(opt => {
-					if(typeof(opt) === "string" || typeof(opt) === "number"){
-						return {label: opt + "", value: opt}
-					} else {
-						return opt
-					}
-				})
+				options: def.options.map(opt => enumOptionToSelectOption(opt))
 			})
 		case "json_file_list":
 			throw new Error("Should have been processed in parent component")
 
+	}
+}
+
+function enumSingleOptionToSelectOption(opt: EnumSingleOption): SelectSingleOption<string | number> {
+	if(typeof(opt) === "string" || typeof(opt) === "number"){
+		return {label: opt + "", value: opt}
+	} else {
+		return opt
+	}
+}
+
+function enumOptionToSelectOption(opt: EnumOption): SelectOption<string | number> {
+	if(isSingleEnumOption(opt)){
+		return enumSingleOptionToSelectOption(opt)
+	} else {
+		return {
+			items: opt.items.map(opt => enumSingleOptionToSelectOption(opt)),
+			label: opt.label
+		}
 	}
 }
 

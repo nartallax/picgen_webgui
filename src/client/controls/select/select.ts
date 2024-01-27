@@ -1,12 +1,40 @@
-import {MRBox, WBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
+import {MRBox, RBox, WBox, box, calcBox, constBoxWrap} from "@nartallax/cardboard"
 import {bindBox, tag} from "@nartallax/cardboard-dom"
 import * as css from "./select.module.scss"
 import {makeOverlayItem} from "client/controls/overlay_item/overlay_item"
 import {Icon} from "client/generated/icons"
 
+export interface SelectSingleOption<T> {
+	readonly value: T
+	readonly label: string
+}
+
+export interface SelectGroupOption<T>{
+	readonly items: readonly SelectSingleOption<T>[]
+	readonly label: string
+}
+
+export type SelectOption<T> = SelectGroupOption<T> | SelectSingleOption<T>
+
+function isSingleOption<T>(opt: SelectOption<T>): opt is SelectSingleOption<T> {
+	return !(opt as SelectGroupOption<T>).items
+}
+
+function flattenOptions<T>(opts: readonly SelectOption<T>[]): SelectSingleOption<T>[] {
+	const result: SelectSingleOption<T>[] = []
+	for(const opt of opts){
+		if(isSingleOption(opt)){
+			result.push(opt)
+		} else {
+			result.push(...opt.items)
+		}
+	}
+	return result
+}
+
 interface Props<T> {
 	value: WBox<T>
-	options: MRBox<readonly {value: T, label: string}[]>
+	options: MRBox<readonly SelectOption<T>[]>
 	listSizeLimit?: number
 	isArgumentInput?: boolean
 	isSearchable?: boolean
@@ -15,6 +43,7 @@ interface Props<T> {
 
 export function Select<T>(props: Props<T>): HTMLElement {
 	const options = constBoxWrap(props.options)
+	const flatOptions = options.map(opts => flattenOptions(opts))
 
 	function handleWindowClick(e: MouseEvent): void {
 		if(e.target === wrap || ((e.target instanceof Node) && wrap.contains(e.target))){
@@ -68,6 +97,10 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		onPaste: onChange
 	})
 
+	function getSingleItemElements(root: HTMLElement): NodeListOf<HTMLElement> {
+		return root.querySelectorAll(`.${css.option}`)
+	}
+
 	input.addEventListener("keydown", e => {
 		const down = e.key === "ArrowDown"
 		const up = e.key === "ArrowUp"
@@ -79,11 +112,11 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			} else if(up){
 				value--
 			}
-			const listLength = listWrap.children.length
+			const listLength = getSingleItemElements(listWrap).length
 			selectedItem.set((value + listLength) % listLength)
 		} else if(e.key === "Enter"){
 			if(selectedItem.get() >= 0){
-				const item = listWrap.children[selectedItem.get()]
+				const item = getSingleItemElements(listWrap)[selectedItem.get()]
 				if(item instanceof HTMLElement){
 					// a bit of a hack, but whatever
 					item.onclick!(new MouseEvent(""))
@@ -97,12 +130,8 @@ export function Select<T>(props: Props<T>): HTMLElement {
 		return str.replace(/\s/g, "").toLowerCase()
 	}
 
-	const filteredOptions = calcBox([searchText, options], (searchText, options) => {
-		const srcText = normalize(searchText)
-		if(!srcText){
-			return options
-		}
-		return options
+	function filterSingleOptions(srcText: string, opts: readonly SelectSingleOption<T>[]): SelectSingleOption<T>[] {
+		return opts
 			.map(opt => ({
 				opt,
 				index: normalize(opt.label.toLowerCase()).indexOf(srcText)
@@ -110,7 +139,42 @@ export function Select<T>(props: Props<T>): HTMLElement {
 			.filter(pair => pair.index >= 0)
 			.sort((a, b) => a.index - b.index)
 			.map(pair => pair.opt)
+	}
+
+	const filteredOptions = calcBox([searchText, options], (searchText, options) => {
+		const srcText = normalize(searchText)
+		if(!srcText){
+			return options
+		}
+		const singleOptions = filterSingleOptions(srcText, options.filter(isSingleOption))
+		const groupOptions = options
+			.filter(opt => !isSingleOption(opt))
+			.map(opt => {
+				const filteredItems = filterSingleOptions(srcText, (opt as SelectGroupOption<T>).items)
+				if(filteredItems.length < 1){
+					return null
+				}
+				return {
+					...opt,
+					items: filteredItems
+				}
+			})
+			.filter(optOrNull => !!optOrNull) as SelectGroupOption<T>[]
+		return [...singleOptions, ...groupOptions]
 	})
+
+	function renderSingleOption(opt: RBox<SelectSingleOption<T>>): HTMLElement {
+		const option = tag({
+			class: css.option
+		}, [opt.prop("label")])
+		option.onclick = () => {
+			props.value.set(opt.get().value)
+			selectedItem.set(-1)
+			input.blur()
+			updateValue()
+		}
+		return option
+	}
 
 	const listWrap = tag({
 		class: [css.dropdown],
@@ -120,17 +184,23 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	},
 	[filteredOptions.mapArray(
 		value => value,
-		value => {
-			const option = tag({
-				class: css.option
-			}, [value.prop("label")])
-			option.onclick = () => {
-				props.value.set(value.get().value)
-				selectedItem.set(-1)
-				input.blur()
-				updateValue()
+		opt => {
+			const optValue = opt.get()
+			if(isSingleOption(optValue)){
+				return renderSingleOption(opt as RBox<SelectSingleOption<T>>)
 			}
-			return option
+			return tag({
+				class: css.group
+			}, [
+				tag({class: css.groupLabel}, [opt.prop("label")]),
+				(opt as RBox<SelectGroupOption<T>>).prop("items").mapArray(
+					value => value,
+					renderSingleOption
+				)
+			])
+
+
+
 		})])
 
 	const wrap = tag({
@@ -152,7 +222,7 @@ export function Select<T>(props: Props<T>): HTMLElement {
 
 	function updateValue(): void {
 		const value = props.value.get()
-		const opts = options.get()
+		const opts = flatOptions.get()
 		const valuePair = opts.find(x => x.value === value)
 		if(!valuePair){
 			if(opts.length > 0){
@@ -168,11 +238,12 @@ export function Select<T>(props: Props<T>): HTMLElement {
 	}
 
 	bindBox(wrap, props.value, updateValue)
-	bindBox(wrap, options, updateValue)
+	bindBox(wrap, flatOptions, updateValue)
 
 	bindBox(wrap, selectedItem, selectedItem => {
-		for(let i = 0; i < listWrap.children.length; i++){
-			const child = listWrap.children[i]!
+		const optEls = getSingleItemElements(listWrap)
+		for(let i = 0; i < optEls.length; i++){
+			const child = optEls[i]!
 			const hasClass = child.classList.contains(css.selectedItem!)
 			if(i === selectedItem){
 				if(!hasClass){

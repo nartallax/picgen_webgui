@@ -49,19 +49,30 @@
     overflow-x: hidden;
 }
 
+.option, .groupLabel {
+    background-color: var(--color-block-secondary);
+    white-space: nowrap;
+    font-size: 1.1rem;
+    line-height: 1.3rem;
+    padding: 0.25rem 0.5rem;
+}
+
 .option {
     cursor: pointer;
     transition: 0.25s;
-    font-size: 1.1rem;
-    line-height: 1.3em;
-    padding: 0.25em 0.5em;
-
-    background-color: var(--color-block-secondary);
-
-    white-space: nowrap;
 
     &.selectedItem,
     &:hover {
         background-color: var(--color-block-selected);
+    }
+}
+
+.group {
+    .groupLabel {
+        font-weight: bold;
+    }
+
+    > :not(:first-child) {
+        margin-left: 1rem;
     }
 }
